@@ -1,0 +1,465 @@
+// These VM tests are constrained to use a very limited form of the language
+// since none of the core functions have been defined yet.
+
+// An implementation of binary addition.
+
+two = add(One, One)
+three = add(two, One)
+four = add(One, three)
+six = add(four, two)
+eight = add(two, six)
+return [three, six, eight]
+
+type Num
+type Bit is Num
+singleton Zero is Bit
+singleton One is Bit
+
+// MultiBit_([bit, num]) (where num is not Zero) represents 2*num + bit
+compound MultiBit is Num
+
+function multiBit(Bit bit, Num num) = num is Zero ? bit : MultiBit_([bit, num])
+
+function add(Num a, Num b) = add(a, b, Zero)
+
+function add(Num a, Num b, Bit carry) {
+  if carry is Zero {
+    if a is Zero { return b }
+    if b is Zero { return a }
+  }
+  aLow = shift(a=)
+  bLow = shift(b=)
+  // Compute cNext, the carry for the next stage
+  if aLow is Zero and bLow is Zero {
+    cNext = Zero
+  } else if aLow is One and bLow is One {
+    cNext = One
+  } else {
+    cNext = carry
+    carry = carry is Zero ? One : Zero
+  }
+  return multiBit(carry, add(a, b, cNext))
+}
+
+// Replace x with x div 2 and return its low-order bit
+// Returns the low-order bit of x, and replaces x with div(x, 2)
+function shift(Num x=) {
+  if x is Bit {
+    result = x
+    x = Zero
+    return result
+  } else {
+    [result, x] = x_
+    return result
+  }
+}
+
+/* RUN () RETURNS
+  [MultiBit([One, One]),
+   MultiBit([Zero, MultiBit([One, One])]),
+   MultiBit([Zero, MultiBit([Zero, MultiBit([Zero, One])])])]
+---
+allocated=6416/230, peak=632
+*/
+
+// An (intentionally) buggy version of the program above, to generate an error
+// dump.
+
+four = multiBit(Zero, multiBit(Zero, One))
+return add(four, One)
+
+type Num
+type Bit is Num
+singleton Zero is Bit
+singleton One is Bit
+compound MultiBit is Num
+
+function multiBit(Bit bit, Num num) = num is Zero ? bit : MultiBit_([bit, num])
+
+function add(Num a, Num b) = add(a, b, Zero)
+
+function add(Num a, Num b, Bit carry) {
+  if carry is Zero {
+    if a is Zero { return b }
+    if b is Zero { return a }
+  }
+  aLow = shift(a=)
+  bLow = shift(b=)
+  // Compute cNext, the carry for the next stage
+  if aLow is Zero and bLow is Zero {
+    cNext = Zero
+  } else if aLow is One and bLow is One {
+    cNext = One
+  } else {
+    cNext = a    // This is an error
+    carry = carry is Zero ? One : Zero
+  }
+  return multiBit(carry, add(a, b, cNext))
+}
+
+function shift(Num x=) {
+  if x is Bit {
+    result = x
+    x = Zero
+    return result
+  } else {
+    [result, x] = x_
+    return result
+  }
+}
+
+/* RUN () ERRORS
+No matching method {function="add:3", args=[MultiBit([Zero, One]), Zero, MultiBit([Zero, One])]}
+run.r8t+67:30_28 _t0 = add(a, b, cNext) {carry=One}
+run.r8t+67:12_0 _t0 = add(a, b, Zero)
+run.r8t+67:2_2 _t0 = add(four, One)
+StackBase
+---
+allocated=1080/38, peak=456
+*/
+
+// A weird little program that does a bunch of recursion and some tracing,
+// to exercise trace formatting.
+
+f(None, None, None, None)
+// We don't compute anything, but VirtualMachineTest expects all tests to return
+// a single value
+return 42
+
+procedure f(a, b, c, d) {
+  // Each recursive call shifts the arguments right by one, so this stops
+  // the recursion at depth 4.
+  if d is not None {
+    trace "Complete", a, b, c, d
+    return
+  }
+  if c is True {
+    // This will include the values of a, b, and c (since they're live), but
+    // not d
+    trace
+  }
+  f(False, a, b, c)
+  f(True, a, b, c)
+}
+/* RUN () RETURNS
+  42
+---
+            StackBase
+        (3) run.r8t+123:1_0 f(None, None, None, None)
+            run.r8t+123:18_7 f(False, a, b, c) {a=None, b=None, c=None}
+        (2) run.r8t+123:18_7 f(False, a, b, c) {a=False, b=None, c=None}
+        (1) run.r8t+123:18_7 f(False, a, b, c) {a=False, b=False, c=None}
+            run.r8t+123:18_7 f(False, a, b, c) {a=False, b=False, c=False}
+0.0s) run.r8t+123:10_1 trace "Complete" a, b, c, d {a=False, b=False, c=False, d=False}
+            ... (1) ...
+            run.r8t+123:19_8 f(True, a, b, c)
+0.0s) run.r8t+123:10_1 trace "Complete" a, b, c, d {a=True, b=False, c=False, d=False}
+            ... (2) ...
+            run.r8t+123:19_8 f(True, a, b, c)
+            run.r8t+123:18_7 f(False, a, b, c) {a=True, b=False, c=False}
+0.0s) run.r8t+123:10_1 trace "Complete" a, b, c, d {a=False, b=True, c=False, d=False}
+            ... (3) ...
+        (5) run.r8t+123:19_8 f(True, a, b, c)
+        (4) run.r8t+123:18_7 f(False, a, b, c) {a=True, b=None, c=None}
+            run.r8t+123:18_7 f(False, a, b, c) {a=False, b=True, c=None}
+0.0s) run.r8t+123:16_5 trace {a=False, b=False, c=True}
+            ... (4) ...
+            run.r8t+123:19_8 f(True, a, b, c)
+0.0s) run.r8t+123:16_5 trace {a=True, b=False, c=True}
+            ... (5) ...
+        (7) run.r8t+123:19_8 f(True, a, b, c)
+        (6) run.r8t+123:18_7 f(False, a, b, c) {a=True, b=True, c=None}
+0.0s) run.r8t+123:16_5 trace {a=False, b=True, c=True}
+(dropped 10)
+            ... (6) ...
+            run.r8t+123:19_8 f(True, a, b, c)
+0.0s) run.r8t+123:10_1 trace "Complete" a, b, c, d {a=True, b=False, c=True, d=True}
+            ... (7) ...
+        (8) run.r8t+123:19_8 f(True, a, b, c)
+0.0s) run.r8t+123:16_5 trace {a=True, b=True, c=True}
+            ... (8) ...
+            run.r8t+123:18_7 f(False, a, b, c) {a=True, b=True, c=True}
+0.0s) run.r8t+123:10_1 trace "Complete" a, b, c, d {a=False, b=True, c=True, d=True}
+            ... (8) ...
+            run.r8t+123:19_8 f(True, a, b, c)
+0.0s) run.r8t+123:10_1 trace "Complete" a, b, c, d {a=True, b=True, c=True, d=True}
+---
+allocated=5008/155, peak=2200
+*/
+
+// Test simple struct extract and printing
+return foo({a: 3, b: 4})
+
+function foo(x) {
+  {a, b} = x
+  return {aa: a, bb: b}
+}
+/* RUN () RETURNS
+  {aa: 3, bb: 4}
+---
+allocated=248/10, peak=96
+*/
+
+a = (1..4) ^** 2 | save
+a[2] = 1
+return [a, a | sum]
+/* RUN () RETURNS
+  [[1, 1, 9, 16], 27]
+---
+allocated=5496/205, peak=104
+*/
+
+x = 0
+return [-1, 1, 2, 3] | filter(-> # > 0) | -> # * # + x | sum
+/* RUN () RETURNS
+  14
+---
+allocated=3728/142, peak=0
+*/
+
+x = newMatrix([2, 2])
+x[1,1] = 1
+x[2,2] = 2
+return x
+
+/* RUN () RETURNS
+  ReshapedArray([2, 2], [1, Absent, Absent, 2])
+---
+allocated=240/9, peak=104
+*/
+
+return -4..10 | filter(-> # % 3 != 0) | saveSequential
+
+/* RUN () RETURNS
+  [-4, -2, -1, 1, 2, 4, 5, 7, 8, 10]
+---
+allocated=7664/284, peak=88
+$0 = *[]i0
+*/
+
+m = matrix([4, 4]) | [i, j] -> i + j
+return m[2..3, 3..] | save
+
+/* RUN () RETURNS
+  ReshapedArray([2, 2], [5, 6, 6, 7])
+---
+allocated=5008/191, peak=152
+*/
+
+x = {a: newMatrix([2, 1], "yet")}
+y = ["as", "if"]
+swap(x.a[2, 1]=, y[2]=)
+return { x, y }
+
+procedure swap(x=, y=) {
+  [x, y] = [y, x]
+}
+
+/* RUN () RETURNS
+  {x: {a: ReshapedArray([2, 1], ["yet", "if"])},
+   y: ["as", "yet"]}
+---
+allocated=856/34, peak=336
+*/
+
+return [1..3, 5] | sum([0, 0, 0])
+
+/* RUN () RETURNS
+  [6, 7, 8]
+---
+allocated=5080/190, peak=56
+*/
+
+return [myFn(3), myFn(True), myFn(MySingleton)]
+
+singleton MySingleton
+function myFn(x)
+method myFn(MySingleton) = "yes"
+method myFn(True) = "no"
+method myFn(_) default = "maybe"
+
+/* RUN () RETURNS
+  ["maybe", "no", "yes"]
+---
+allocated=256/10, peak=56
+*/
+
+a = matrix([2, 3], [2, 0, 10, 0, -2, 11])
+// Zero out all off-diagonal elements
+z = withKeys(a) | [[i, j], v] -> (i == j ? v : 0)
+// The result is still a matrix
+return a + z | save
+
+/* RUN () RETURNS
+  ReshapedArray([2, 3], [4, 0, 10, 0, -4, 11])
+---
+allocated=10976/418, peak=136
+*/
+
+a = {x: 3, y: -1, z: 2}
+return withKeys(a) | [k, v] -> (v >= 0 ? k : Absent) | saveSequential
+
+/* RUN () RETURNS
+  ["x", "z"]
+---
+allocated=2392/89, peak=56
+$0 = *[]x0:String
+*/
+
+[x, y] = codePoints("xy") | save
+three = codePoints("xy" & "zzy") | filter(-> (# == x or # == y)) | count
+http = codePoints("http") | save
+return {three, http}
+
+/* RUN () RETURNS
+  {http: [104, 116, 116, 112], three: 3}
+---
+allocated=9120/341, peak=152
+*/
+
+return "Hello, world!" == "Hello, world!"
+
+/* RUN () RETURNS
+  True
+---
+allocated=72/3, peak=0
+*/
+
+return "Hello, you!" == "Hello, me!"
+/* RUN () RETURNS
+  False
+---
+allocated=72/3, peak=0
+*/
+
+return "Hello" & " world!"
+/* RUN () RETURNS
+    "Hello world!"
+---
+allocated=160/4, peak=88
+*/
+
+return -2147483648 ++ 0
+/* RUN () ERRORS
+Invalid argument
+RangeCore.rangeWithSize {min=-2147483648, size=0}
+run.r8t+341:1_0 _t0 = rangeWithSize(-2147483648, 0)
+StackBase
+---
+allocated=168/6, peak=144
+*/
+
+nums = [-10, Absent, floor(pi * 100), 1, 17]
+minAbs = nums | top([x, y] -> abs(x) < abs(y))
+maxWithKey = withKeys(nums) | maxAt([2])
+return {min: min(nums), max: max(nums), minAbs, maxWithKey}
+
+/* RUN () RETURNS
+  {max: 314, maxWithKey: [[3], 314], min: -10, minAbs: 1}
+---
+allocated=8496/316, peak=224
+*/
+
+// Start with a simple matrix and square each element in place
+a = matrix([2, 2], 1..4) | save
+a *= a
+// Add two to each even element
+a |= -> (# % 2 == 1 ? # : # + 2)
+// The same result in a different way
+a += [2, 0][^a % 2 + 1]
+// Add 100 to each element on the diagonal
+// (Not the clearest or best way to do this, but showing it works.)
+a2 = a
+a2 |= keys(a) | [i, j] -> (-> (i == j ? # + 100 : #))
+return {a, a2}
+
+/* RUN () RETURNS
+  {a: ReshapedArray([2, 2], [1, 8, 9, 20]),
+   a2: ReshapedArray([2, 2], [101, 8, 9, 120])}
+---
+allocated=23216/882, peak=304
+*/
+
+// Make sure that TState.dropOnThrow() works as expected
+
+return ["a", "b", "c"][2..4]
+
+/* RUN () ERRORS
+Invalid argument
+MatrixCore.SubMatrix.afterSizes {sizes=[3], m=["a", "b", "c"], key=[Range(2, 4)]}
+MatrixCore.at
+run.r8t+384:1_1 _t0 = at(["a", "b", "c"], [_t0])
+StackBase
+---
+allocated=520/20, peak=328
+*/
+
+// Make sure that empty VArrays are handled properly.
+
+// Using size > 6 ensures that newMatrix() allocates a VArray
+x = newMatrix([8], [])
+
+// Storing arrays of different lengths ensures that a VArray is used for the
+// elements of x
+x[1] = [0]
+
+// Now x has a VArrayLayout, and its elements are also VArrays.  The template
+// for the inner VArray is initially just the constant 0, so storing anything
+// else there will force it to expand.
+
+y = replaceElement(x[1], [1], None)
+
+return {x: x[2], y}
+
+/* RUN () RETURNS
+{x: [], y: [None]}
+---
+allocated=568/20, peak=152
+$0 = *[]x0:$1
+$1 = *[]b0⸨0:0; 1:None⸩
+*/
+
+// The ?: subexpression returns different length arrays depending on which
+// path is taken; this verifies that harmonizing those results causes them
+// to be converted to VArrays.
+
+return 1..2 | i -> size(i == 1 ? [4, 5] : [6, 7, 8]) | save
+
+/* RUN () RETURNS
+[2, 3]
+---
+allocated=2456/93, peak=48
+$0 = *[]b0
+*/
+
+// Verify that method memos now harmonize their results.
+//
+// This is a little awkward to test, since results from the same call site
+// were already harmonized.  We need to get the same memo used from two
+// different call sites, so we need an exlined method (hence the recursion).
+// But we also need to ensure that the recursive call site hasn't already
+// harmonized the results for us, so we actually need separate recursion
+// sites for the different results.
+//
+// The final trick is that if we use a boolean to distinguish the call sites
+// we'll end up with two separate exlined memos, because the arguments aren't
+// similar enough.  So we instead use an integer to distinguish them.
+// Bleah.
+
+_ = test(100, 0)
+return test(100, 1)
+
+function test(i, shortResult) {
+  if shortResult != 0 {
+    return i == 0 ? [4, 5] : test(i-1, 1)
+  } else {
+    return i == 0 ? [6, 7, 8] : test(i-1, 0)
+  }
+}
+
+/* RUN () RETURNS
+[4, 5]
+---
+allocated=30760/1214, peak=56
+$0 = *[]b0
+*/

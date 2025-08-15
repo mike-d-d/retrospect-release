@@ -1,0 +1,87 @@
+// Based on https://code.earthengine.google.com/b26d304f61f2296408138a7bbbfb054d
+scale = size * size / 100
+b0 = testBand(size * 0.3, size * 0.3, scale)
+b1 = testBand(size * 0.3, size * 0.7, scale)
+b2 = testBand(size * 0.7 , size * 0.5, scale)
+img = { b0, b1, b2 }
+
+// Create a (lazily-computed) collection of features
+// Note that pixelCoordinates() returns the coordinates of pixel centers, hence
+// the 0.5 shift.
+// (And it's negative because our matrices are indexed from 1, not 0).
+features = matrix([size, size])
+             | [i, j] -> feature([i - 0.5, j - 0.5], img)
+
+centroids =
+    [[0, 0, 0], [0.6, 0, 0], [0, 0.6, 0], [0, 0, 0.6], [0.55, 0.55, 0.55]]
+
+// Classify each feature and return a histogram of the results
+return features
+     | f -> classify(f, centroids)
+     | f -> f.class
+     | histogram(0, size(centroids), size(centroids))
+
+function testBand(xc, yc, scale) =
+    [x, y] -> testBandHelper([x, y] - [xc, yc], scale)
+
+function testBandHelper(delta, scale) {
+  d = delta ** 2
+  d2 = d[2] + d[1]
+  return 1 / (log(d2 / scale + 7 - 6) + 1)
+}
+
+// Evaluate each of the bands at the given xy coordinates and save the results
+// as a struct.
+function feature(xy, bands) = bands | b -> b @ xy | save
+
+// Translation of the "classify()" function in the code editor script, which
+// "given a feature with properties b0, b1, and b2, adds a class property with
+// the index of the closest centroid" (using Euclidean distance as its
+// similarity metric).
+function classify(f, centroids) {
+  b0 = f.b0
+  b1 = f.b1
+  b2 = f.b2
+  pt = [b0, b1, b2]
+  // If we were writing idiomatic Retrospect we'd do something more like
+  //
+  //     distances = 1..5 | i -> [dist(pt, centroids[i]), i - 1]
+  //
+  // ... but we're approximating the results of translating the EE expression,
+  // where the loop is on the client side.
+  distances = [[dist(pt, centroids[1]), 0],
+               [dist(pt, centroids[2]), 1],
+               [dist(pt, centroids[3]), 2],
+               [dist(pt, centroids[4]), 3],
+               [dist(pt, centroids[5]), 4]]
+  min = distances | minAt([1])
+  return {b0, b1, b2, class: min[2]}
+}
+
+function dist(pt, centroid) = (centroid - pt) ** 2 | sum
+
+// We don't yet have a (fixed) histogram reducer in Retrospect,
+// but it's easy enough to implement.
+
+compound Histogram is Reducer
+
+function histogram(min, max, steps) =
+    Histogram_({min, scale: steps / (max - min), steps})
+
+method emptyState(Histogram h) = newMatrix([h_.steps], 0)
+
+method nextState(Histogram h, state, value) {
+  b = 1 + floor((value - h_.min) * h_.scale)
+  if b >= 1 and b <= size(state) {
+    state[b] += 1
+  }
+  return state
+}
+
+method combineStates(Histogram, state1, state2) = state1 + state2
+
+/* RUN (size=200) RETURNS
+[10838, 7456, 7456, 8110, 6140]
+---
+allocated=1682852120/64398830, peak=184
+*/

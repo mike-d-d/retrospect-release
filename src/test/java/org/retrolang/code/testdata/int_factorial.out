@@ -1,0 +1,63 @@
+ 1: test i0 < 2; T:→ 7                                      // if n < 2 {
+ 2: i2 ← factorial(iSub(i0, 1));                            // t1 = factorial(t0)
+ 3: test i2 < 0; T:→ 6                                      // if t1 >= 0 {
+ 4: i3 ← Math.multiplyExact(i0, i2); ArithmeticException:→ 6 // t2 = multiplyExact(n, t1); on ArithmeticException goto overflow
+ 5: return i3                                               // return t2
+-6: return -1                                               // return -1
+-7: return 1                                                // return 1
+---
+ 1: test I0 < 2; T:→ 7                                      // if n < 2 {
+ 2: I1 ← factorial(iSub(I0, 1));                            // t1 = factorial(t0)
+ 3: test I1 < 0; T:→ 6                                      // if t1 >= 0 {
+ 4: I0 ← Math.multiplyExact(I0, I1); ArithmeticException:→ 6 // t2 = multiplyExact(n, t1); on ArithmeticException goto overflow
+ 5: return I0                                               // return t2
+-6: return -1                                               // return -1
+-7: return 1                                                // return 1
+---
+const 0: MethodHandle(int)int
+---
+  public static factorial(I)I
+    TRYCATCHBLOCK L0 L1 L2 java/lang/ArithmeticException
+   L3
+    LINENUMBER 1 L3
+    ILOAD 0
+    ICONST_2
+    IF_ICMPLT L4
+   L5
+    LINENUMBER 2 L5
+    LoadConst 0
+    ILOAD 0
+    ICONST_1
+    ISUB
+    INVOKEVIRTUAL MethodHandle.invokeExact
+    ISTORE 1
+   L6
+    LINENUMBER 3 L6
+    ILOAD 1
+    IFLT L7
+   L0
+    LINENUMBER 4 L0
+    ILOAD 0
+    ILOAD 1
+    INVOKESTATIC java/lang/Math.multiplyExact (II)I
+   L1
+    ISTORE 0
+   L8
+    LINENUMBER 5 L8
+    ILOAD 0
+    IRETURN
+   L2
+   FRAME FULL [] [java/lang/Throwable]
+    POP
+   L7
+    LINENUMBER 6 L7
+   FRAME SAME
+    ICONST_M1
+    IRETURN
+   L4
+    LINENUMBER 7 L4
+   FRAME SAME
+    ICONST_1
+    IRETURN
+    MAXSTACK = 3
+    MAXLOCALS = 2

@@ -1,0 +1,146 @@
+// Create 5 futures, then wait for them all
+
+x = 1..5 | i -> future(-> fn(i)) | save
+return waitFor(^x) | save
+
+function fn(i) {
+  // Just trace one of the subtasks to avoid non-deterministic ordering of the traces
+  if i == 2 { trace }
+  return i * i
+}
+
+/* RUN () RETURNS
+[1, 4, 9, 16, 25]
+---
+      StackBase
+      FutureValue.FutureMethod.begin
+      future.r8t+2:1_1 _t0 = fn(i)
+0.0s) future.r8t+2:6_2 trace {i=2}
+---
+allocated=9480‥11800/355‥436, peak=264‥1584
+*/
+
+// Verify that we log something reasonable if an error occurs while evaluating
+// a future.
+
+x = 1..4 | i -> future(-> i * (i != 2 ? i : None)) | save
+return waitFor(^x) | save
+
+/* RUN () ERRORS
+Error while computing future() value {futureStack=[No matching method {function="multiply:2", args=[2, None]}, future.r8t+25:1_8 _t0 = multiply(i, _t0), FutureValue.FutureMethod.begin]}
+WaitFor {fv=⊠xxxx}
+`waitFor:1`
+CollectionCore.NextTransformedIterator.at {key=[2], innerIt=ArrayIterator([⊡xxxx:1, ⊠xxxx, ⊡xxxx:9, ⊡xxxx:16], EnumerateAllKeys, 2), it=TransformedIterator(ToBeSet, EnumerateAllKeys, `waitFor:1`)}
+LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=[1, ToBeSet, ToBeSet, ToBeSet]}
+LoopCore.enumerateDefault
+LoopCore.PipeCollectionCollector.enumerate {loop=SaverLoop(SaveElements)}
+future.r8t+25:2_6 _t0 = pipe(_t0, _t1)
+StackBase
+---
+allocated=6960‥7560/261‥280, peak=1168‥1432
+*/
+
+// Fibonacci with futures!
+
+b1 = testFuture
+b2 = testFuture
+prev = b1
+last = b2
+for _ in 3..100 sequential prev, last {
+  next = future(-> waitFor(prev) + waitFor(last))
+  [prev, last] = [last, next]
+}
+setTestFuture(b1, 1)
+setTestFuture(b2, 1)
+return waitFor(last)
+
+/* RUN () RETURNS
+3.54224848179262E20
+---
+allocated=67840‥108576/2562‥3976, peak=9624‥24536
+*/
+
+// Same as previous example, but with the futures constructed in a more complex
+// way (which makes for a more interesting stack to unwind).
+
+b1 = testFuture
+b2 = testFuture
+prev = b1
+last = b2
+for _ in 3..100 sequential prev, last {
+  next = future(-> (waitFor(^[prev, last]) | sum))
+  [prev, last] = [last, next]
+}
+setTestFuture(b1, 1)
+setTestFuture(b2, 1)
+return waitFor(last)
+
+/* RUN () RETURNS
+3.54224848179262E20
+---
+allocated=229832‥314472/8527‥11471, peak=10456‥66088
+*/
+
+// Start with Fibonacci, but create a parallel set of "spam" futures that will
+// be dropped after they've been started to verify that the garbage collection
+// is handled properly.
+
+b1 = testFuture
+b2 = testFuture
+prev = b1
+last = b2
+spam = future(-> 1)
+for _ in 3..100 sequential prev, last, spam {
+  next = future(-> (waitFor(^[prev, last]) | sum))
+  // Each of the spam futures depends on the previous one (and a piece of the
+  // fibonacci calculation), but ultimately nothing depends on them.
+  spam = future(-> waitFor(spam) + waitFor(prev))
+  [prev, last] = [last, next]
+}
+setTestFuture(b1, 1)
+setTestFuture(b2, 1)
+// This assert is trivially true, but ensures that the spam futures are kept
+// alive until this point in execution.
+assert spam is not None
+return waitFor(last)
+
+/* RUN () RETURNS
+3.54224848179262E20
+---
+allocated=264200‥378808/9795‥13711, peak=20680‥90400
+*/
+
+// Force some layout evolution & replacement while multiple threads are active
+
+// A bunch of values with different types
+others = [1, "a", True, "b", False, None]
+
+// Using size > 6 ensures that newMatrix() allocates a VArray
+x = newMatrix([8], [])
+// Storing arrays of different lengths ensures that a VArray is used for the
+// elements of x
+x[1] = [0]
+
+// Now x has a VArrayLayout, and its elements are also VArrays.  The template
+// for the inner VArray is initially just the constant 0, but we'll store
+// other things in there to force it to expand.
+
+// Create a future for each element z of `others` that replaces the first (only)
+// element of x[1] with z, and then another future that retrieves that element
+// (the net effect is to incrementally expand the inner VArray layout to support
+// all of those elements).
+y = others
+    | z -> future(-> replaceElement(x[1], [1], z))
+    | f -> future(-> waitFor(f)[1])
+    | save
+
+// Wait for all those futures to complete and return their results.
+return waitFor(^y) | save
+
+/* RUN () RETURNS
+[1, "a", True, "b", False, None]
+---
+allocated=13784‥19976/513‥726, peak=680‥3656
+$0 = *[]x0:$1
+$1 = *[]b0⸨0:b1; 1:False; 2:True; 3:None; 4:x0:String⸩
+*/

@@ -1,0 +1,52 @@
+tree = Empty
+nextValue = 1
+for depth in 0..5 sequential tree, nextValue {
+  size = 2 ** depth
+  start = 0.5 / size
+  for i in 1..size sequential tree, nextValue {
+    tree[start * (2 * i - 1)] = nextValue
+    nextValue += 1
+  }
+}
+tree[19/32] = 1
+return [tree[17/32], tree[18/32], tree[19/32], tree[1]]
+
+type BST
+compound NonEmpty is BST
+singleton Empty is BST
+
+method at(BST bst, [key]) {
+  if bst is Empty {
+    return Absent
+  }
+  rootKey = bst_.key
+  if key < rootKey {
+    return bst_.left[key]
+  } else if key > rootKey {
+    return bst_.right[key]
+  } else {
+    return bst_.value
+  }
+}
+
+method replaceElement(BST bst, [key], value) {
+  if bst is Empty {
+    return NonEmpty_({key, value, left: Empty, right: Empty})
+  }
+  rootKey = bst_.key
+  if key < rootKey {
+    bst_.left[key] = value
+  } else if key > rootKey {
+    bst_.right[key] = value
+  } else {
+    bst_.value = value
+  }
+  return bst
+}
+
+/* RUN () RETURNS
+  [24, 12, 1, Absent]
+---
+allocated=223840/8497, peak=56
+$0 = *[d4, b0⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x0:$0)); 1:Empty⸩, b1⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x1:$0)); 1:Empty⸩, b2]
+*/

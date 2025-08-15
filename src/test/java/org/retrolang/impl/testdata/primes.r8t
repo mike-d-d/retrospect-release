@@ -1,0 +1,27 @@
+// Find primes using the sieve of Eratosthenes
+
+assert n >= 1
+primes = []
+next = 3
+
+for sequential next, primes {
+  // Test whether no element of primes divides evenly into next
+  if primes | p -> (next % p) == 0 | allFalse {
+    // That test could also be written using distributed operations:
+    //      if (next % primes) ^== 0 | allFalse {
+    primes &= [next]
+    if size(primes) == n - 1 { break }
+  }
+  next += 2
+}
+
+// Insert 2 at the beginning
+primes[1..0] = [2]
+return primes
+
+/* RUN (n=16) RETURNS
+  [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53]
+---
+allocated=96904/3596, peak=64
+$0 = *[]b0
+*/

@@ -1,0 +1,46 @@
+return [sumSqDistance([0, 0], pts(3)), sumSqDistance([0.25, 0.5], pts(5))]
+
+// Creates an array of 2n points evenly spaced along two edges of a 2x2 square
+// centered on the origin, then filters out any on the x axis.
+function pts(n) = 0..(2 * n -1)
+                | i -> [i >= n ? 1 : -1, 2 * (i % n) / (n - 1) - 1 ]
+                | filter([_, y] -> y != 0)
+                | save
+
+// Sums the square of the distance from [x, y]] to each element of pts
+function sumSqDistance([x, y], pts) = pts | [px, py] -> (x - px) ** 2 + (y - py) ** 2 | sum
+
+/* CODEGEN sumSqDistance RETURNS
+[8, 15.5]
+---
+sumSqDistance_0([d1, d2], x3:*[]@xxxx):
+  1: AtomicInteger.incrementAndGet(0);
+  2: I6 ← 0;
+  3: D7 ← 0;
+= 4: I9 ← I6;
+= 5: test X5 is *[]b0⸨0:[i1, d2]; 1:Absent⸩@xxxx; F:→ 17
+  6: test I9 < Frame1i4x.i0(X5); F:→ 14
+  7: I10 ← iAdd(I9, 1);
+  8: test uint8[](Frame1i4x.x0(X5), I9) 1 (< 2); F:→ 10
+  9: I9 ← I10; → 5
+-10: D11 ← dSub(D1, int[](Frame1i4x.x1(X5), iShl(I9, 2)));
+ 11: D13 ← dSub(D3, double[](Frame1i4x.x2(X5), iShl(I9, 3)));
+ 12: I6 ← I10;
+ 13: D7 ← dAdd(D7, dAdd(dMul(D11, D11), dMul(D13, D13))); → 4
+-14: TState.setResultTemplates(X0, [d0]);
+ 15: setDouble[](TState.fnResultBytes(X0, 8), 0, D7);
+ 16: return
+-17: X10 ← newStackEntry(ArrayCore.NextArrayIterator.startLoop {index=I9, it=ArrayIterator(X5, EnumerateValues, I6)});
+ 18: X5 ← TState.fillStackEntry(X0, null, X10, [⸨[i0, d0]; Absent⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), TransformedIterator((empty), EnumerateValues, lambda@11:53⸨x=d0, y=d0⸩)], mMemo_1@xxxx, null);
+ 19: X6 ← newStackEntry(CollectionCore.NextTransformedIterator.next {it=TransformedIterator((empty), EnumerateValues, lambda@11:53⸨x=D1, y=D3⸩)});
+ 20: X1 ← TState.fillStackEntry(X0, X5, X6, [⸨d0; Absent⸩, TransformedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), EnumerateValues, lambda@11:53⸨x=d0, y=d0⸩), Sum(0), d0], mMemo_10@xxxx, null);
+ 21: X2 ← newStackEntry(LoopCore.Iterate.next {loop=Sum(0), state=D7});
+ 22: X1 ← TState.fillStackEntry(X0, X1, X2, [d0, Sum(0)], mMemo_17@xxxx, null);
+ 23: X1 ← TState.fillStackEntry(X0, X1, LoopCore.enumerateDefault, [d0, Sum(0)], mMemo_18@xxxx, null);
+ 24: X1 ← TState.fillStackEntry(X0, X1, LoopCore.PipeCollectionCollector.enumerate {loop=Sum(0)}, d0, mMemo_22@xxxx, null);
+ 25: X1 ← TState.fillStackEntry(X0, X1, varray.r8t+0:11_3 _t0 = pipe(_t0, _t1), d0, mMemo_x@xxxx, null);
+ 26: TState.setStackRest(X0, X1);
+ 27: return
+---
+allocated=20688/788, released=20296/780, peak=488
+*/

@@ -1,0 +1,57 @@
+// An example from overview.md#inout-parameters
+
+counts = [{key: 2, count: 100}]
+c2 = count(2, counts=)
+c3 = count(3, counts=)
+return [c2, c3, counts]
+
+function count(key, counts=) {
+  i = binarySearch(key, counts^.key)
+  if i > 0 {
+    result = counts[i].count
+    counts[i].count += 1
+    return result
+  } else {
+    i = 1 - i
+    // Insert another element before i
+    counts[i .. i-1] = [{key: key, count: 1}]
+    return 0
+  }
+}
+
+// A placeholder
+function binarySearch(_, _) = 1
+
+/* COMPILE ():
+function binarySearch(a0, a1)
+function count(a0, a1=)
+method binarySearch(_, _) {
+    return 1  // 21:30
+}
+method count(key, counts) {
+    _t0 = curryLambda('at:2', [0, -1], ["key"])  // 7:2
+    _t0 = pipe(counts, _t0)
+    i = binarySearch(key, _t0)
+    _t0 = lessThan(0, i)  // 8:2
+    branch L1 if not _t0
+    _t0 = at(counts, [i])  // 9:4
+    result = at(_t0, "count")
+    _t0, _t1 = startUpdate(counts, [i])  // 10:4
+    _t0, _t2 = startUpdate(_t0, "count")
+    _t0 = binaryUpdate(_t0, 'add:2', 1)
+    _t0 = at(_t2, _t0)
+    counts = at(_t1, _t0)
+    return result, counts  // 11:4
+  L1:
+    i = subtract(1, i)  // 13:4
+    _t0 = subtract(i, 1)  // 15:4
+    _t0 = range(i, _t0)
+    counts = replaceElement(counts, [_t0], [{count: 1, key: key}])
+    return 0, counts  // 16:4
+}
+---
+    counts = [{count: 100, key: 2}]  // 1:0
+    c2, counts = count(2, counts)  // 2:0
+    c3, counts = count(3, counts)  // 3:0
+    return [c2, c3, counts]  // 4:0
+*/

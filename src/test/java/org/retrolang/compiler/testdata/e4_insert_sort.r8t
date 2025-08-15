@@ -1,0 +1,76 @@
+// An example from overview.md#immutable-values
+
+function insertSort(nums) {
+  for i in 2 .. size(nums) sequential nums {
+    // nums[1 .. i-1] are already sorted, insert nums[i] appropriately
+    n_i = nums[i]
+    // If n_i turns out to be the smallest value we've
+    // seen, this is where it will be inserted.
+    dest = 1
+    for j in reverse(1 .. i-1) sequential {
+      if n_i >= nums[j] {
+        // It's not the smallest; insert after this element
+        break { dest = j + 1 }
+      }
+    }
+    if dest != i {
+      nums[dest+1 .. i] = nums[dest .. i-1]
+      nums[dest] = n_i
+    }
+  }
+  return nums
+}
+
+/* COMPILE ():
+private singleton loop@2 is Loop
+private compound loop@2_state{nums}
+private compound loop@8{n_i,nums} is Loop
+private compound loop@8_break@11{j}
+function insertSort(a0)
+method insertSort(nums) {
+    _t0 = size(nums)  // 2:2
+    _t0 = range(2, _t0)
+    _t0 = iterate(_t0, EnumerateValues, loop@2, loop@2_state(nums))
+    nums = unloop@2_state(_t0)
+    return nums  // 19:2
+}
+method nextState(_loop, _state, _element) _0 is loop@2 {
+    nums = unloop@2_state(_state)
+    i = _element
+    n_i = at(nums, [i])  // 4:4
+    dest = 1  // 7:4
+    _t0 = subtract(i, 1)  // 8:4
+    _t0 = range(1, _t0)
+    _t0 = reverse(_t0)
+    _t0 = iterate(_t0, EnumerateValues, loop@8(n_i, nums), Absent)
+    branch L3 if _t0 is not LoopExit
+    _t0 = loopExitState(_t0)
+    j = unloop@8_break@11(_t0)
+    dest = add(j, 1)  // 11:16
+    branch L2
+  L3:
+  L2:
+    _t0 = equal(dest, i)  // 14:4
+    branch L4 if _t0
+    _t0 = subtract(i, 1)  // 15:6
+    _t0 = range(dest, _t0)
+    _t0 = at(nums, [_t0])
+    _t1 = add(dest, 1)
+    _t1 = range(_t1, i)
+    nums = replaceElement(nums, [_t1], _t0)
+    nums = replaceElement(nums, [dest], n_i)  // 16:6
+  L4:
+    return loop@2_state(nums)
+}
+method nextState(_loop, _state, _element) _0 is loop@8 {
+    n_i, nums = unloop@8(_loop)
+    j = _element
+    _t0 = at(nums, [j])  // 9:6
+    _t0 = lessThan(n_i, _t0)
+    branch L2 if _t0
+    _t0 = loopExit(loop@8_break@11(j))  // 11:8
+    return _t0
+  L2:
+    return Absent
+}
+*/

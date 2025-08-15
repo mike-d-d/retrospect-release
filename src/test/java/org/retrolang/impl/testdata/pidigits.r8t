@@ -1,0 +1,463 @@
+// Compute digits of pi; algorithm from
+// https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/pidigits.html
+
+spigot = initialSpigot
+for _ in 1 .. n sequential spigot {
+  digits << nextDigit(spigot=)
+} collect {
+  digits =| save
+}
+return digits
+
+function initialSpigot() = {
+  z: transform(1, 0, 0, 1),  // state
+  k: 1                       // next input
+}
+
+// Crank spigot until we get the next digit, and return it
+function nextDigit(spigot=) {
+  for sequential spigot {
+    digit = extract(spigot.z, 3)
+    if digit == extract(spigot.z, 4) {
+      break {
+        spigot.z = compose(transform(10, -10 * digit, 0, 1), spigot.z)
+        return digit
+      }
+    }
+    spigot.z = compose(spigot.z, nextTransform(spigot.k))
+    spigot.k += 1
+  }
+}
+
+function transform(q, r, s, t) = {
+    q: bigInt(q),
+    r: bigInt(r),
+    s: bigInt(s),
+    t: bigInt(t)
+  }
+
+function nextTransform(k) = transform(k, 4 * k + 2, 0, 2 * k + 1)
+
+function extract({q, r, s, t}, j) {
+  j = bigInt(j)
+  return asInt(div(q * j + r, s * j + t))
+}
+
+function compose(t1, t2) = {
+    q: t1.q * t2.q,
+    r: t1.q * t2.r + t1.r * t2.t,
+    s: t1.s * t2.q + t1.t * t2.s,
+    t: t1.s * t2.r + t1.t * t2.t
+  }
+
+
+
+// The rest of this file is an implementation of BigInt arithmetic.
+
+// A BigInt's representation is { signum, mag }, where
+//   - signum is 0, 1, or -1
+//   - mag is a (little endian, minimal length) array of U32.
+compound BigInt
+
+// Returns the BigInt representing i.
+function bigInt(Integer i) {
+  if i == 0 {
+    return BigInt_({signum: 0, mag: []})
+  } else if i < 0 {
+    signum = -1
+    // Note that if i is -2^31 this will turn it into a double, which u32() will
+    // then turn back into an int (without losing anything but a little
+    // performance).  If we wanted to avoid that we could do something like
+    //     uAdd(u32(-(1+i)), u32(1)).low
+    i = -i
+  } else {
+    signum = 1
+  }
+  return BigInt_({signum, mag: [u32(i)]})
+}
+
+function bigZero() = bigInt(0)
+
+// Returns the Integer with the same value as the given BigInt.
+// Errors if x does not correspond to an Integer.
+method asInt(BigInt x) {
+  if x_.signum == 0 {
+    return 0
+  }
+  [result] = x_.mag
+  result = number(result)
+  // asInt(number) will error if our result isn't an Integer.
+  return asInt(x_.signum < 0 ? -result : result)
+}
+
+// Define the standard arithmetic operations over BigInts
+
+method add(BigInt x, BigInt y) {
+  if x_.signum == 0 {
+    return y
+  } else if y_.signum == 0 {
+    return x
+  } else if x_.signum == y_.signum {
+    return BigInt_({signum: x_.signum, mag: addMags(x_.mag, y_.mag)})
+  }
+  cmp = compareMags(x_.mag, y_.mag)
+  if cmp == 0 {
+    return bigZero
+  }
+  mag = cmp > 0 ? subtractMags(x_.mag, y_.mag) : subtractMags(y_.mag, x_.mag)
+  return BigInt_({signum: cmp == x_.signum ? 1 : -1, mag})
+}
+
+method negative(BigInt x) {
+  return BigInt_({signum: -x_.signum, mag: x_.mag})
+}
+
+method subtract(BigInt x, BigInt y) {
+  return x + negative(y)
+}
+
+method multiply(BigInt x, BigInt y) {
+  signum = x_.signum * y_.signum
+  if signum == 0 {
+    return bigZero
+  }
+  // TODO: use more efficient algorithms (karatsuba, toom cook)
+  // if both x and y are very large (size > 80)
+  if size(x_.mag) == 1 {
+    mag = multiplyMagByU32(y_.mag, x_.mag[1])
+  } else if size(y_.mag) == 1 {
+    mag = multiplyMagByU32(x_.mag, y_.mag[1])
+  } else {
+    mag = multiplyMags(x_.mag, y_.mag)
+  }
+  return BigInt_({signum, mag})
+}
+
+method div(BigInt x, BigInt y) = div(x, y, False)
+
+method modulo(BigInt x, BigInt y) = div(x, y, True).r
+
+// Returns {q, r}
+function divWithRemainder(BigInt x, BigInt y) = div(x, y, True)
+
+// Returns {q, r} if withRemainder is True, otherwise just q
+private function div(BigInt x, BigInt y, withRemainder) {
+  // TODO: use a more efficient algorithm (burnikel ziegler) if y is very large
+  // (ySize > 80) and x is even larger (xSize > ySize + 40)
+  signum = x_.signum * y_.signum
+  if signum == 0 {
+    assert y_.signum != 0
+    return withRemainder ? {q: x, r: x} : x
+  }
+  result = divMags(x_.mag, y_.mag, withRemainder)
+  q = (size(result.q) == 0) ? bigZero : BigInt_({signum, mag: result.q})
+  if y_.signum < 0 and size(result.r) != 0 {
+    // We want floor division, not truncate-towards-zero
+    q = q + bigInt(-1)
+    // We also have to fix r, but we'll do that below.
+  }
+  if not withRemainder {
+    return q
+  } else if size(result.r) == 0 {
+    return {q, r: bigZero}
+  }
+  if y_.signum > 0 {
+    r = BigInt_({signum: 1, mag: result.r})
+  } else {
+    r = BigInt_({signum: -1, mag: subtractMags(y_.mag, result.r)})
+  }
+  return {q, r}
+}
+
+private function uAdd(i, j, k) {
+  sum1 = uAdd(i, j)
+  sum2 = uAdd(sum1.low, k)
+  return {low: sum2.low, high: uAdd(sum1.high, sum2.high).low}
+}
+
+// Returns 0, 1, or -1
+private function compareMags(m1, m2) {
+  n = size(m1)
+  n2 = size(m2)
+  if n != n2 {
+    return n < n2 ? -1 : 1
+  }
+  for i in reverse(1..n) sequential {
+    m1_i = m1[i]
+    m2_i = m2[i]
+    if m1_i != m2_i {
+      break {
+        return m1_i < m2_i ? -1 : 1
+      }
+    }
+  }
+  return 0
+}
+
+// Add two arrays of U32
+private function addMags(x, y) {
+  // Ensure that x is at least as long as y
+  if size(x) < size(y) {
+    [x, y] = [y, x]
+  }
+  // Add y into x
+  carry = u32(0)
+  for i in 1..size(x) sequential carry, x {
+    if i <= size(y) {
+      y_i_plus_carry = uAdd(y[i], carry)
+    } else if carry == 0 {
+      break
+    } else {
+      y_i_plus_carry = {low: carry, high: u32(0)}
+    }
+    {low, high} = uAdd(x[i], y_i_plus_carry.low)
+    x[i] = low
+    // These are both zero or one, so don't need to worry about overflow
+    carry = uAdd(high, y_i_plus_carry.high).low
+  }
+  if carry != 0 {
+    x &= [carry]
+  }
+  return x
+}
+
+// Subtract one array of U32 (y) from another (x); x must represent a
+// larger number.
+private function subtractMags(x, y) {
+  // borrow will be 0 or 1
+  borrow = u32(0)
+  for i in 1..size(x) sequential borrow, x {
+    if i <= size(y) {
+      y_i_plus_borrow = uAdd(y[i], borrow)
+    } else if borrow == 0 {
+      break
+    } else {
+      y_i_plus_borrow = {low: borrow, high: u32(0)}
+    }
+    {low, high} = uSubtract(x[i], y_i_plus_borrow.low)
+    x[i] = low
+    // y_i_plus_borrow.high is 0 or 1; high is -1 or 0
+    borrow = uSubtract(y_i_plus_borrow.high, high).low
+  }
+  assert borrow == 0
+  return dropLeadingZeros(x)
+}
+
+private function dropLeadingZeros(mag) {
+  end = size(mag)
+  for i in reverse(1 .. end) sequential {
+    if mag[i] != 0 {
+      break {
+        if i < end {
+          mag[i + 1 ..] = []
+        }
+        return mag
+      }
+    }
+  }
+  return []
+}
+
+private function multiplyMagByU32(mag, k) {
+  if bitCount(k) == 1 {
+    carry = shiftMagLeft(mag=, bitFirstOne(k))
+  } else {
+    carry = u32(0)
+    for i in 1..size(mag) sequential carry, mag {
+      t1 = uMultiply(mag[i], k)
+      t2 = uAdd(t1.low, carry)
+      mag[i] = t2.low
+      carry = uAdd(t1.high, t2.high).low
+    }
+  }
+  if carry != 0 {
+    mag &= [carry]
+  }
+  return mag
+}
+
+// Returns carry
+private function shiftMagLeft(mag=, n) {
+  assert n < 32
+  if n == 0 {
+    return u32(0)
+  }
+  prev = u32(0)
+  for i in 1..size(mag) sequential prev, mag {
+    mag_i = mag[i]
+    mag[i] = bitRotate({low: mag_i, high: prev}, n)
+    prev = mag_i
+  }
+  return bitRotate({low: u32(0), high: prev}, n)
+}
+
+// Multiply two arrays of U32
+private function multiplyMags(x, y) {
+  xSize = size(x)
+  z = newMatrix([xSize + size(y)], u32(0))
+  for [j]: y_j in y sequential z {
+    // Add x * y[j] to z[j..]
+    carry = 0
+    for [i]: x_i in x sequential carry, z {
+      t1 = uMultiply(x_i, y_j)
+      t2 = uAdd(t1.low, z[j + i - 1], carry)
+      z[j + i - 1] = t2.low
+      carry = uAdd(t1.high, t2.high).low
+    }
+    z[j + xSize] = carry
+  }
+  return dropLeadingZeros(z)
+}
+
+// Returns {q, r}; if withRemainder is False, r will be None
+// Based on Knuth "Algorithm D", as implemented by Hank Warren in Hacker's Delight
+private function divMags(u, v, withRemainder) {
+  cmp = compareMags(u, v)
+  if cmp < 0 {
+    // numerator less than denominator
+    return { q: [], r: withRemainder ? u : None }
+  } else if cmp == 0 {
+    // numerator equal to denominator
+    return { q: [1], r: withRemainder ? [] : None }
+  } else if size(v) == 1 {
+    r = divMagByU32(u=, v[1])
+    if withRemainder {
+      r = (r == 0) ? [] : [r]
+    } else {
+      r = None
+    }
+    return { q: u, r }
+  }
+  // TODO: consider canceling powers of two if size(y) > 5
+  vSize = size(v)
+  uSize = size(u)
+  qSize = uSize - vSize + 1
+
+  // Normalize by shifting u & v left until the top bit of v is 1
+  normalizeShift = 31 - bitLastOne(v[vSize])
+  carry = shiftMagLeft(v=, normalizeShift)
+  assert carry == 0
+  uTop = shiftMagLeft(u=, normalizeShift)
+
+  q = newMatrix([qSize], u32(0))
+  vTop = v[vSize]
+  vTop2 = v[vSize - 1]
+  for j in 0 .. qSize-1 sequential q, u, uTop {
+    // Each iteration of this loop computes q[qSize - j] by
+    // dividing u[qSize-j .. uSize-j] & [uTop] (vSize + 1 words)
+    // by v (vSize words),
+    // and subtracting the product from u[qSize-j .. uSize-j].
+
+    // D3: Calculate qHat, our guess at q
+    qHat = qHat(uTop, u[uSize - j], u[uSize - j - 1], vTop, vTop2)
+    // At this point qHat is either the correct q, or q+1
+    // D4: Multiply and subtract
+    if qHat == 0 {
+      assert uTop == 0
+      uTop = u[uSize - j]
+      continue
+    }
+    uStart = qSize - j - 1
+    borrow = u32(0)
+    // Subtract qHat * v from u[qSize-j .. uSize-j]
+    for [i]: v_i in v sequential borrow, u {
+      p = uMultiply(qHat, v_i)
+      p2 = uAdd(p.low, borrow)
+      t = uSubtract(u[uStart + i], p2.low)
+      u[uStart + i] = t.low
+      borrow = uAdd(p.high, p2.high).low
+      borrow = uSubtract(borrow, t.high).low
+    }
+    // Update uTop
+    t = uSubtract(uTop, borrow)
+    // D5: Test remainder (should be either 0 or -1)
+    assert t.low == t.high
+    if t.high != 0 {
+      // D6: Add back (qHat was one too high)
+      qHat = uSubtract(qHat, u32(1)).low
+      carry = u32(0)
+      for [i]: v_i in v sequential carry, u {
+        t2 = uAdd(u[uStart + i], v_i, carry)
+        u[uStart + i] = t2.low
+        carry = t2.high
+      }
+      // That should carry, to cancel the earlier borrow
+      assert carry == 1
+    }
+    q[qSize - j] = qHat
+    uTop = u[uSize - j]
+  }
+  q = dropLeadingZeros(q)
+  if not withRemainder {
+    return { q, r: None }
+  }
+  // D8: Unnormalize the remainder
+  for i in 1 .. vSize {
+    high = (i < vSize) ? u[i + 1] : u32(0)
+    r << bitRotate({low: u[i], high}, -normalizeShift)
+  } collect {
+    r =| save
+  }
+  return {q, r}
+}
+
+// Implements step D3 of Algorithm D
+private function qHat(uTop, uTop2, uTop3, vTop, vTop2) {
+  { q: {low: qHat, high: qHigh}, r: rHat } = uDivWithRemainder({low: uTop2, high: uTop}, vTop)
+  // Adjust qHat downward if we overshot
+  for sequential qHat, qHigh, rHat {
+    // We'll accept this qHat if qHigh is 0 and qHat * vTop2 <= { low: uTop3, high: rHat }
+    if qHigh == 0 {
+      t = uMultiply(qHat, vTop2)
+      if t.high < rHat or (t.high == rHat and t.low <= uTop3) {
+        break
+      }
+    }
+    // qHat was obviously too high; decrement it and check again
+    if qHat == 0 {
+      assert qHigh == 1
+      qHigh = u32(0)
+    }
+    qHat = uSubtract(qHat, u32(1)).low
+    {low: rHat, high: carry} = uAdd(rHat, vTop)
+    // We also accept qHat if rHat overflows a word
+    if carry != 0 {
+      break
+    }
+  }
+  return qHat
+}
+
+// Returns the remainder
+private function divMagByU32(mag=, denom) {
+  if denom == 1 {
+    return u32(0)
+  } else if size(mag) <= 2 {
+    mag2 = (size(mag) == 1) ? u32(0) : mag[2]
+    { q: {low: qLow, high: qHigh}, r } = uDivWithRemainder({low: mag[1], high: mag2}, denom)
+    if qHigh != 0 {
+      mag = [qLow, qHigh]
+    } else if qLow != 0 {
+      mag = [qLow]
+    } else {
+      mag = []
+    }
+    return r
+  }
+  r = 0
+  for i in reverse(1 .. size(mag)) sequential mag, r {
+    { q: {low: qLow, high: qHigh}, r } = uDivWithRemainder({low: mag[i], high: r}, denom)
+    assert qHigh == 0
+    mag[i] = qLow
+  }
+  return r
+}
+
+/* RUN (n=30) RETURNS
+ [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6, 2, 6, 4, 3, 3, 8, 3, 2, 7]
+---
+allocated=25493672/997822, peak=80
+$0 = *[]b0
+$1 = *[]U32(i0)
+*/
+

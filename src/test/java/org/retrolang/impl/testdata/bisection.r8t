@@ -1,0 +1,104 @@
+// Find roots by bisection.
+// This version uses tail recursion.
+
+fn = [x] -> x * x - 2
+root1 = findRoot(fn, 0, 2, 1e-6)
+root2 = findRoot(fn, -2, 0, 1e-6)
+outOfBounds = findRoot(fn, 2, 3, 1e-6)
+discontinuousFn = [x] -> (x > 1 ? 1 : -1)
+discontinuous = findRoot(discontinuousFn, 0, 2, 1e-6)
+return {discontinuous, outOfBounds, root1, root2}
+
+// Returns an x in [xMin, xMax], or None
+function findRoot(f, xMin, xMax, eps) {
+  fxMin = f[xMin]
+  fxMax = f[xMax]
+  if abs(fxMin) <= eps {
+    return xMin
+  } else if abs(fxMax) <= eps {
+    return xMax
+  } else if fxMin < 0 and fxMax > 0 {
+    return findRootInternal(f, xMin, xMax, eps)
+  } else if fxMin > 0 and fxMax < 0 {
+    return findRootInternal(f, xMax, xMin, eps)
+  } else {
+    return None
+  }
+}
+
+// Preconditions: f[x0] < -eps, f[x1] > eps
+function findRootInternal(f, x0, x1, eps) {
+  xm = (x0 + x1) / 2
+  if xm == x0 or xm == x1 {
+    return None
+  }
+  fxm = f[xm]
+  if abs(fxm) <= eps {
+    return xm
+  } else if (fxm < 0) {
+    return findRootInternal(f, xm, x1, eps)
+  } else {
+    return findRootInternal(f, x0, xm, eps)
+  }
+}
+
+/* RUN () RETURNS
+  {discontinuous: None,
+   outOfBounds: None,
+   root1: 1.4142136573791504,
+   root2: -1.4142136573791504}
+---
+allocated=55136/2107, peak=152
+*/
+
+// Find roots by bisection.
+// This version uses a sequential loop.
+
+fn = [x] -> x * x - 2
+root1 = findRoot(fn, 0, 2, 1e-6)
+root2 = findRoot(fn, -2, 0, 1e-6)
+outOfBounds = findRoot(fn, 2, 3, 1e-6)
+discontinuousFn = [x] -> (x > 1 ? 1 : -1)
+discontinuous = findRoot(discontinuousFn, 0, 2, 1e-6)
+return {discontinuous, outOfBounds, root1, root2}
+
+// Returns an x in [xMin, xMax], or None
+function findRoot(f, xMin, xMax, eps) {
+  fxMin = f[xMin]
+  fxMax = f[xMax]
+  if abs(fxMin) <= eps {
+    return xMin
+  } else if abs(fxMax) <= eps {
+    return xMax
+  } else if fxMin < 0 and fxMax > 0 {
+    x0 = xMin; x1 = xMax
+  } else if fxMin > 0 and fxMax < 0 {
+    x0 = xMax; x1 = xMin
+  } else {
+    return None
+  }
+  // Loop invariant: f[x0] < -eps, f[x1] > eps
+  for sequential x0, x1 {
+    xm = (x0 + x1) / 2
+    if xm == x0 or xm == x1 {
+      break { return None }
+    }
+    fxm = f[xm]
+    if abs(fxm) <= eps {
+      break { return xm }
+    } else if (fxm < 0) {
+      x0 = xm
+    } else {
+      x1 = xm
+    }
+  }
+}
+
+/* RUN () RETURNS
+  {discontinuous: None,
+   outOfBounds: None,
+   root1: 1.4142136573791504,
+   root2: -1.4142136573791504}
+---
+allocated=67648/2627, peak=152
+*/

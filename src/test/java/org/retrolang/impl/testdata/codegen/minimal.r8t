@@ -1,0 +1,35 @@
+expectTrue = exactlyTwo(True, True, False)
+         and exactlyTwo(False, True, True)
+
+expectFalse = exactlyTwo(False, True, False)
+           or exactlyTwo(True, True, True)
+           or exactlyTwo(True, False, False)
+
+return expectTrue and not expectFalse
+
+// Given 3 booleans, returns True if any of 2 of them are True
+function exactlyTwo(a, b, c) {
+  return a ? (b or c) and not (b and c) : b and c
+}
+
+/* CODEGEN exactlyTwo RETURNS
+True
+---
+exactlyTwo_0(i1⸨0:False; 1:True⸩, i2⸨0:False; 1:True⸩, i3⸨0:False; 1:True⸩):
+  1: AtomicInteger.incrementAndGet(0);
+  2: test I1 0 (< 2); T:→ 11
+  3: test I2 0 (< 2); F:→ 9
+  4: test I3 0 (< 2); T:→ 10
+= 5: I1 ← 1;
+= 6: TState.setResultTemplates(X0, [i0⸨0:False; 1:True⸩]);
+  7: setInt[](TState.fnResultBytes(X0, 4), 0, I1);
+  8: return
+- 9: test I3 0 (< 2); T:→ 5
+-10: I1 ← 0; → 6
+-11: test I2 0 (< 2); T:→ 14
+ 12: test I3 0 (< 2); T:→ 14
+ 13: I1 ← 1; → 6
+-14: I1 ← 0; → 6
+---
+allocated=216/7, peak=0
+*/

@@ -1,0 +1,38 @@
+ 1: i2 ← iAdd(i0, 2);                                       // n2 = n + 2
+ 2: test 0 < iAdd(i0, 1); T:→ 4                             // if n1 > 0 {
+ 3: return i2                                               // return n2
+-4: return iAdd(i2, 1)                                      // return n3
+---
+ 1: I1 ← iAdd(I0, 2);                                       // n2 = n + 2
+ 2: test 0 < iAdd(I0, 1); T:→ 4                             // if n1 > 0 {
+ 3: return I1                                               // return n2
+-4: return iAdd(I1, 1)                                      // return n3
+---
+No constants
+---
+  public static subs(I)I
+   L0
+    LINENUMBER 1 L0
+    ILOAD 0
+    ICONST_2
+    IADD
+    ISTORE 1
+   L1
+    LINENUMBER 2 L1
+    ILOAD 0
+    ICONST_1
+    IADD
+    IFGT L2
+   L3
+    LINENUMBER 3 L3
+    ILOAD 1
+    IRETURN
+   L2
+    LINENUMBER 4 L2
+   FRAME FULL [T I] []
+    ILOAD 1
+    ICONST_1
+    IADD
+    IRETURN
+    MAXSTACK = 2
+    MAXLOCALS = 2

@@ -1,0 +1,27 @@
+ 1: test i1 == 1000000; T:→ 3                               // if n == 1_000_000 {
+ 2: return i0                                               // return m
+-3: return -1                                               // return -1
+---
+ 1: test I1 == 1000000; T:→ 3                               // if n == 1_000_000 {
+ 2: return I0                                               // return m
+-3: return -1                                               // return -1
+---
+No constants
+---
+  public static bomb(II)I
+   L0
+    LINENUMBER 1 L0
+    ILOAD 1
+    LDC 1000000
+    IF_ICMPEQ L1
+   L2
+    LINENUMBER 2 L2
+    ILOAD 0
+    IRETURN
+   L1
+    LINENUMBER 3 L1
+   FRAME CHOP 2
+    ICONST_M1
+    IRETURN
+    MAXSTACK = 2
+    MAXLOCALS = 2

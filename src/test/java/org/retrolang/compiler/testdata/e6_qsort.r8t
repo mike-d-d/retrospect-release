@@ -1,0 +1,90 @@
+// An example from overview.md#inout-parameters
+
+procedure qsort(nums=, start, end) {
+  if start >= end { return }
+  pivot = nums[div(start + end, 2)]
+  lo = start
+  hi = end
+  for sequential nums, lo, hi {
+    // nums[start .. lo-1] ^<= pivot
+    // nums[hi+1 .. end] ^>= pivot
+    if nums[lo] < pivot {
+      lo += 1
+    } else if nums[hi] > pivot {
+      hi -= 1
+    } else {
+      t = nums[lo]
+      nums[lo] = nums[hi]
+      nums[hi] = t
+      lo += 1
+      hi -= 1
+    }
+    if lo > hi { break }
+  }
+  assert lo > start and hi < end and lo == hi + 1
+  qsort(nums=, start, hi)
+  qsort(nums=, lo, end)
+}
+
+/* COMPILE ():
+private compound loop@6{pivot} is Lambda
+private compound loop@6_break{nums,lo,hi}
+private compound loop@6_state{nums,lo,hi}
+procedure qsort(a0=, a1, a2)
+method at(_loop, _state) _0 is loop@6 {
+    pivot = unloop@6(_loop)
+    nums, lo, hi = unloop@6_state(_state)
+    _t0 = at(nums, [lo])  // 9:4
+    _t0 = lessThan(_t0, pivot)
+    branch L2 if not _t0
+    lo = binaryUpdate(lo, 'add:2', 1)  // 10:6
+    branch L3
+  L2:
+    _t0 = at(nums, [hi])
+    _t0 = lessThan(pivot, _t0)
+    branch L4 if not _t0
+    hi = binaryUpdate(hi, 'subtract:2', 1)  // 12:6
+    branch L3
+  L4:
+    t = at(nums, [lo])  // 14:6
+    _t0 = at(nums, [hi])  // 15:6
+    nums = replaceElement(nums, [lo], _t0)
+    nums = replaceElement(nums, [hi], t)  // 16:6
+    lo = binaryUpdate(lo, 'add:2', 1)  // 17:6
+    hi = binaryUpdate(hi, 'subtract:2', 1)  // 18:6
+  L3:
+    _t0 = lessThan(hi, lo)  // 20:4
+    branch L5 if not _t0
+    _t0 = loopExit(loop@6_break(nums, lo, hi))  // 20:17
+    return _t0
+  L5:
+    return loop@6_state(nums, lo, hi)
+}
+method qsort(nums, start, end) {
+    _t0 = lessThan(start, end)  // 2:2
+    branch L1 if _t0
+    return nums  // 2:20
+  L1:
+    _t0 = add(start, end)  // 3:2
+    _t0 = div(_t0, 2)
+    pivot = at(nums, [_t0])
+    lo = start  // 4:2
+    hi = end  // 5:2
+    _t0 = iterateUnbounded(loop@6(pivot), loop@6_state(nums, lo, hi))  // 6:2
+    _t0 = loopExitState(_t0)
+    nums, lo, hi = unloop@6_break(_t0)
+    _t0 = lessThan(start, lo)  // 22:2
+    branch L4 if not _t0
+    _t0 = lessThan(hi, end)
+    branch L4 if not _t0
+    _t0 = add(hi, 1)
+    _t0 = equal(lo, _t0)
+    branch L3 if _t0
+  L4:
+    error "Assertion failed"
+  L3:
+    nums = qsort(nums, start, hi)  // 23:2
+    nums = qsort(nums, lo, end)  // 24:2
+    return nums  // 24:22
+}
+*/

@@ -1,0 +1,188 @@
+// Examples used in the compiler tour
+
+a = 3
+b = 1 + 3 * a + a ** 2
+return b
+
+/* COMPILE ():
+---
+    a = 3  // 1:0
+    _t0 = multiply(3, a)  // 2:0
+    _t0 = add(1, _t0)
+    _t1 = exponent(a, 2)
+    b = add(_t0, _t1)
+    return b  // 3:0
+*/
+
+return f(1..4, 2)
+
+// Sum the given numbers, after raising them to the given exponent.
+function f(nums, x) = nums | -> # ** x | sum
+
+function f2(nums, x) = nums ^** x | sum
+
+/* COMPILE ():
+private compound lambda@4:29{x} is Lambda
+function f2(a0, a1)
+function f(a0, a1)
+method at(_self, #) _0 is lambda@4:29 {
+    x = unlambda@4:29(_self)  // 4:29
+    _t0 = exponent(#, x)
+    return _t0
+}
+method f(nums, x) {
+    _t0 = pipe(nums, lambda@4:29(x))  // 4:22
+    _t1 = sum()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+method f2(nums, x) {
+    _t0 = curryLambda('exponent:2', [0, -1], [x])  // 6:23
+    _t0 = pipe(nums, _t0)
+    _t1 = sum()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+---
+    _t0 = range(1, 4)  // 1:0
+    _t0 = f(_t0, 2)
+    return _t0
+*/
+
+procedure insertSort(nums=) {
+  for i in 2 .. size(nums) sequential nums {
+    // nums[1 .. i-1] are already sorted, insert nums[i] appropriately
+    n_i = nums[i]
+    dest = i
+    for sequential dest {
+      if dest == 1 or n_i >= nums[dest - 1] { break }
+      dest -= 1
+    }
+    if dest != i {
+      nums[dest+1 .. i] = nums[dest .. i-1]
+      nums[dest] = n_i
+    }
+  }
+}
+
+/* COMPILE ():
+private singleton loop@2 is Loop
+private compound loop@2_state{nums}
+private compound loop@6{n_i,nums} is Lambda
+private compound loop@6_break{dest}
+private compound loop@6_state{dest}
+procedure insertSort(a0=)
+method at(_loop, _state) _0 is loop@6 {
+    n_i, nums = unloop@6(_loop)
+    dest = unloop@6_state(_state)
+    _t0 = equal(dest, 1)  // 7:6
+    branch L3 if _t0
+    _t0 = subtract(dest, 1)
+    _t0 = at(nums, [_t0])
+    _t0 = lessThan(n_i, _t0)
+    branch L2 if _t0
+  L3:
+    _t0 = loopExit(loop@6_break(dest))  // 7:46
+    return _t0
+  L2:
+    dest = binaryUpdate(dest, 'subtract:2', 1)  // 8:6
+    return loop@6_state(dest)
+}
+method insertSort(nums) {
+    _t0 = size(nums)  // 2:2
+    _t0 = range(2, _t0)
+    _t0 = iterate(_t0, EnumerateValues, loop@2, loop@2_state(nums))
+    nums = unloop@2_state(_t0)
+    return nums  // 14:2
+}
+method nextState(_loop, _state, _element) _0 is loop@2 {
+    nums = unloop@2_state(_state)
+    i = _element
+    n_i = at(nums, [i])  // 4:4
+    dest = i  // 5:4
+    _t0 = iterateUnbounded(loop@6(n_i, nums), loop@6_state(dest))  // 6:4
+    _t0 = loopExitState(_t0)
+    dest = unloop@6_break(_t0)
+    _t0 = equal(dest, i)  // 10:4
+    branch L3 if _t0
+    _t0 = subtract(i, 1)  // 11:6
+    _t0 = range(dest, _t0)
+    _t0 = at(nums, [_t0])
+    _t1 = add(dest, 1)
+    _t1 = range(_t1, i)
+    nums = replaceElement(nums, [_t1], _t0)
+    nums = replaceElement(nums, [dest], n_i)  // 12:6
+  L3:
+    return loop@2_state(nums)
+}
+*/
+
+for k: v in nums {
+  if looksSketchy(v) {
+    anomalies << k
+  } else {
+    vSum << v
+  }
+} collect {
+  vSum =| sum
+  anomalies =| saveUnordered
+}
+return { vSum, anomalies }
+
+function looksSketchy(x)
+
+/* COMPILE (nums):
+private compound loop@1{vSum_ro,anomalies_ro} is Loop
+private compound loop@1_state{vSum_rw,anomalies_rw}
+function looksSketchy(a0)
+method combineStates(loop, state1, state2) _0 is loop@1 {
+    vSum_ro, anomalies_ro = unloop@1(loop)
+    vSum_rw1, anomalies_rw1 = unloop@1_state(state1)
+    vSum_rw2, anomalies_rw2 = unloop@1_state(state2)
+    vSum_rw1 = combineStatesHelper(vSum_ro, vSum_rw1, vSum_rw2)
+    anomalies_rw1 = combineStatesHelper(anomalies_ro, anomalies_rw1, anomalies_rw2)
+    return loop@1_state(vSum_rw: vSum_rw1, anomalies_rw: anomalies_rw1)
+}
+method emptyState(loop) _0 is loop@1 {
+    vSum_ro, anomalies_ro = unloop@1(loop)
+    vSum_rw = emptyStateHelper(vSum_ro)
+    anomalies_rw = emptyStateHelper(anomalies_ro)
+    return loop@1_state(vSum_rw, anomalies_rw)
+}
+method nextState(_loop, _state, _element) _0 is loop@1 {
+    vSum_ro, anomalies_ro = unloop@1(_loop)
+    vSum_rw, anomalies_rw = unloop@1_state(_state)
+    _key, _element = unarray2(_element)
+    branch L1 if _element is Absent
+    k = _key
+    v = _element
+    _t0 = looksSketchy(v)  // 2:2
+    branch L2 if not _t0
+    anomalies_rw = emitValue(anomalies_ro, anomalies_rw, k)  // 3:4
+    branch L3
+  L2:
+    vSum_rw = emitValue(vSum_ro, vSum_rw, v)  // 5:4
+  L3:
+  L1:
+    vSum_rw = emitKey(vSum_ro, vSum_rw, _key)
+    anomalies_rw = emitKey(anomalies_ro, anomalies_rw, _key)
+    return loop@1_state(vSum_rw, anomalies_rw)
+}
+method splitState(loop, state) _0 is loop@1 {
+    vSum_ro, anomalies_ro = unloop@1(loop)
+    vSum_rw1, anomalies_rw1 = unloop@1_state(state)
+    vSum_rw2, vSum_rw1 = splitStateHelper(vSum_ro, vSum_rw1)
+    anomalies_rw2, anomalies_rw1 = splitStateHelper(anomalies_ro, anomalies_rw1)
+    return loop@1_state(vSum_rw: vSum_rw2, anomalies_rw: anomalies_rw2), loop@1_state(vSum_rw: vSum_rw1, anomalies_rw: anomalies_rw1)
+}
+---
+    vSum_ro = sum()  // 1:0
+    vSum_ro, _t0, _t1 = loopHelper(vSum_ro, nums, EnumerateWithKeys, True)
+    anomalies_ro = saveUnordered()
+    anomalies_ro, _t2, _t1 = loopHelper(anomalies_ro, nums, _t1, True)
+    _t0 = enumerate(nums, _t1, loop@1(vSum_ro, anomalies_ro), loop@1_state(vSum_rw: _t0, anomalies_rw: _t2))
+    vSum, anomalies = unloop@1_state(_t0)
+    vSum = finalResultHelper(vSum_ro, vSum)
+    anomalies = finalResultHelper(anomalies_ro, anomalies)
+    return {anomalies: anomalies, vSum: vSum}  // 11:0
+*/

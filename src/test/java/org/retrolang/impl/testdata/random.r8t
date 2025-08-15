@@ -1,0 +1,29 @@
+// Generate random numbers in [0,1] and count how many land in each bucket of
+// width 0.1
+
+// Setting n to 0 enables a test mode that just verifies we eventually get a
+// value in every bucket; otherwise we just generate n random numbers.
+
+isTest = (n <= 0)
+upperBound = isTest ? None : n
+
+numBuckets = 10
+counts = newMatrix([numBuckets], 0)
+for _ in 1..upperBound sequential counts {
+  counts[1 + floor(random * numBuckets)] += 1
+  if isTest and (counts ^!= 0 | allTrue) {
+    break {
+      // Tests need to be deterministic, so for now just always return [] in
+      // test mode
+      return []
+    }
+  }
+}
+return counts
+
+/* RUN (n=0) RETURNS
+  []
+---
+allocated=27576‥475768/1047‥17943, peak=0
+$0 = *[]b0
+*/

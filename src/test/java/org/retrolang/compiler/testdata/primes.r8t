@@ -1,0 +1,50 @@
+// Find the first 100 primes using the sieve of Eratosthenes
+
+n = 100
+primes = []
+next = 3
+for sequential next, primes {
+  if (next % primes) ^!= 0 | allTrue {
+    primes &= [next]
+    if size(primes) == n - 1 { break }
+  }
+  next += 2
+}
+return [2] & primes
+
+/* COMPILE ():
+private compound loop@4{n} is Lambda
+private compound loop@4_break{primes}
+private compound loop@4_state{next,primes}
+method at(_loop, _state) _0 is loop@4 {
+    n = unloop@4(_loop)
+    next, primes = unloop@4_state(_state)
+    _t0 = modulo(next, primes)  // 5:2
+    _t1 = curryLambda('equal:2', [0, -1], [0])
+    _t0 = pipe(_t0, _t1)
+    _t0 = pipe(_t0, 'not:1')
+    _t1 = allTrue()
+    _t0 = pipe(_t0, _t1)
+    branch L2 if not _t0
+    primes = concatUpdate(primes, [next])  // 6:4
+    _t0 = size(primes)  // 7:4
+    _t1 = subtract(n, 1)
+    _t0 = equal(_t0, _t1)
+    branch L3 if not _t0
+    _t0 = loopExit(loop@4_break(primes))  // 7:31
+    return _t0
+  L3:
+  L2:
+    next = binaryUpdate(next, 'add:2', 2)  // 9:2
+    return loop@4_state(next, primes)
+}
+---
+    n = 100  // 1:0
+    primes = []  // 2:0
+    next = 3  // 3:0
+    _t0 = iterateUnbounded(loop@4(n), loop@4_state(next, primes))  // 4:0
+    _t0 = loopExitState(_t0)
+    primes = unloop@4_break(_t0)
+    _t0 = concat([2], primes)  // 11:0
+    return _t0
+*/

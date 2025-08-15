@@ -1,0 +1,68 @@
+// Test convolve with a circular kernel, see https://developers.google.com/earth-engine/guides/image_convolutions
+// This version is a straightforward implementation.
+
+image = matrix([4,4], [0,0,1,1, 1,2,2,2, 3,3,3,4, 4,4,5,5])
+return convolveCircularKernel(image, radius, sum)
+
+// Returns a matrix which is the result of convolving the given image with a
+// circular kernel and the given reducer.
+function convolveCircularKernel(image, radius, reducer) {
+  return matrix(sizes(image))
+      | [i,j] -> (circularKernel(image, i, j, radius) | reducer)
+      | save
+}
+
+// Returns a matrix which is the portion of `image` with a circular kernel
+// applied at position [i,j] and given radius. The elements which are not within
+// the circle are set to Absent.
+function circularKernel(image, i, j, radius) {
+  subMatrix = withKeys(image)[
+      max(1, i - radius) .. min(i + radius, sizes(image)[1]),
+      max(1, j - radius) .. min(j + radius, sizes(image)[2])
+    ]
+  radiusSquared = radius * radius
+  return subMatrix
+      | [[ii,jj], v] -> ((i-ii)*(i-ii)+(j-jj)*(j-jj) <= radiusSquared ? v : Absent)
+}
+
+/* RUN (radius=1) RETURNS
+  ReshapedArray([4, 4], [1, 3, 4, 4, 6, 8, 10, 9, 11, 15, 17, 14, 11, 16, 17, 14])
+---
+allocated=184496/7005, peak=400
+$0 = *[]b0
+*/
+
+// Test convolve with a circular kernel.
+// This version simplifies the code by using a vector `center` instead of [i, j]
+// and the distribute operator (^).
+
+image = matrix([4,4], [0,0,1,1, 1,2,2,2, 3,3,3,4, 4,4,5,5])
+return convolveCircularKernel(image, radius, sum)
+
+// Returns a matrix which is the result of convolving the given image with a
+// circular kernel and the given reducer.
+function convolveCircularKernel(image, radius, reducer) {
+  return keys(image)
+      | center -> (circularKernel(image, center, radius) | reducer)
+      | save
+}
+
+// Returns a matrix which is the portion of `image` with a circular kernel
+// applied at position `center` and given radius. The elements which are not
+// within the circle are set to Absent.
+function circularKernel(image, center, radius) {
+  start = max(1, ^(center - radius))
+  end = min(^(center + radius), ^sizes(image))
+  subMatrix = withKeys(image) @ (start^..^end | save)
+  radiusSquared = radius ** 2
+  return subMatrix
+      | filter([pos, _] -> (((pos - center) ** 2) | sum) <= radiusSquared)
+      | [_, v] -> v
+}
+
+/* RUN (radius=2) RETURNS
+  ReshapedArray([4, 4], [7, 10, 11, 10, 15, 21, 24, 20, 20, 31, 34, 25, 20, 29, 30, 23])
+---
+allocated=1145992/43526, peak=1568
+$0 = *[]b0
+*/

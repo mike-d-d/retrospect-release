@@ -1,0 +1,97 @@
+// Model the mechanics of a four-planet solar system, based on
+// https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/nbody.html
+
+// state is a (length 5) array of {pos, v, mass}
+// ([sun, jupiter, saturn, uranus, neptune]).
+
+state = initialState
+e0 = energy(state)
+// Advance time in steps of 0.01
+for _ in 1 .. nSteps sequential state {
+  advance(state=, 0.01)
+}
+e1 = energy(state)
+return [e0, e1]
+
+function initialState() {
+  solarMass = 4 * pi * pi
+  daysPerYear = 365.24
+
+  jupiter = {
+    pos: [4.84143144246472090e+00, -1.16032004402742839e+00, -1.03622044471123109e-01],
+    v: [1.66007664274403694e-03, 7.69901118419740425e-03, -6.90460016972063023e-05] * daysPerYear | save,
+    mass: 9.54791938424326609e-04 * solarMass
+  }
+  saturn = {
+    pos: [8.34336671824457987e+00, 4.12479856412430479e+00, -4.03523417114321381e-01],
+    v: [-2.76742510726862411e-03, 4.99852801234917238e-03, 2.30417297573763929e-05] * daysPerYear | save,
+    mass: 2.85885980666130812e-04 * solarMass
+  }
+  uranus = {
+    pos: [1.28943695621391310e+01, -1.51111514016986312e+01, -2.23307578892655734e-01],
+    v: [2.96460137564761618e-03, 2.37847173959480950e-03, -2.96589568540237556e-05] * daysPerYear | save,
+    mass: 4.36624404335156298e-05 * solarMass
+  }
+  neptune = {
+    pos: [1.53796971148509165e+01, -2.59193146099879641e+01, 1.79258772950371181e-01],
+    v: [2.68067772490389322e-03, 1.62824170038242295e-03, -9.51592254519715870e-05] * daysPerYear | save,
+    mass: 5.15138902046611451e-05 * solarMass
+  }
+
+  planets = [jupiter, saturn, uranus, neptune]
+  planetsMomentum = momentum(^planets) | sum([0, 0, 0])
+  sun = { pos: [0, 0, 0], v: -planetsMomentum / solarMass | save, mass: solarMass }
+  return [sun] & planets | save
+}
+
+function momentum(obj) = obj.v * obj.mass
+
+procedure advance(state=, dt) {
+  n = size(state)
+  // First update the velocities given the positions...
+  for i in 1 .. n-1 sequential state {
+    state_i = state[i];
+    for j in i+1 .. n sequential state, state_i {
+      updateVs(state_i=, state[j]=, dt)
+    }
+    state[i] = state_i;
+  }
+  // ... then update the positions given the velocities.
+  for i in 1 .. n sequential state {
+    state[i].pos += dt * state[i].v
+  }
+}
+
+procedure updateVs(b1=, b2=, dt) {
+  posDiff = b2.pos - b1.pos
+  dSquared = sumSq(posDiff)
+  mag = dt / (dSquared * sqrt(dSquared))
+  b1.v += posDiff * (b2.mass * mag)
+  b2.v -= posDiff * (b1.mass * mag)
+}
+
+function sumSq(x) = x**2 | sum
+
+function energy(state) {
+  for [i]: body in state {
+    // Add in the kinetic energy of each body, and subtract the gravitational
+    // potential energy between each pair of bodies
+    e << 0.5 * body.mass * sumSq(body.v)
+    e << -(potentialEnergy(body, ^state[i+1..]) | sum)
+  } collect {
+    e =| sum
+  }
+  return e
+}
+
+function potentialEnergy(b1, b2) =
+    b1.mass * b2.mass / sqrt(sumSq(b1.pos - b2.pos))
+
+/* RUN (nSteps=1000) RETURNS
+  [-0.16907516382852442, -0.16908760523460617]
+---
+allocated=206349280/7859678, peak=96
+$0 = *[]Struct(["mass", "pos", "v"], [d0, [d1, d2, d3], [d4, d5, d6]])
+$1 = *[]Struct(["mass", "pos", "v"], [d0, [d1, d2, d3], [d4, d5, d6]])
+$2 = *[]Struct(["mass", "pos", "v"], [d0, [d1, d2, d3], [d4, d5, d6]])
+*/

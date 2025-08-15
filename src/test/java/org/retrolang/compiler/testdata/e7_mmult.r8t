@@ -1,0 +1,54 @@
+// An example from overview.md#matrices
+
+a = matrix([2, 3], [2, 0, 10, 0, -2, 11])
+b = matrix([3, 1], [4, 5, 1])
+return mmult(a, b)
+
+function mmult(x, y) {
+  assert sizes(x)[2] == sizes(y)[1]
+  return matrix([sizes(x)[1], sizes(y)[2]])
+         | [i, j] -> (x[i, ..] ^*^ y[.., j] | sum)
+         | save
+}
+
+/* COMPILE ():
+private compound lambda@8:18{x,y} is Lambda
+function mmult(a0, a1)
+method at(_self, _a) _0 is lambda@8:18 {
+    i, j = unarray2(_a)  // 8:18
+    x, y = unlambda@8:18(_self)
+    _t0 = range(None, None)
+    _t0 = at(x, [i, _t0])
+    _t1 = range(None, None)
+    _t1 = at(y, [_t1, j])
+    _t0 = join(_t0, _t1)
+    _t0 = pipe(_t0, 'multiply:2')
+    _t1 = sum()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+method mmult(x, y) {
+    _t0 = sizes(x)  // 6:2
+    _t0 = at(_t0, [2])
+    _t1 = sizes(y)
+    _t1 = at(_t1, [1])
+    _t0 = equal(_t0, _t1)
+    branch L1 if _t0
+    error "Assertion failed"
+  L1:
+    _t0 = sizes(x)  // 7:2
+    _t0 = at(_t0, [1])
+    _t1 = sizes(y)
+    _t1 = at(_t1, [2])
+    _t0 = matrix([_t0, _t1])
+    _t0 = pipe(_t0, lambda@8:18(x, y))
+    _t1 = save()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+---
+    a = matrix([2, 3], [2, 0, 10, 0, -2, 11])  // 1:0
+    b = matrix([3, 1], [4, 5, 1])  // 2:0
+    _t0 = mmult(a, b)  // 3:0
+    return _t0
+*/

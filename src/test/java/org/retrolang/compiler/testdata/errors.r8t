@@ -1,0 +1,430 @@
+// Test lots of compile-time error messages
+
+a = b = c
+
+/* COMPILE (): no viable alternative at input 'a=b='
+*/
+
+return 3 ? "x" : "y"
+
+/* COMPILE (): Not a sensible condition to test
+*/
+
+return 03 + 1
+
+/* COMPILE (): Integer constant may not start with '0'
+*/
+
+return x -> # + x
+
+/* COMPILE (): '#' is not in a lambda with no argument pattern
+*/
+
+x = iterator([1, 2, 3], EnumerateValues)
+return _ -> next(x=)
+
+/* COMPILE (): Updates not allowed here
+*/
+
+x = 5
+for i in 1..2 sequential {  // should be "sequential x"
+  x += 1
+  result << x
+} collect {
+  result =| save
+}
+return result
+
+/* COMPILE (): Cannot modify 'x'
+*/
+
+x = iterator([1, 2, 3], EnumerateValues)
+for i in 1..2 {
+  result << next(x=)
+} collect {
+  result =| save
+}
+return result
+
+/* COMPILE (): Cannot modify 'x'
+*/
+
+x = 1
+for i in 1.. {
+  // There are separate x's inside and outside the loop.
+  x = i * i
+  if x > 10 {
+    break { return x }
+  }
+}
+
+/* COMPILE (): Ambiguous variable reference 'x'
+*/
+
+function f(x, x) = x + x
+
+/* COMPILE (): Duplicate parameter name 'x'
+*/
+
+function f([x, x]) = x + x
+
+/* COMPILE (): Duplicate parameter name 'x'
+*/
+
+function f([x, _], x) = x + x
+
+/* COMPILE (): Duplicate parameter name 'x'
+*/
+
+[a, a] = [3, 3]
+
+/* COMPILE (): Conflicting assignment to 'a'
+*/
+
+a = 2
+if a > 3 {
+  b = 5
+  return b
+} else {
+  return postIncr(b=)
+}
+
+function postIncr(x=) {
+  r = x
+  x += 1
+  return r
+}
+
+/* COMPILE (): No initialization of 'b'
+*/
+
+a = 4
+return a + postIncr(a=)
+
+function postIncr(x=) {
+  r = x
+  x += 1
+  return r
+}
+
+/* COMPILE (): Conflict with read of 'a'
+*/
+
+a = 4
+return postIncr(a=) + a
+
+function postIncr(x=) {
+  r = x
+  x += 1
+  return r
+}
+
+/* COMPILE (): Conflicting update to 'a'
+*/
+
+a = 4
+return [-> a, postIncr(a=)]
+
+function postIncr(x=) {
+  r = x
+  x += 1
+  return r
+}
+
+/* COMPILE (): Conflict with read of 'a'
+*/
+
+a = 4
+return postIncr(a=) + postIncr(a=)
+
+function postIncr(x=) {
+  r = x
+  x += 1
+  return r
+}
+
+/* COMPILE (): Conflicting update to 'a'
+*/
+
+a = 4
+a = postIncr(a=)
+
+function postIncr(x=) {
+  r = x
+  x += 1
+  return r
+}
+
+/* COMPILE (): Conflicting assignment to 'a'
+*/
+
+return a
+
+/* COMPILE (): Unknown function 'a:0'
+*/
+
+trace a
+
+/* COMPILE (): Unknown variable 'a'
+*/
+
+a = 3
+return x -> a
+
+/* COMPILE (): 'x' is not used
+*/
+
+a = a + 1
+return a
+
+/* COMPILE (): No initialization of 'a'
+*/
+
+a.x = 1
+a = [a]
+return a
+
+/* COMPILE (): No initialization of 'a'
+*/
+
+a = 3
+return a + f(a<<)
+
+function f(a<<)
+
+/* COMPILE (): No initialization of 'a_ro'
+*/
+
+b = 4
+if b < 2 {
+  return -> # + a
+} else {
+  a = b
+  return -> a
+}
+
+/* COMPILE (): No initialization of 'a'
+*/
+
+a = 3
+a = 4
+return a
+
+/* COMPILE (): 'a' is not used after assignment
+*/
+
+x = 7
+for i in 1.. sequential x {
+  if i > 3 {
+    break { return 3 }
+  }
+  x = 4
+}
+
+/* COMPILE (): 'x' is not used
+*/
+
+x = 0
+for i in 1.. sequential x {
+  if i > 3 {
+    x += 1
+    break { return 3 }
+  }
+}
+
+/* COMPILE (): 'x' is not used after assignment
+*/
+
+a = [3, 2, 0]
+m = a | max
+for _: v in a {
+  if v == m {
+    break
+  }
+}
+
+/* COMPILE (): Missing return statement
+*/
+
+function f(x) {
+  return
+}
+
+/* COMPILE (): Missing return value
+*/
+
+function f(x) {
+  if x > 0 {
+    return x
+  }
+}
+
+/* COMPILE (): Missing return statement
+*/
+
+procedure f(x) {
+  return x
+}
+
+/* COMPILE (): Procedure cannot return a result
+*/
+
+procedure f(x) = x
+
+/* COMPILE (): Procedure cannot return a result
+*/
+
+f()
+return None
+
+function f() = 3
+
+/* COMPILE (): 'f' returns a result
+*/
+
+a = 3
+return f(a=)
+
+procedure f(x=) { }
+
+/* COMPILE (): 'f' does not return a result
+*/
+
+return g
+
+procedure g() { }
+
+/* COMPILE (): 'g' does not return a result
+*/
+
+a = [3, 4]
+return postIncr(^a=)
+
+function postIncr(x=) { r = x; x += 1; return r }
+
+/* COMPILE (): Conflicting annotations
+*/
+
+return Foo_(None)
+
+/* COMPILE (): 'Foo' is not a compound type declared in this module
+*/
+
+return Foo_(None)
+
+type Foo
+
+/* COMPILE (): 'Foo' is not a compound type declared in this module
+*/
+
+f(3)
+return None
+
+procedure f(x=) { }
+
+/* COMPILE (): Parameter 0 should be inOut
+*/
+
+a = [2, 3, -1, 4]
+emitTwice(a[2]<<, 3)
+
+procedure emitTwice(s<<, x) { s << x; s << x }
+
+/* COMPILE (): Variable name expected
+*/
+
+a = 3
+for {
+  if a > 5 { break }
+  a += 1
+}
+
+/* COMPILE (): 'for' without collection must be sequential
+*/
+
+a = [2, 3, -1, 4]
+for x in a {
+  if x <= 0 {
+    break { return s }
+  }
+  s << x
+} collect {
+  s =| sum
+}
+
+/* COMPILE (): No initialization of 's'
+*/
+
+a = 0
+for sequential {
+  if a > 5 { return a }
+  a += 1
+}
+
+/* COMPILE (): 'return' not allowed in loop (use 'break {return}')
+*/
+
+a = 0
+for sequential {
+  a += 1
+}
+
+/* COMPILE (): Loop cannot exit
+*/
+
+a = 2
+if a > 2 {
+  return 3
+} else {
+  return "\\\n";
+}
+return "unreachable";
+
+/* COMPILE (): Not reachable
+*/
+
+a = 0
+for sequential a {
+  a += 1
+  if a == 10 {
+    break { return true }
+  }
+}
+return "unreachable";
+
+/* COMPILE (): Not reachable
+*/
+
+continue
+
+/* COMPILE (): 'continue' not in loop
+*/
+
+break
+
+/* COMPILE (): 'break' not in loop
+*/
+
+a = [1, 2]
+a[^a] = 4
+return a
+
+/* COMPILE (): Distribute (^) not allowed here
+*/
+
+return -^3
+
+/* COMPILE (): Distribute (^) not allowed here
+*/
+
+a = [1, 2, 3]
+return replaceElement(^a, ^a, ^a)
+
+/* COMPILE (): Cannot distribute over more than two parameters
+*/
+
+a = 3
+return -> [-> #]
+
+/* COMPILE (): A lambda without an argument pattern may not contain another lambda
+*/

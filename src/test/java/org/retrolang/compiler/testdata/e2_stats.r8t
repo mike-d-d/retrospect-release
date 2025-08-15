@@ -1,0 +1,122 @@
+// An example from overview.md#loops
+
+function stats(nums) {
+  for x in nums {
+    if looksSketchy(x) {
+      anomalies << x
+    } else {
+      n << 1
+      xSum << x
+      x2Sum << x ** 2
+    }
+  } collect {
+    n, xSum, x2Sum =| sum
+    anomalies =| saveUnordered
+  }
+  if n < 2 {
+    return { mean: n == 0 ? None : xSum, sd: None, anomalies }
+  }
+  mean = xSum / n
+  sd = sqrt((x2Sum - xSum * mean) / (n - 1))
+  return { mean, sd, anomalies }
+}
+
+// A placeholder
+function looksSketchy(x) = abs(x) > 1000
+
+/* COMPILE ():
+private compound loop@2{n_ro,anomalies_ro,_eKind} is Loop
+private compound loop@2_state{n_rw,xSum_rw,x2Sum_rw,anomalies_rw}
+function looksSketchy(a0)
+function stats(a0)
+method combineStates(loop, state1, state2) _0 is loop@2 {
+    n_ro, anomalies_ro, _ = unloop@2(loop)
+    n_rw1, xSum_rw1, x2Sum_rw1, anomalies_rw1 = unloop@2_state(state1)
+    n_rw2, xSum_rw2, x2Sum_rw2, anomalies_rw2 = unloop@2_state(state2)
+    n_rw1 = combineStatesHelper(n_ro, n_rw1, n_rw2)
+    xSum_rw1 = combineStatesHelper(n_ro, xSum_rw1, xSum_rw2)
+    x2Sum_rw1 = combineStatesHelper(n_ro, x2Sum_rw1, x2Sum_rw2)
+    anomalies_rw1 = combineStatesHelper(anomalies_ro, anomalies_rw1, anomalies_rw2)
+    return loop@2_state(n_rw: n_rw1, xSum_rw: xSum_rw1, x2Sum_rw: x2Sum_rw1, anomalies_rw: anomalies_rw1)
+}
+method emptyState(loop) _0 is loop@2 {
+    n_ro, anomalies_ro, _ = unloop@2(loop)
+    n_rw = emptyStateHelper(n_ro)
+    xSum_rw = emptyStateHelper(n_ro)
+    x2Sum_rw = emptyStateHelper(n_ro)
+    anomalies_rw = emptyStateHelper(anomalies_ro)
+    return loop@2_state(n_rw, xSum_rw, x2Sum_rw, anomalies_rw)
+}
+method looksSketchy(x) {
+    _t0 = abs(x)  // 23:27
+    _t0 = lessThan(1000, _t0)
+    return _t0
+}
+method nextState(_loop, _state, _element) _0 is loop@2 {
+    n_ro, anomalies_ro, _eKind = unloop@2(_loop)
+    n_rw, xSum_rw, x2Sum_rw, anomalies_rw = unloop@2_state(_state)
+    _key = Absent
+    branch L2 if _eKind is EnumerateValues
+    _key, _element = unarray2(_element)
+    branch L1 if _element is Absent
+  L2:
+    x = _element
+    _t0 = looksSketchy(x)  // 3:4
+    branch L3 if not _t0
+    anomalies_rw = emitValue(anomalies_ro, anomalies_rw, x)  // 4:6
+    branch L4
+  L3:
+    n_rw = emitValue(n_ro, n_rw, 1)  // 6:6
+    xSum_rw = emitValue(n_ro, xSum_rw, x)  // 7:6
+    _t0 = exponent(x, 2)  // 8:6
+    x2Sum_rw = emitValue(n_ro, x2Sum_rw, _t0)
+  L4:
+  L1:
+    n_rw = emitKey(n_ro, n_rw, _key)
+    xSum_rw = emitKey(n_ro, xSum_rw, _key)
+    x2Sum_rw = emitKey(n_ro, x2Sum_rw, _key)
+    anomalies_rw = emitKey(anomalies_ro, anomalies_rw, _key)
+    return loop@2_state(n_rw, xSum_rw, x2Sum_rw, anomalies_rw)
+}
+method splitState(loop, state) _0 is loop@2 {
+    n_ro, anomalies_ro, _ = unloop@2(loop)
+    n_rw1, xSum_rw1, x2Sum_rw1, anomalies_rw1 = unloop@2_state(state)
+    n_rw2, n_rw1 = splitStateHelper(n_ro, n_rw1)
+    xSum_rw2, xSum_rw1 = splitStateHelper(n_ro, xSum_rw1)
+    x2Sum_rw2, x2Sum_rw1 = splitStateHelper(n_ro, x2Sum_rw1)
+    anomalies_rw2, anomalies_rw1 = splitStateHelper(anomalies_ro, anomalies_rw1)
+    return loop@2_state(n_rw: n_rw2, xSum_rw: xSum_rw2, x2Sum_rw: x2Sum_rw2, anomalies_rw: anomalies_rw2), loop@2_state(n_rw: n_rw1, xSum_rw: xSum_rw1, x2Sum_rw: x2Sum_rw1, anomalies_rw: anomalies_rw1)
+}
+method stats(nums) {
+    n_ro = sum()  // 2:2
+    n_ro, _t0, _t1 = loopHelper(n_ro, nums, EnumerateValues, True)
+    _t2 = anotherRw(n_ro, nums)
+    _t3 = anotherRw(n_ro, nums)
+    anomalies_ro = saveUnordered()
+    anomalies_ro, _t4, _t1 = loopHelper(anomalies_ro, nums, _t1, True)
+    _t0 = enumerate(nums, _t1, loop@2(n_ro, anomalies_ro, _eKind: _t1), loop@2_state(n_rw: _t0, xSum_rw: _t2, x2Sum_rw: _t3, anomalies_rw: _t4))
+    n, xSum, x2Sum, anomalies = unloop@2_state(_t0)
+    n = finalResultHelper(n_ro, n)
+    xSum = finalResultHelper(n_ro, xSum)
+    x2Sum = finalResultHelper(n_ro, x2Sum)
+    anomalies = finalResultHelper(anomalies_ro, anomalies)
+    _t0 = lessThan(n, 2)  // 14:2
+    branch L1 if not _t0
+    _t1 = equal(n, 0)  // 15:4
+    branch L3 if not _t1
+    _t0 = None
+    branch L2
+  L3:
+    _t0 = xSum
+  L2:
+    return {anomalies: anomalies, mean: _t0, sd: None}
+  L1:
+    mean = divide(xSum, n)  // 17:2
+    _t0 = multiply(xSum, mean)  // 18:2
+    _t0 = subtract(x2Sum, _t0)
+    _t1 = subtract(n, 1)
+    _t0 = divide(_t0, _t1)
+    sd = sqrt(_t0)
+    return {anomalies: anomalies, mean: mean, sd: sd}  // 19:2
+}
+*/

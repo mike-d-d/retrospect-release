@@ -1,0 +1,35 @@
+// Like int_overflow, except that we force overflow before codegen
+
+if prep {
+  return [tenthPower(3), tenthPower(10)]
+} else {
+  return [tenthPower(5), tenthPower(12)]
+}
+
+function tenthPower(x) = squared(fifthPower(x))
+
+function fifthPower(x) = x * fourthPower(x)
+
+function fourthPower(x) = squared(squared(x))
+
+function squared(x) = x * x
+
+/* CODEGEN tenthPower RETURNS
+[9765625, 6.1917364224E10]
+---
+tenthPower_0(i1):
+  1: AtomicInteger.incrementAndGet(0);
+  2: I2 ← Math.multiplyExact(I1, I1); ArithmeticException:→ 9
+  3: I2 ← Math.multiplyExact(I2, I2); ArithmeticException:→ 9
+  4: I2 ← Math.multiplyExact(I1, I2); ArithmeticException:→ 9
+  5: D1 ← dMul(I2, I2);
+  6: TState.setResultTemplates(X0, [d0]);
+  7: setDouble[](TState.fnResultBytes(X0, 8), 0, D1);
+  8: return
+- 9: X2 ← newStackEntry(int_overflow_2.r8t+2:7_0 _t0 = fifthPower(x) {x=I1});
+ 10: X1 ← TState.fillStackEntry(X0, null, X2, d0, mMemo_x@xxxx, null);
+ 11: TState.setStackRest(X0, X1);
+ 12: return
+---
+allocated=200/8, peak=96
+*/

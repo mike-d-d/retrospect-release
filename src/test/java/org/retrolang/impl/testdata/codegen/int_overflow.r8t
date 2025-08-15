@@ -1,0 +1,35 @@
+// Test that code generated for integer arithmetic properly escapes on overflow
+
+if prep {
+  return [tenthPower(2), tenthPower(5)]
+} else {
+  return [tenthPower(3), tenthPower(10)]
+}
+
+function tenthPower(x) = squared(fifthPower(x))
+
+function fifthPower(x) = x * fourthPower(x)
+
+function fourthPower(x) = squared(squared(x))
+
+function squared(x) = x * x
+
+/* CODEGEN tenthPower ESCAPE_COUNT=1 RETURNS
+[59049, 1.0E10]
+---
+tenthPower_0(i1):
+  1: AtomicInteger.incrementAndGet(0);
+  2: I2 ← Math.multiplyExact(I1, I1); ArithmeticException:→ 9
+  3: I2 ← Math.multiplyExact(I2, I2); ArithmeticException:→ 9
+  4: I2 ← Math.multiplyExact(I1, I2); ArithmeticException:→ 9
+  5: I2 ← Math.multiplyExact(I2, I2); ArithmeticException:→ 9
+  6: TState.setResultTemplates(X0, [i0]);
+  7: setInt[](TState.fnResultBytes(X0, 4), 0, I2);
+  8: return
+- 9: X2 ← newStackEntry(int_overflow.r8t+2:7_0 _t0 = fifthPower(x) {x=I1});
+ 10: X1 ← TState.fillStackEntry(X0, null, X2, i0, mMemo_x@xxxx, null);
+ 11: TState.setStackRest(X0, X1);
+ 12: return
+---
+allocated=728/29, peak=96
+*/

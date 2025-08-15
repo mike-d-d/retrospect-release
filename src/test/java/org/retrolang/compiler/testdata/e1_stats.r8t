@@ -1,0 +1,49 @@
+// An example from overview.md#pipelines
+
+function stats(nums) {
+  n = size(nums)
+  xSum = nums | sum
+  if n < 2 {
+    return { mean: n == 0 ? None : xSum, sd: None }
+  }
+  x2Sum = nums | x -> x**2 | sum
+  mean = xSum / n
+  sd = sqrt((x2Sum - xSum * mean) / (n - 1))
+  // The next line is equivalent to "return {mean: mean, sd: sd}"
+  return { mean, sd }
+}
+
+/* COMPILE ():
+private singleton lambda@7:19 is Lambda
+function stats(a0)
+method at(_self, x) _0 is lambda@7:19 {
+    _t0 = exponent(x, 2)  // 7:19
+    return _t0
+}
+method stats(nums) {
+    n = size(nums)  // 2:2
+    _t0 = sum()  // 3:2
+    xSum = pipe(nums, _t0)
+    _t0 = lessThan(n, 2)  // 4:2
+    branch L1 if not _t0
+    _t1 = equal(n, 0)  // 5:4
+    branch L3 if not _t1
+    _t0 = None
+    branch L2
+  L3:
+    _t0 = xSum
+  L2:
+    return {mean: _t0, sd: None}
+  L1:
+    _t0 = pipe(nums, lambda@7:19)  // 7:2
+    _t1 = sum()
+    x2Sum = pipe(_t0, _t1)
+    mean = divide(xSum, n)  // 8:2
+    _t0 = multiply(xSum, mean)  // 9:2
+    _t0 = subtract(x2Sum, _t0)
+    _t1 = subtract(n, 1)
+    _t0 = divide(_t0, _t1)
+    sd = sqrt(_t0)
+    return {mean: mean, sd: sd}  // 11:2
+}
+*/
