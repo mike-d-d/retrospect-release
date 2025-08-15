@@ -1,0 +1,451 @@
+// Test a number of edge cases in loop compilation.
+
+vals = [0, 2, -5, 0]
+max = None
+maxIndex = None
+for [i]: v in vals sequential max, maxIndex {
+  if max is None or v > max {
+    max = v
+    maxIndex = i
+  }
+}
+return maxIndex
+
+/* COMPILE ():
+private singleton loop@4 is Loop
+private compound loop@4_state{max,maxIndex}
+method nextState(_loop, _state, _element) _0 is loop@4 {
+    max, maxIndex = unloop@4_state(_state)
+    _t0, _element = unarray2(_element)
+    i = unarray1(_t0)
+    v = _element
+    branch L3 if max is None  // 5:2
+    _t0 = lessThan(max, v)
+    branch L2 if not _t0
+  L3:
+    max = v  // 6:4
+    maxIndex = i  // 7:4
+  L2:
+    return loop@4_state(max, maxIndex)
+}
+---
+    vals = [0, 2, -5, 0]  // 1:0
+    max = None  // 2:0
+    maxIndex = None  // 3:0
+    _t0 = iterate(vals, EnumerateWithKeys, loop@4, loop@4_state(max, maxIndex))  // 4:0
+    max, maxIndex = unloop@4_state(_t0)
+    return maxIndex  // 10:0
+*/
+
+vals = [0, 2, -5, 0]
+[[maxIndex], _] = withKeys(vals) | maxAt([2])
+return maxIndex
+
+/* COMPILE ():
+---
+    vals = [0, 2, -5, 0]  // 1:0
+    _t0 = withKeys(vals)  // 2:0
+    _t1 = maxAt([2])
+    _t0 = pipe(_t0, _t1)
+    _t1, _ = unarray2(_t0)
+    maxIndex = unarray1(_t1)
+    return maxIndex  // 3:0
+*/
+
+for x in 1..4 {
+  if x == 2 {
+    break {
+      y = -> x
+    }
+  }
+}
+return y
+
+/* COMPILE ():
+private singleton loop@1 is Loop
+private compound lambda@4:10{x} is Lambda
+private compound loop@1_break@4{x}
+method at(_self, #) _0 is lambda@4:10 {
+    x = unlambda@4:10(_self)  // 4:10
+    return x
+}
+method nextState(_loop, _state, _element) _0 is loop@1 {
+    x = _element
+    _t0 = equal(x, 2)  // 2:2
+    branch L2 if not _t0
+    _t0 = loopExit(loop@1_break@4(x))  // 3:4
+    return _t0
+  L2:
+    return Absent
+}
+---
+    _t0 = range(1, 4)  // 1:0
+    _t0 = enumerate(_t0, EnumerateValues, loop@1, Absent)
+    branch L2 if _t0 is not LoopExit
+    _t0 = loopExitState(_t0)
+    x = unloop@1_break@4(_t0)
+    y = lambda@4:10(x)  // 4:6
+    branch L1
+  L2:
+  L1:
+    return y  // 8:0
+*/
+
+for x in 1..4 {
+  for y in 1..4 {
+    z << x + y
+  } collect { z }
+} collect {
+  z =| sum
+}
+return z
+
+/* COMPILE ():
+private compound loop@1{z_ro,_eKind} is Loop
+private compound loop@1_state{z_rw}
+private compound loop@2{z_ro,x} is Loop
+private compound loop@2_state{z_rw}
+method combineStates(loop, state1, state2) _0 is loop@1 {
+    z_ro, _ = unloop@1(loop)
+    z_rw1 = unloop@1_state(state1)
+    z_rw2 = unloop@1_state(state2)
+    z_rw1 = combineStatesHelper(z_ro, z_rw1, z_rw2)
+    return loop@1_state(z_rw: z_rw1)
+}
+method combineStates(loop, state1, state2) _0 is loop@2 {
+    z_ro, _ = unloop@2(loop)
+    z_rw1 = unloop@2_state(state1)
+    z_rw2 = unloop@2_state(state2)
+    z_rw1 = combineStatesHelper(z_ro, z_rw1, z_rw2)
+    return loop@2_state(z_rw: z_rw1)
+}
+method emptyState(loop) _0 is loop@1 {
+    z_ro, _ = unloop@1(loop)
+    z_rw = emptyStateHelper(z_ro)
+    return loop@1_state(z_rw)
+}
+method emptyState(loop) _0 is loop@2 {
+    z_ro, _ = unloop@2(loop)
+    z_rw = emptyStateHelper(z_ro)
+    return loop@2_state(z_rw)
+}
+method nextState(_loop, _state, _element) _0 is loop@1 {
+    z_ro, _eKind = unloop@1(_loop)
+    z_rw = unloop@1_state(_state)
+    _key = Absent
+    branch L2 if _eKind is EnumerateValues
+    _key, _element = unarray2(_element)
+    branch L1 if _element is Absent
+  L2:
+    x = _element
+    _t0 = range(1, 4)  // 2:2
+    verifyEV(z_ro)
+    _t0 = enumerate(_t0, EnumerateValues, loop@2(z_ro, x), loop@2_state(z_rw))
+    z_rw = unloop@2_state(_t0)
+  L1:
+    z_rw = emitKey(z_ro, z_rw, _key)
+    return loop@1_state(z_rw)
+}
+method nextState(_loop, _state, _element) _0 is loop@2 {
+    z_ro, x = unloop@2(_loop)
+    z_rw = unloop@2_state(_state)
+    y = _element
+    _t0 = add(x, y)  // 3:4
+    z_rw = emitValue(z_ro, z_rw, _t0)
+    return loop@2_state(z_rw)
+}
+method splitState(loop, state) _0 is loop@1 {
+    z_ro, _ = unloop@1(loop)
+    z_rw1 = unloop@1_state(state)
+    z_rw2, z_rw1 = splitStateHelper(z_ro, z_rw1)
+    return loop@1_state(z_rw: z_rw2), loop@1_state(z_rw: z_rw1)
+}
+method splitState(loop, state) _0 is loop@2 {
+    z_ro, _ = unloop@2(loop)
+    z_rw1 = unloop@2_state(state)
+    z_rw2, z_rw1 = splitStateHelper(z_ro, z_rw1)
+    return loop@2_state(z_rw: z_rw2), loop@2_state(z_rw: z_rw1)
+}
+---
+    _t0 = range(1, 4)  // 1:0
+    z_ro = sum()
+    z_ro, _t1, _t2 = loopHelper(z_ro, _t0, EnumerateValues, True)
+    _t0 = enumerate(_t0, _t2, loop@1(z_ro, _eKind: _t2), loop@1_state(z_rw: _t1))
+    z = unloop@1_state(_t0)
+    z = finalResultHelper(z_ro, z)
+    return z  // 8:0
+*/
+
+for x in 1..4 sequential {
+  for y in 1..4 sequential {
+    z << x + y
+  } collect { z }
+} collect {
+  z =| sum
+}
+return z
+
+/* COMPILE ():
+private compound loop@1{z_ro,_eKind} is Loop
+private compound loop@1_state{z_rw}
+private compound loop@2{z_ro,x} is Loop
+private compound loop@2_state{z_rw}
+method nextState(_loop, _state, _element) _0 is loop@1 {
+    z_ro, _eKind = unloop@1(_loop)
+    z_rw = unloop@1_state(_state)
+    _key = Absent
+    branch L2 if _eKind is EnumerateValues
+    _key, _element = unarray2(_element)
+    branch L1 if _element is Absent
+  L2:
+    x = _element
+    _t0 = range(1, 4)  // 2:2
+    verifyEV(z_ro)
+    _t0 = iterate(_t0, EnumerateValues, loop@2(z_ro, x), loop@2_state(z_rw))
+    z_rw = unloop@2_state(_t0)
+  L1:
+    z_rw = emitKey(z_ro, z_rw, _key)
+    return loop@1_state(z_rw)
+}
+method nextState(_loop, _state, _element) _0 is loop@2 {
+    z_ro, x = unloop@2(_loop)
+    z_rw = unloop@2_state(_state)
+    y = _element
+    _t0 = add(x, y)  // 3:4
+    z_rw = emitValue(z_ro, z_rw, _t0)
+    return loop@2_state(z_rw)
+}
+---
+    _t0 = range(1, 4)  // 1:0
+    z_ro = sum()
+    z_ro, _t1, _t2 = loopHelper(z_ro, _t0, EnumerateValues, False)
+    _t0 = iterate(_t0, _t2, loop@1(z_ro, _eKind: _t2), loop@1_state(z_rw: _t1))
+    z = unloop@1_state(_t0)
+    z = finalResultHelper(z_ro, z)
+    return z  // 8:0
+*/
+
+x = 1
+for sequential x {
+  z << x
+  y = x
+  x += 1
+  if x > 10 { break { z = (z | sum) + y }}
+} collect {
+  z =| saveUnordered
+}
+return z
+
+/* COMPILE ():
+private compound loop@2{z_ro} is Lambda
+private compound loop@2_break@6{y,z_rw}
+private compound loop@2_state{z_rw,x}
+method at(_loop, _state) _0 is loop@2 {
+    z_ro = unloop@2(_loop)
+    z_rw, x = unloop@2_state(_state)
+    z_rw = emitValue(z_ro, z_rw, x)  // 3:2
+    y = x  // 4:2
+    x = binaryUpdate(x, 'add:2', 1)  // 5:2
+    _t0 = lessThan(10, x)  // 6:2
+    branch L2 if not _t0
+    _t0 = loopExit(loop@2_break@6(y, z_rw))  // 6:14
+    return _t0
+  L2:
+    return loop@2_state(z_rw, x)
+}
+---
+    x = 1  // 1:0
+    z_ro = saveUnordered()  // 2:0
+    z_ro, _t0 = loopHelper(z_ro)
+    _t0 = iterateUnbounded(loop@2(z_ro), loop@2_state(z_rw: _t0, x))
+    _t0 = loopExitState(_t0)
+    y, z = unloop@2_break@6(_t0)
+    z = finalResultHelper(z_ro, z)
+    _t0 = sum()  // 6:22
+    _t0 = pipe(z, _t0)
+    z = add(_t0, y)
+    return z  // 10:0
+*/
+
+for x in 1..4 sequential {
+  for y in 1..4 {
+    if y < x {
+      break {
+        break {
+          return x + y
+        }
+      }
+    }
+  }
+}
+
+/* COMPILE ():
+private singleton loop@1 is Loop
+private compound loop@1_break@6{x,y}
+private compound loop@2{x} is Loop
+private compound loop@2_break@5{y}
+method nextState(_loop, _state, _element) _0 is loop@1 {
+    x = _element
+    _t0 = range(1, 4)  // 2:2
+    _t0 = enumerate(_t0, EnumerateValues, loop@2(x), Absent)
+    branch L3 if _t0 is not LoopExit
+    _t0 = loopExitState(_t0)
+    y = unloop@2_break@5(_t0)
+    _t0 = loopExit(loop@1_break@6(x, y))  // 5:8
+    return _t0
+  L3:
+    return Absent
+}
+method nextState(_loop, _state, _element) _0 is loop@2 {
+    x = unloop@2(_loop)
+    y = _element
+    _t0 = lessThan(y, x)  // 3:4
+    branch L2 if not _t0
+    _t0 = loopExit(loop@2_break@5(y))  // 4:6
+    return _t0
+  L2:
+    return Absent
+}
+---
+    _t0 = range(1, 4)  // 1:0
+    _t0 = iterate(_t0, EnumerateValues, loop@1, Absent)
+    branch L2 if _t0 is not LoopExit
+    _t0 = loopExitState(_t0)
+    x, y = unloop@1_break@6(_t0)
+    _t0 = add(x, y)  // 6:10
+    return _t0
+  L2:
+    error "Missing return statement"   // 11:0
+*/
+
+a = [3, 2, 0]
+m = a | max
+for k: v in a {
+  if v == m {
+    break { return k }
+  }
+}
+
+/* COMPILE ():
+private compound loop@3{m} is Loop
+private compound loop@3_break@5{k}
+method nextState(_loop, _state, _element) _0 is loop@3 {
+    m = unloop@3(_loop)
+    k, _element = unarray2(_element)
+    v = _element
+    _t0 = equal(v, m)  // 4:2
+    branch L2 if not _t0
+    _t0 = loopExit(loop@3_break@5(k))  // 5:4
+    return _t0
+  L2:
+    return Absent
+}
+---
+    a = [3, 2, 0]  // 1:0
+    _t0 = max()  // 2:0
+    m = pipe(a, _t0)
+    _t0 = enumerate(a, EnumerateWithKeys, loop@3(m), Absent)  // 3:0
+    branch L2 if _t0 is not LoopExit
+    _t0 = loopExitState(_t0)
+    k = unloop@3_break@5(_t0)
+    return k  // 5:12
+  L2:
+    error "Missing return statement"   // 7:0
+*/
+
+for i in 1..3 {
+  emitAllTwice(s<<, 1..i)
+} collect {
+  s =| sum
+}
+return s
+
+procedure emitAllTwice(v<<, a) {
+  for x in a {
+    v << x
+    v << x
+  } collect {
+    v
+  }
+}
+
+/* COMPILE ():
+private compound loop@1{s_ro,_eKind} is Loop
+private compound loop@1_state{s_rw}
+private compound loop@9{v_ro} is Loop
+private compound loop@9_state{v_rw}
+procedure emitAllTwice(a0, a1=, a2)
+method combineStates(loop, state1, state2) _0 is loop@1 {
+    s_ro, _ = unloop@1(loop)
+    s_rw1 = unloop@1_state(state1)
+    s_rw2 = unloop@1_state(state2)
+    s_rw1 = combineStatesHelper(s_ro, s_rw1, s_rw2)
+    return loop@1_state(s_rw: s_rw1)
+}
+method combineStates(loop, state1, state2) _0 is loop@9 {
+    v_ro = unloop@9(loop)
+    v_rw1 = unloop@9_state(state1)
+    v_rw2 = unloop@9_state(state2)
+    v_rw1 = combineStatesHelper(v_ro, v_rw1, v_rw2)
+    return loop@9_state(v_rw: v_rw1)
+}
+method emitAllTwice(v_ro, v_rw, a) {
+    verifyEV(v_ro)  // 9:2
+    _t0 = enumerate(a, EnumerateValues, loop@9(v_ro), loop@9_state(v_rw))
+    v_rw = unloop@9_state(_t0)
+    return v_rw  // 14:2
+}
+method emptyState(loop) _0 is loop@1 {
+    s_ro, _ = unloop@1(loop)
+    s_rw = emptyStateHelper(s_ro)
+    return loop@1_state(s_rw)
+}
+method emptyState(loop) _0 is loop@9 {
+    v_ro = unloop@9(loop)
+    v_rw = emptyStateHelper(v_ro)
+    return loop@9_state(v_rw)
+}
+method nextState(_loop, _state, _element) _0 is loop@1 {
+    s_ro, _eKind = unloop@1(_loop)
+    s_rw = unloop@1_state(_state)
+    _key = Absent
+    branch L2 if _eKind is EnumerateValues
+    _key, _element = unarray2(_element)
+    branch L1 if _element is Absent
+  L2:
+    i = _element
+    _t0 = range(1, i)  // 2:2
+    s_rw = emitAllTwice(s_ro, s_rw, _t0)
+  L1:
+    s_rw = emitKey(s_ro, s_rw, _key)
+    return loop@1_state(s_rw)
+}
+method nextState(_loop, _state, _element) _0 is loop@9 {
+    v_ro = unloop@9(_loop)
+    v_rw = unloop@9_state(_state)
+    x = _element
+    v_rw = emitValue(v_ro, v_rw, x)  // 10:4
+    v_rw = emitValue(v_ro, v_rw, x)  // 11:4
+    return loop@9_state(v_rw)
+}
+method splitState(loop, state) _0 is loop@1 {
+    s_ro, _ = unloop@1(loop)
+    s_rw1 = unloop@1_state(state)
+    s_rw2, s_rw1 = splitStateHelper(s_ro, s_rw1)
+    return loop@1_state(s_rw: s_rw2), loop@1_state(s_rw: s_rw1)
+}
+method splitState(loop, state) _0 is loop@9 {
+    v_ro = unloop@9(loop)
+    v_rw1 = unloop@9_state(state)
+    v_rw2, v_rw1 = splitStateHelper(v_ro, v_rw1)
+    return loop@9_state(v_rw: v_rw2), loop@9_state(v_rw: v_rw1)
+}
+---
+    _t0 = range(1, 3)  // 1:0
+    s_ro = sum()
+    s_ro, _t1, _t2 = loopHelper(s_ro, _t0, EnumerateValues, True)
+    _t0 = enumerate(_t0, _t2, loop@1(s_ro, _eKind: _t2), loop@1_state(s_rw: _t1))
+    s = unloop@1_state(_t0)
+    s = finalResultHelper(s_ro, s)
+    return s  // 6:0
+*/

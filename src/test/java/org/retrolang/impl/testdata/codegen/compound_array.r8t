@@ -1,0 +1,54 @@
+// Verify that we can emit the clunky code required to access an arbitrary
+// element of a non-varray
+return [sumSqDistance([0, 0], pts(0)), sumSqDistance([0.25, 0.5], pts(-1))]
+
+// Creates an array of 6 points evenly spaced along two edges of a 2x2 square
+// centered on the origin, then filters out any point with the specified y value.
+function pts(skipY) = [[-1, -1], [-1, 0], [-1, 1], [1, -1], [1, 0], [1, 1]]
+                | filter([_, y] -> y != skipY)
+                | save
+
+// Sums the square of the distance from [x, y]] to each element of pts
+function sumSqDistance([x, y], pts) = pts | [px, py] -> (x - px) ** 2 + (y - py) ** 2 | sum
+
+/* CODEGEN sumSqDistance RETURNS
+[8, 5.25]
+---
+sumSqDistance_0([d1, d2], [i3⸨0:[-1, -1]; 1:Absent⸩, i4⸨0:[-1, 0]; 1:Absent⸩, [-1, 1], i5⸨0:[1, -1]; 1:Absent⸩, i6⸨0:[1, 0]; 1:Absent⸩, [1, 1]]):
+  1: AtomicInteger.incrementAndGet(0);
+  2: D10 ← 0;
+  3: I9 ← 0;
+= 4: I12 ← iAdd(I9, 1);
+  5: test I9 == 0; F:→ 15
+  6: I13 ← -1;
+  7: I14 ← -1;
+  8: I9 ← I5;
+= 9: test I9 1 (< 2); F:→ 30
+ 10: I9 ← I12;
+=11: test I9 < 6; T:→ 4
+ 12: TState.setResultTemplates(X0, [d0]);
+ 13: setDouble[](TState.fnResultBytes(X0, 8), 0, D10);
+ 14: return
+-15: test I9 == 1; F:→ 19
+ 16: I13 ← -1;
+ 17: I14 ← 0;
+ 18: I9 ← I6; → 9
+-19: test I9 == 2; T:→ 28
+ 20: test I9 == 3; F:→ 24
+ 21: I13 ← 1;
+ 22: I14 ← -1;
+ 23: I9 ← I7; → 9
+-24: test I9 == 4; F:→ 34
+ 25: I13 ← 1;
+ 26: I14 ← 0;
+ 27: I9 ← I8; → 9
+-28: I13 ← -1;
+=29: I14 ← 1;
+-30: D15 ← dSub(D1, I13);
+ 31: D13 ← dSub(D3, I14);
+ 32: I9 ← I12;
+ 33: D10 ← dAdd(D10, dAdd(dMul(D15, D15), dMul(D13, D13))); → 11
+-34: I13 ← 1; → 29
+---
+allocated=11576/434, peak=96
+*/

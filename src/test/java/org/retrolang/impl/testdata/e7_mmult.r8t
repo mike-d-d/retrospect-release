@@ -1,0 +1,20 @@
+// An example from overview.md#matrices
+
+a = matrix([2, 3], [2, 0, 10, 0, -2, 11])
+b = matrix([3, 1], [4, 5, 1])
+return mmult(a, b)
+
+function mmult(x, y) {
+  [xs1, xs2] = sizes(x)
+  [ys1, ys2] = sizes(y)
+  assert xs2 == ys1
+  return matrix([xs1, ys2])
+         | [i, j] -> (x[i, ..] * y[.., j] | sum)
+         | save
+}
+
+/* RUN () RETURNS
+  ReshapedArray([2, 1], [18, 1])
+---
+allocated=16464/631, peak=144
+*/

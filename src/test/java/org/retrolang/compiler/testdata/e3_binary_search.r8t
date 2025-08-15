@@ -1,0 +1,78 @@
+// An example from overview.md#loops
+
+a = [{key: "one", value: 1}, {key: "three", value: 3}, {key: "two", value: 2}]
+return binarySearch("three", a^.key)
+
+function binarySearch(x, array) {
+  low = 0
+  high = size(array)
+  // Invariant: x > array[1..low]
+  //        and x < array[high+1 ..]
+  for sequential low, high {
+    if low == high {
+      break { return -low }
+    }
+    mid = div(low + high + 1, 2)
+    a_mid = array[mid]
+    if a_mid == x {
+      break { return mid }
+    } else if a_mid < x {
+      low = mid
+    } else {
+      high = mid - 1
+    }
+  }
+}
+
+/* COMPILE ():
+private compound loop@9{array,x} is Lambda
+private compound loop@9_break@11{low}
+private compound loop@9_break@16{mid}
+private compound loop@9_state{low,high}
+function binarySearch(a0, a1)
+method at(_loop, _state) _0 is loop@9 {
+    array, x = unloop@9(_loop)
+    low, high = unloop@9_state(_state)
+    _t0 = equal(low, high)  // 10:4
+    branch L2 if not _t0
+    _t0 = loopExit(loop@9_break@11(low))  // 11:6
+    return _t0
+  L2:
+    _t0 = add(low, high)  // 13:4
+    _t0 = add(_t0, 1)
+    mid = div(_t0, 2)
+    a_mid = at(array, [mid])  // 14:4
+    _t0 = equal(a_mid, x)  // 15:4
+    branch L3 if not _t0
+    _t0 = loopExit(loop@9_break@16(mid))  // 16:6
+    return _t0
+  L3:
+    _t0 = lessThan(a_mid, x)
+    branch L5 if not _t0
+    low = mid  // 18:6
+    branch L4
+  L5:
+    high = subtract(mid, 1)  // 20:6
+  L4:
+    return loop@9_state(low, high)
+}
+method binarySearch(x, array) {
+    low = 0  // 5:2
+    high = size(array)  // 6:2
+    _t0 = iterateUnbounded(loop@9(array, x), loop@9_state(low, high))  // 9:2
+    _t0 = loopExitState(_t0)
+    branch L2 if _t0 is not loop@9_break@11
+    low = unloop@9_break@11(_t0)
+    _t0 = negative(low)  // 11:14
+    return _t0
+  L2:
+    mid = unloop@9_break@16(_t0)
+    return mid  // 16:14
+}
+---
+    a = [{key: "one", value: 1}, {key: "three", value: 3}, {key: "two", value: 2}]  // 1:0
+    _t0 = curryLambda('at:2', [0, -1], ["key"])  // 2:0
+    _t0 = pipe(a, _t0)
+    _t0 = binarySearch("three", _t0)
+    return _t0
+*/

@@ -1,0 +1,29 @@
+ 1: test i0 < 0; F:→ 3                                      // if n < 0 {
+ 2: i0 ← iNeg(i0);                                          // n = -n
+-3: return iAdd(1, i0)                                      // return i + n
+---
+ 1: test I0 < 0; F:→ 3                                      // if n < 0 {
+ 2: I0 ← iNeg(I0);                                          // n = -n
+-3: return iAdd(1, I0)                                      // return i + n
+---
+No constants
+---
+  public static trivial(I)I
+   L0
+    LINENUMBER 1 L0
+    ILOAD 0
+    IFGE L1
+   L2
+    LINENUMBER 2 L2
+    ILOAD 0
+    INEG
+    ISTORE 0
+   L1
+    LINENUMBER 3 L1
+   FRAME SAME
+    ICONST_1
+    ILOAD 0
+    IADD
+    IRETURN
+    MAXSTACK = 2
+    MAXLOCALS = 1

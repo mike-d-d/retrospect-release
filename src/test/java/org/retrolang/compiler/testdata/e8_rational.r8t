@@ -1,0 +1,141 @@
+// An example from overview.md#types-and-generic-functions
+
+oneThird = ratio(1, 3)
+twoThirds = oneThird + oneThird
+return [twoThirds, oneThird + twoThirds]
+
+compound Rational
+
+function ratio(Integer num, Integer denom) {
+  assert denom != 0
+  if num == 0 { return 0 }
+  if denom < 0 {
+    denom = -denom
+    num = -num
+  }
+  gcd = gcd(abs(num), denom)
+  num = div(num, gcd)
+  denom = div(denom, gcd)
+  return denom == 1 ? num : Rational_({num, denom})
+}
+
+function gcd(Integer u, Integer v) {
+  for sequential u, v {
+    if v == 0 {
+      break { return u }
+    }
+    [u, v] = [v, u % v]
+  }
+}
+
+method add(Rational a, Rational b) {
+  return ratio(a_.num * b_.denom + a_.denom * b_.num, a_.denom * b_.denom)
+}
+
+method add(Rational a, Integer b) {
+  return ratio(a_.num + b * a_.denom, a_.denom)
+}
+
+method add(Integer a, Rational b) {
+  return b + a
+}
+
+/* COMPILE ():
+private singleton loop@21 is Lambda
+compound Rational
+private compound loop@21_break@23{u}
+private compound loop@21_state{u,v}
+function gcd(a0, a1)
+function ratio(a0, a1)
+method add(a, b) (_0 is Number) and (_1 is Rational) {
+    a = asInt(a)  // 37:34
+    _t0 = add(b, a)  // 38:2
+    return _t0
+}
+method add(a, b) (_0 is Rational) and (_1 is Number) {
+    b = asInt(b)  // 33:34
+    _t0 = _get(a)  // 34:2
+    _t0 = at(_t0, "num")
+    _t1 = _get(a)
+    _t1 = at(_t1, "denom")
+    _t1 = multiply(b, _t1)
+    _t0 = add(_t0, _t1)
+    _t1 = _get(a)
+    _t1 = at(_t1, "denom")
+    _t0 = ratio(_t0, _t1)
+    return _t0
+}
+method add(a, b) (_0 is Rational) and (_1 is Rational) {
+    _t0 = _get(a)  // 30:2
+    _t0 = at(_t0, "num")
+    _t1 = _get(b)
+    _t1 = at(_t1, "denom")
+    _t0 = multiply(_t0, _t1)
+    _t1 = _get(a)
+    _t1 = at(_t1, "denom")
+    _t2 = _get(b)
+    _t2 = at(_t2, "num")
+    _t1 = multiply(_t1, _t2)
+    _t0 = add(_t0, _t1)
+    _t1 = _get(a)
+    _t1 = at(_t1, "denom")
+    _t2 = _get(b)
+    _t2 = at(_t2, "denom")
+    _t1 = multiply(_t1, _t2)
+    _t0 = ratio(_t0, _t1)
+    return _t0
+}
+method at(_loop, _state) _0 is loop@21 {
+    u, v = unloop@21_state(_state)
+    _t0 = equal(v, 0)  // 22:4
+    branch L2 if not _t0
+    _t0 = loopExit(loop@21_break@23(u))  // 23:6
+    return _t0
+  L2:
+    _t0 = modulo(u, v)  // 25:4
+    u, v = unarray2([v, _t0])
+    return loop@21_state(u, v)
+}
+method gcd(u, v) (_0 is Number) and (_1 is Number) {
+    u = asInt(u)  // 20:35
+    v = asInt(v)
+    _t0 = iterateUnbounded(loop@21, loop@21_state(u, v))  // 21:2
+    _t0 = loopExitState(_t0)
+    u = unloop@21_break@23(_t0)
+    return u  // 23:14
+}
+method ratio(num, denom) (_0 is Number) and (_1 is Number) {
+    num = asInt(num)  // 7:43
+    denom = asInt(denom)
+    _t0 = equal(denom, 0)  // 8:2
+    branch L1 if not _t0
+    error "Assertion failed"
+  L1:
+    _t0 = equal(num, 0)  // 9:2
+    branch L2 if not _t0
+    return 0  // 9:16
+  L2:
+    _t0 = lessThan(denom, 0)  // 10:2
+    branch L3 if not _t0
+    denom = negative(denom)  // 11:4
+    num = negative(num)  // 12:4
+  L3:
+    _t0 = abs(num)  // 14:2
+    gcd = gcd(_t0, denom)
+    num = div(num, gcd)  // 15:2
+    denom = div(denom, gcd)  // 16:2
+    _t1 = equal(denom, 1)  // 17:2
+    branch L5 if not _t1
+    _t0 = num
+    branch L4
+  L5:
+    _t0 = Rational({denom: denom, num: num})
+  L4:
+    return _t0
+}
+---
+    oneThird = ratio(1, 3)  // 1:0
+    twoThirds = add(oneThird, oneThird)  // 2:0
+    _t0 = add(oneThird, twoThirds)  // 3:0
+    return [twoThirds, _t0]
+*/

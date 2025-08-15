@@ -1,0 +1,121 @@
+  1: i1 ← lengthInt[](x0);                                   // n = nums.length
+  2: i4 ← 0;                                                 // count = 0
+  3: i5 ← 0;                                                 // j = 0
+  4: i3 ← -1;                                                // max = -1
+  5: i6 ← 0;                                                 // i = 0
+= 6: test i6 == i1; T:→ 10                                   // if i == n { break }
+  7: i3 ← Math.max(i3, int[](x0, i6));                       // max = Math.max(max, nums[i])
+  8: i6 ← iAdd(i6, 1);                                       // i += 1
+  9: back1 → 6 with i3, i6                                   // }
+=10: test i5 == i1; T:→ 16                                   // if j == n {
+ 11: test int[](x0, i5) == i3; F:→ 14                        // if nums[j] == max {
+ 12: i4 ← iAdd(i4, 1);                                       // count += 1
+ 13: setInt[](x0, i5, iSub(i3, 1));                          // nums[j] = max - 1
+-14: i5 ← iAdd(i5, 1);                                       // j += 1
+ 15: back0 → 10 with i4, i5                                  // }
+-16: return iSub(i1, i4)                                     // return result
+---
+  1: I1 ← lengthInt[](X0);                                   // n = nums.length
+  2: I3 ← 0;                                                 // count = 0
+  3: I4 ← 0;                                                 // j = 0
+  4: I2 ← -1;                                                // max = -1
+  5: I5 ← 0;                                                 // i = 0
+= 6: test I5 == I1; T:→ 9                                    // if i == n { break }
+  7: I2 ← Math.max(I2, int[](X0, I5));                       // max = Math.max(max, nums[i])
+  8: I5 ← iAdd(I5, 1); → 6                                   // i += 1
+= 9: test I4 == I1; T:→ 14                                   // if j == n {
+ 10: test int[](X0, I4) == I2; F:→ 13                        // if nums[j] == max {
+ 11: I3 ← iAdd(I3, 1);                                       // count += 1
+ 12: setInt[](X0, I4, iSub(I2, 1));                          // nums[j] = max - 1
+-13: I4 ← iAdd(I4, 1); → 9                                   // j += 1
+-14: return iSub(I1, I3)                                     // return result
+---
+No constants
+---
+  public static decrementMax([I)I
+   L0
+    LINENUMBER 1 L0
+    ALOAD 0
+    ARRAYLENGTH
+    ISTORE 1
+   L1
+    LINENUMBER 2 L1
+    ICONST_0
+    ISTORE 3
+   L2
+    LINENUMBER 3 L2
+    ICONST_0
+    ISTORE 4
+   L3
+    LINENUMBER 4 L3
+    ICONST_M1
+    ISTORE 2
+   L4
+    LINENUMBER 5 L4
+    ICONST_0
+    ISTORE 5
+   L5
+    LINENUMBER 6 L5
+   FRAME FULL [[I I I I I I] []
+    ILOAD 5
+    ILOAD 1
+    IF_ICMPEQ L6
+   L7
+    LINENUMBER 7 L7
+    ILOAD 2
+    ALOAD 0
+    ILOAD 5
+    IALOAD
+    INVOKESTATIC java/lang/Math.max (II)I
+    ISTORE 2
+   L8
+    LINENUMBER 8 L8
+    ILOAD 5
+    ICONST_1
+    IADD
+    ISTORE 5
+    GOTO L5
+   L6
+    LINENUMBER 9 L6
+   FRAME CHOP 1
+    ILOAD 4
+    ILOAD 1
+    IF_ICMPEQ L9
+   L10
+    LINENUMBER 10 L10
+    ALOAD 0
+    ILOAD 4
+    IALOAD
+    ILOAD 2
+    IF_ICMPNE L11
+   L12
+    LINENUMBER 11 L12
+    ILOAD 3
+    ICONST_1
+    IADD
+    ISTORE 3
+   L13
+    LINENUMBER 12 L13
+    ALOAD 0
+    ILOAD 4
+    ILOAD 2
+    ICONST_1
+    ISUB
+    IASTORE
+   L11
+    LINENUMBER 13 L11
+   FRAME SAME
+    ILOAD 4
+    ICONST_1
+    IADD
+    ISTORE 4
+    GOTO L6
+   L9
+    LINENUMBER 14 L9
+   FRAME FULL [T I T I] []
+    ILOAD 1
+    ILOAD 3
+    ISUB
+    IRETURN
+    MAXSTACK = 4
+    MAXLOCALS = 6

@@ -1,0 +1,34 @@
+// Sum the squares of the ints in a given range.
+// This version constructs code that sums in doubles (by forcing an overflow during prep).
+
+return [sumSquares(-10..10), sumSquares(1..10000)]
+
+function sumSquares(range) = range ^** 2 | sum
+
+
+/* CODEGEN sumSquares RETURNS
+[770, 3.33383335E11]
+---
+sumSquares_0(Range(i1, i2)):
+  1: AtomicInteger.incrementAndGet(0);
+  2: D3 ← 0;
+= 3: test I2 < I1; T:→ 8
+  4: I5 ← Math.addExact(I1, 1); ArithmeticException:→ 11
+  5: I6 ← Math.multiplyExact(I1, I1); ArithmeticException:→ 11
+  6: I1 ← I5;
+  7: D3 ← dAdd(D3, I6); → 3
+- 8: TState.setResultTemplates(X0, [d0]);
+  9: setDouble[](TState.fnResultBytes(X0, 8), 0, D3);
+ 10: return
+-11: X5 ← newStackEntry(CollectionCore.NextTransformedIterator.loop {innerIt=RangeIterator(I1, I2, None), it=TransformedIterator(ToBeSet, EnumerateValues, CurriedLambda(`exponent:2`, [0, -1], [2]))});
+ 12: X1 ← TState.fillStackEntry(X0, null, X5, [⸨i0; Absent⸩, TransformedIterator(RangeIterator(i0, i0, None), EnumerateValues, CurriedLambda(`exponent:2`, [0, -1], [2])), Sum(0), d0], mMemo_5@xxxx, null);
+ 13: X2 ← newStackEntry(LoopCore.Iterate.next {loop=Sum(0), state=D3});
+ 14: X1 ← TState.fillStackEntry(X0, X1, X2, [d0, Sum(0)], mMemo_12@xxxx, null);
+ 15: X1 ← TState.fillStackEntry(X0, X1, LoopCore.enumerateDefault, [d0, Sum(0)], mMemo_13@xxxx, null);
+ 16: X1 ← TState.fillStackEntry(X0, X1, LoopCore.PipeCollectionCollector.enumerate {loop=Sum(0)}, d0, mMemo_17@xxxx, null);
+ 17: X1 ← TState.fillStackEntry(X0, X1, sum_squares.r8t+3:3_3 _t0 = pipe(_t0, _t1), d0, mMemo_x@xxxx, null);
+ 18: TState.setStackRest(X0, X1);
+ 19: return
+---
+allocated=344/14, peak=96
+*/

@@ -1,0 +1,117 @@
+// "Clustering Large Applications based upon RANdomized Search"
+// Based on on https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/clustering/CLARANS.java
+
+// data is a list of objects
+// distance is a lambda mapping a pair of objects to a number
+// This function tries to find a set of k clusters, each represented by an element of data
+// (the medoid for that cluster), that minimizes the sum of distances from each element of
+// data to the closest medoid.
+// Returns { medoids, assignments }
+// where medoids has length k and contains elements of data,
+// and assignments has length size(data) and element i is { cluster, dist }
+// where cluster is an index into medoids and dist is distance[data[i], medoids[cluster]].
+function clarans(data, distance, k, numLocal, maxNeighbor) {
+  // Make numLocal independent tries, and pick the one that results in the lowest
+  // sum-of-distances.
+  for _ in 1..numLocal {
+    // Set up our initial state.
+    { medoids, assignments } = chooseInitial(data, distance, k)
+    distSum = assignments^.dist | sum
+    // Iteratively improve the initial state until we get maxNeighbor consecutive misses.
+    misses = 0
+    for sequential misses, medoids, assignments, distSum {
+      // Choose an element of medoids to replace, and element of data to replace it with.
+      replacedIndex = randomInt(1..k)
+      replacement = chooseReplacement(data, medoids)
+      for [i]: assignment in assignments {
+        datum = data[i]
+        d = distance[datum, replacement]
+        if d < assignment.dist {
+          // New medoid is closer than our previous best, so assign to it.
+          assignment = { cluster: replacedIndex, dist: d }
+        } else if assignment.cluster == replacedIndex {
+          // We were assigned to the medoid that's being replaced, so we need to
+          // recompute our assignment from scratch.
+          assignment = 1..k
+              | -> {cluster: #,
+                    dist: (# == replacedIndex) ? d : distance[datum, medoids[#]]}
+              | minAt(["dist"])
+        }
+        newAssignments << assignment
+      } collect {
+        newAssignments =| save
+      }
+      newDistSum = newAssignments^.dist | sum
+      if newDistSum < distSum {
+        medoids[replacedIndex] = replacement
+        assignments = newAssignments
+        distSum = newDistSum
+        misses = 0
+      } else {
+        misses += 1
+        if misses == maxNeighbor { break }
+      }
+    }
+    result << [ distSum, { medoids, assignments } ]
+  } collect {
+    result =| minAt([1])
+  }
+  // result[1] is the minimum sum of distances
+  // result[2] is the corresponding medoids and assignments
+  return result[2]
+}
+
+// Based on seed() in https://github.com/haifengl/smile/blob/master/core/src/main/java/smile/clustering/PartitionClustering.java
+// Copy full citation from there
+function chooseInitial(data, distance, k) {
+  medoid1 = data[randomInt(1..size(data))]
+  // Start with everything assigned to the first cluster...
+  assignments = data | -> { cluster: 1, dist: distance[#, medoid1] } | save
+  for i in 1..k sequential assignments {
+    if i == 1 {
+      medoids << medoid1
+      continue
+    }
+    // Choose the next medoid randomly but weighted by min distance to current medoids
+    r = random * (assignments^.dist | sum)
+    for [j] : assignment in assignments sequential r {
+      r -= assignment.dist
+      if r <= 0 {
+        break {
+          medoid = data[j]
+          assignments[j] = { cluster: i, dist: 0 }
+        }
+      }
+    }
+    medoids << medoid
+    for j in 1..size(assignments) sequential assignments {
+      // See which other points should be assigned to the new medoid
+      dist = assignments[j].dist
+      if dist > 0 {
+        d = distance[data[j], medoid]
+        if d < dist {
+          assignments[j] = { cluster: i, dist: d }
+        }
+      }
+    }
+  } collect {
+    medoids =| save
+  }
+  return { medoids, assignments }
+}
+
+// Randomly choose and return an element of data that is not equal to any element of
+// medoids
+function chooseReplacement(data, medoids) {
+  // Keep trying until we get one
+  for sequential {
+    result = data[randomInt(1..size(data))]
+    if result ==^ medoids | allFalse {
+      break {
+        return result
+      }
+    }
+  }
+}
+
+/* COMPILE () */

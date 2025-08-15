@@ -1,0 +1,73 @@
+// Test lots of method predicate edge cases
+
+function f1(Integer x, {y}) = x + y
+
+/* COMPILE ():
+function f1(a0, a1)
+method f1(x, _a0) (_0 is Number) and (_1 is Struct) {
+    x = asInt(x)  // 1:28
+    y = unstruct{y}(_a0)
+    _t0 = add(x, y)  // 1:30
+    return _t0
+}
+*/
+
+function f1(x, y)
+method f1(x, y) (x is Integer) = x + y
+
+/* COMPILE (): Integer may not be used as a method predicate
+*/
+
+function f1(x, y)
+method f1(x, y) (z is Number) = x + y
+
+/* COMPILE (): 'z' is not an argument of this method
+*/
+
+function f1(x, y)
+method f1(x, y) (x is Number or x is Array and y is not Lambda) = x + y
+
+/* COMPILE (): Ambiguous method predicate
+*/
+
+function f1(x, y)
+method f1(x, y) (x is Number or x is Array or y is not Lambda) = x + y
+
+/* COMPILE ():
+function f1(a0, a1)
+method f1(x, y) ((_0 is Number) or (_0 is Array)) or (_1 is not Lambda) {
+    _t0 = add(x, y)  // 2:65
+    return _t0
+}
+*/
+
+function f1(x, y)
+method f1(x, y) (not ((x is Number or x is Array) and y is not Lambda)) = x + y
+
+/* COMPILE ():
+function f1(a0, a1)
+method f1(x, y) ((_0 is not Number) and (_0 is not Array)) or (_1 is Lambda) {
+    _t0 = add(x, y)  // 2:74
+    return _t0
+}
+*/
+
+function f2(a, b=)
+
+method f2({a: x, b: _}, Lambda y=)  (y is not Array) = x + y
+
+method f2(x, [y, _]=) (not (x is Array or x is not Number)) = x + y
+
+/* COMPILE ():
+function f2(a0, a1=)
+method f2(_a0, y) (_1 is not Array) and ((_0 is Struct) and (_1 is Lambda)) {
+    x, _ = unstruct{a,b}(_a0)  // 3:53
+    _t0 = add(x, y)  // 3:55
+    return _t0, y
+}
+method f2(x, _a0) ((_0 is not Array) and (_0 is Number)) and (_1 is Array) {
+    y, _a1 = unarray2(_a0)  // 5:60
+    _t0 = add(x, y)  // 5:62
+    return _t0, [y, _a1]
+}
+*/

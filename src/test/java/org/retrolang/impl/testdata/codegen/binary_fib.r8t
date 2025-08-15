@@ -1,0 +1,145 @@
+// Recursive fibonacci; awkward because we don't yet have any arithmetic,
+// so we're re-implementing it with fixed-length arrays of booleans
+// (they need to be fixed length because we don't yet have varrays either).
+
+// Computes fib(4), so should return 5 (aka [True, False, True])
+return fib([True, False, False])
+
+function fib([n4, n2, n1]) {
+  if not (n2 or n4) {
+    // arg is 0 or 1, so result is 1.  throw in a trace just so that we
+    // can verify everything is working as intended.
+    trace n1
+    return [False, False, True]
+  }
+  // Compute n-1 and n-2
+  m1 = sub1([n4, n2, n1])
+  m2 = sub1(m1)
+  // Make the recursive calls and add their results
+  return add2(fib(m1), fib(m2))
+}
+
+// Subtracts 1 from its argument
+function sub1([x4, x2, x1]) {
+  if x1 {
+    return [x4, x2, False]
+  }
+  assert x2 or x4
+  return [x2 and x4, not x2, True]
+}
+
+// Adds three single-bit values and returns a 2-bit result
+function add3(x, y, z) {
+  if eq(x, y) {
+    return [x, z]
+  } else {
+    return [z, not z]
+  }
+}
+
+// We don't even have equality checks implemented yet
+function eq(x, y) = x ? y : not y
+
+// Adds two 3-bit values.  Errors if the result doesn't fit in 3 bits.
+function add2([x4, x2, x1], [y4, y2, y1]) {
+  // c2 is the carry into the 2's place, etc.
+  [c2, z1] = add3(x1, y1, False)
+  [c4, z2] = add3(x2, y2, c2)
+  [c8, z4] = add3(x4, y4, c4)
+  assert not c8
+  return [z4, z2, z1]
+}
+
+/* CODEGEN fib RETURNS
+[True, False, True]
+---
+fib_0([i1⸨0:False; 1:True⸩, i2⸨0:False; 1:True⸩, i3⸨0:False; 1:True⸩]):
+  1: AtomicInteger.incrementAndGet(0);
+  2: X4 ← null;
+  3: test I2 0 (< 2); F:→ 17
+  4: test I1 0 (< 2); F:→ 17
+  5: X1 ← newStackEntry(binary_fib.r8t+5:7_3 trace n1 {n1=I3⸨0:False; 1:True⸩});
+  6: X4 ← TState.trace(X0, trace n1, X1, null);
+  7: I1 ← 0;
+  8: I2 ← 0;
+  9: I8 ← 1;
+=10: TState.setResultTemplates(X0, [[i0⸨0:False; 1:True⸩, i4⸨0:False; 1:True⸩, i8⸨0:False; 1:True⸩]]);
+ 11: X5 ← TState.fnResultBytes(X0, 12);
+ 12: setInt[](X5, 0, I1);
+ 13: setInt[](X5, 4, I2);
+ 14: setInt[](X5, 8, I8);
+ 15: TState.setStackRest(X0, X4);
+ 16: return
+-17: test I3 0 (< 2); T:→ 50
+ 18: test I1 == 0; F:→ 55
+ 19: test I2 0 (< 2); T:→ 55
+ 20: I2 ← 1;
+ 21: I5 ← 0;
+=22: [[i0⸨0:False; 1:True⸩, i4⸨0:False; 1:True⸩, i8⸨0:False; 1:True⸩]] ← fib_0(X0, 0, I2, I5); X2 ← stackRest; unwind:→ 65
+ 23: X5 ← TState.fnResultBytes(X0, 0);
+ 24: test int[](X5, 0) == 0; F:→ 65
+ 25: I6 ← int[](X5, 4);
+ 26: I7 ← int[](X5, 8);
+ 27: TState.clearResultTemplates(X0);
+ 28: test X2 == null; T:→ 31
+ 29: X4 ← newStackEntry(binary_fib.r8t+5:14_8 _t0 = fib(m1) {m2=[False, I1⸨0:False; 1:True⸩, I3⸨0:False; 1:True⸩]});
+ 30: X4 ← TState.fillStackEntry(X0, X2, X4, [⸨False; True⸩, ⸨False; True⸩, ⸨False; True⸩], mMemo_x@xxxx, null);
+-31: [[i0⸨0:False; 1:True⸩, i4⸨0:False; 1:True⸩, i8⸨0:False; 1:True⸩]] ← fib_0(X0, 0, I1, I3); X2 ← stackRest; unwind:→ 63
+ 32: X5 ← TState.fnResultBytes(X0, 0);
+ 33: test int[](X5, 0) == 0; F:→ 63
+ 34: I1 ← int[](X5, 4);
+ 35: I3 ← int[](X5, 8);
+ 36: TState.clearResultTemplates(X0);
+ 37: test X2 == null; T:→ 40
+ 38: X5 ← newStackEntry(binary_fib.r8t+5:14_9 _t1 = fib(m2) {_t0=[False, I6⸨0:False; 1:True⸩, I7⸨0:False; 1:True⸩]});
+ 39: X4 ← TState.fillStackEntry(X0, X2, X5, [⸨False; True⸩, ⸨False; True⸩, ⸨False; True⸩], mMemo_x@xxxx, X4);
+-40: test I7 0 (< 2); F:→ 57
+ 41: test I3 0 (< 2); T:→ 46
+=42: I2 ← 0;
+ 43: I8 ← 1;
+=44: test I6 0 (< 2); F:→ 60
+ 45: test I1 0 (< 2); T:→ 10
+=46: X2 ← newStackEntry(binary_fib.r8t+5:14_10 _t0 = add2(_t0, _t1) {_t0=[False, I6⸨0:False; 1:True⸩, I7⸨0:False; 1:True⸩], _t1=[False, I1⸨0:False; 1:True⸩, I3⸨0:False; 1:True⸩]});
+ 47: X4 ← TState.fillStackEntry(X0, null, X2, [⸨False; True⸩, ⸨False; True⸩, ⸨False; True⸩], mMemo_x@xxxx, X4);
+=48: TState.setStackRest(X0, X4);
+ 49: return
+-50: test I2 0 (< 2); F:→ 54
+ 51: test I1 0 (< 2); T:→ 55
+=52: I2 ← I1;
+ 53: I5 ← 1; → 22
+-54: test I1 0 (< 2); T:→ 52
+-55: X4 ← newStackEntry(binary_fib.r8t+5:3_0 n4, n2, n1 = unarray3(_a0) {_a0=[I1⸨0:False; 1:True⸩, I2⸨0:False; 1:True⸩, I3⸨0:False; 1:True⸩]});
+ 56: X4 ← TState.fillStackEntry(X0, null, X4, [⸨False; True⸩, ⸨False; True⸩, ⸨False; True⸩], mMemo_x@xxxx, null); → 48
+-57: test I3 0 (< 2); T:→ 42
+ 58: I2 ← 1;
+ 59: I8 ← 0; → 44
+-60: test I1 0 (< 2); F:→ 10
+ 61: test I2 0 (< 2); F:→ 46
+ 62: I2 ← 1; → 10
+-63: X1 ← newStackEntry(binary_fib.r8t+5:14_9 _t1 = fib(m2) {_t0=[False, I6⸨0:False; 1:True⸩, I7⸨0:False; 1:True⸩]});
+ 64: X4 ← TState.fillStackEntry(X0, X2, X1, [⸨False; True⸩, ⸨False; True⸩, ⸨False; True⸩], mMemo_x@xxxx, X4); → 48
+-65: X4 ← newStackEntry(binary_fib.r8t+5:14_8 _t0 = fib(m1) {m2=[False, I1⸨0:False; 1:True⸩, I3⸨0:False; 1:True⸩]});
+ 66: X4 ← TState.fillStackEntry(X0, X2, X4, [⸨False; True⸩, ⸨False; True⸩, ⸨False; True⸩], mMemo_x@xxxx, null); → 48
+---
+            StackBase
+        (3) binary_fib.r8t+5:1_0 _t0 = fib([True, False, False])
+        (2) binary_fib.r8t+5:14_8 _t0 = fib(m1) {m2=[False, True, False]}
+        (1) binary_fib.r8t+5:14_8 _t0 = fib(m1) {m2=[False, False, True]}
+            binary_fib.r8t+5:14_8 _t0 = fib(m1) {m2=[False, False, False]}
+0.0s) binary_fib.r8t+5:7_3 trace n1 {n1=True}
+            ... (1) ...
+            binary_fib.r8t+5:14_9 _t1 = fib(m2) {_t0=[False, False, True]}
+0.0s) binary_fib.r8t+5:7_3 trace n1 {n1=False}
+            ... (2) ...
+            binary_fib.r8t+5:14_9 _t1 = fib(m2) {_t0=[False, True, False]}
+0.0s) binary_fib.r8t+5:7_3 trace n1 {n1=True}
+            ... (3) ...
+        (4) binary_fib.r8t+5:14_9 _t1 = fib(m2) {_t0=[False, True, True]}
+            binary_fib.r8t+5:14_8 _t0 = fib(m1) {m2=[False, False, False]}
+0.0s) binary_fib.r8t+5:7_3 trace n1 {n1=True}
+            ... (4) ...
+            binary_fib.r8t+5:14_9 _t1 = fib(m2) {_t0=[False, False, True]}
+0.0s) binary_fib.r8t+5:7_3 trace n1 {n1=False}
+---
+allocated=1184/33, peak=1112
+*/

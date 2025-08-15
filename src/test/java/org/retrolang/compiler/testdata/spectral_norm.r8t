@@ -1,0 +1,118 @@
+// Compute the spectral norm of a large matrix, based on
+// https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/spectralnorm.html
+
+n = 100
+u = newMatrix([n], 1)
+v = None
+
+for _ in 1..10 sequential u, v {
+  v = multiply_A_At(u)
+  u = multiply_A_At(v)
+}
+
+vBv = u * v | sum
+vv = v * v | sum
+return sqrt(vBv / vv)
+
+// Returns the reciprocal of element (i,j) of (infinite) matrix A
+function aRecip(i, j) = (i+j-2) * (i+j-1) / 2 + i
+
+// Returns v times A (a vector the same length as v, where each element is the
+// dot product of v with a row of A)
+function multiply_A(v) = matrix([size(v)],
+                                [i] -> (v / aRecip(i, ^1..size(v)) | sum))
+                         | save
+
+// Returns v times A transposed
+function multiply_At(v) = matrix([size(v)],
+                                 [i] -> (v / aRecip(^1..size(v), i) | sum))
+                          | save
+
+// Returns v times A times A transposed
+function multiply_A_At(v) = multiply_At(multiply_A(v))
+
+/* COMPILE ():
+private singleton loop@5 is Loop
+private compound lambda@20:36{v} is Lambda
+private compound lambda@25:37{v} is Lambda
+private compound loop@5_state{u,v}
+function aRecip(a0, a1)
+function multiply_A(a0)
+function multiply_A_At(a0)
+function multiply_At(a0)
+method aRecip(i, j) {
+    _t0 = add(i, j)  // 15:24
+    _t0 = subtract(_t0, 2)
+    _t1 = add(i, j)
+    _t1 = subtract(_t1, 1)
+    _t0 = multiply(_t0, _t1)
+    _t0 = divide(_t0, 2)
+    _t0 = add(_t0, i)
+    return _t0
+}
+method at(_self, _a) _0 is lambda@20:36 {
+    i = unarray1(_a)  // 20:36
+    v = unlambda@20:36(_self)
+    _t0 = size(v)
+    _t0 = range(1, _t0)
+    _t1 = curryLambda('aRecip:2', [-1, 0], [i])
+    _t0 = pipe(_t0, _t1)
+    _t0 = divide(v, _t0)
+    _t1 = sum()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+method at(_self, _a) _0 is lambda@25:37 {
+    i = unarray1(_a)  // 25:37
+    v = unlambda@25:37(_self)
+    _t0 = size(v)
+    _t0 = range(1, _t0)
+    _t1 = curryLambda('aRecip:2', [0, -1], [i])
+    _t0 = pipe(_t0, _t1)
+    _t0 = divide(v, _t0)
+    _t1 = sum()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+method multiply_A(v) {
+    _t0 = size(v)  // 19:25
+    _t0 = matrix([_t0], lambda@20:36(v))
+    _t1 = save()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+method multiply_A_At(v) {
+    _t0 = multiply_A(v)  // 29:28
+    _t0 = multiply_At(_t0)
+    return _t0
+}
+method multiply_At(v) {
+    _t0 = size(v)  // 24:26
+    _t0 = matrix([_t0], lambda@25:37(v))
+    _t1 = save()
+    _t0 = pipe(_t0, _t1)
+    return _t0
+}
+method nextState(_loop, _state, _element) _0 is loop@5 {
+    u, v = unloop@5_state(_state)
+    v = multiply_A_At(u)  // 6:2
+    u = multiply_A_At(v)  // 7:2
+    return loop@5_state(u, v)
+}
+---
+    n = 100  // 1:0
+    u = newMatrix([n], 1)  // 2:0
+    v = None  // 3:0
+    _t0 = range(1, 10)  // 5:0
+    _t0 = iterate(_t0, EnumerateValues, loop@5, loop@5_state(u, v))
+    u, v = unloop@5_state(_t0)
+    _t0 = multiply(u, v)  // 10:0
+    _t1 = sum()
+    vBv = pipe(_t0, _t1)
+    _t0 = multiply(v, v)  // 11:0
+    _t1 = sum()
+    vv = pipe(_t0, _t1)
+    _t0 = divide(vBv, vv)  // 12:0
+    _t0 = sqrt(_t0)
+    return _t0
+*/
