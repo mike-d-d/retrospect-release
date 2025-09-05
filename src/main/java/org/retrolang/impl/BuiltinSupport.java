@@ -502,11 +502,6 @@ class BuiltinSupport {
     for (Class<?> nestedClass : klass.getDeclaredClasses()) {
       if (BuiltinMethod.class.isAssignableFrom(nestedClass)) {
         addMethodFromNestedClass(cName, nestedClass, types, functions);
-      } else {
-        // Core includes definitions of other classes (e.g. FixedArrayType), but none of the other
-        // classes are expected to.
-        Preconditions.checkArgument(
-            klass == Core.class, "%s does not extend BuiltinMethod", nestedClass);
       }
     }
   }

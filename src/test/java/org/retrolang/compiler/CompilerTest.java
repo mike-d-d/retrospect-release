@@ -108,8 +108,8 @@ public class CompilerTest {
       System.out.format("** %s:\n%s\n", testProgram.name(), result);
       if (expected != null) {
         assertWithMessage("Compilation results don't match")
-            .that(cleanLines(expected))
-            .isEqualTo(cleanLines(result));
+            .that(cleanLines(result))
+            .isEqualTo(cleanLines(expected));
       }
     } catch (CompileError e) {
       errMsg = (errMsg == null) ? "(no error expected)" : errMsg.trim();

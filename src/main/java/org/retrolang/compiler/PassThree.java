@@ -81,35 +81,16 @@ class PassThree extends VisitorBase<Void> {
   }
 
   private void emitCompoundAssign(Local lhs, int assignType, Expr rhs) {
-    Expr lambda;
-    // "|=" is a bit of an oddball because it uses at() with the arguments reversed instead of
-    // pipe().
-    if (assignType == TokenType.PIPE_EQUALS) {
-      // We need to emit a call to curryLambda to construct [x, y] -> at(y, x):
-      //    lambda = curryLambda(at, [2, 1], [])
-      //
-      Local lambdaTmp = blockCompiler.newTmp();
-      Vm.VirtualMachine vm = blockCompiler.symbols.vm;
-      Expr twoOne = vm.arrayOfSize(2).make(vm.asExpr(2), vm.asExpr(1));
-      blockCompiler.ib.emitCall(
-          lambdaTmp,
-          vmCore().lookupFunction("curryLambda", 3),
-          blockCompiler.symbols.vmAt.asLambdaExpr(),
-          twoOne,
-          vm.arrayOfSize(0).make());
-      lambda = lambdaTmp;
-    } else {
-      // "&=" doesn't use binaryUpdate because "&" operates on a whole collection rather than
-      // distributing across it.
-      if (assignType == TokenType.CONCAT_EQUALS) {
-        blockCompiler.ib.emitCall(lhs, blockCompiler.symbols.vmConcatUpdate, lhs, rhs);
-        return;
-      }
-      String fnName = Symbols.FUNCTION_NAME_FROM_ASSIGNMENT_TOKEN.get(assignType);
-      Vm.Function fn = vmCore().lookupFunction(fnName, 2);
-      lambda = fn.asLambdaExpr();
+    // "&=" doesn't use binaryUpdate because "&" operates on a whole collection rather than
+    // distributing across it.
+    if (assignType == TokenType.CONCAT_EQUALS) {
+      blockCompiler.ib.emitCall(lhs, blockCompiler.symbols.vmConcatUpdate, lhs, rhs);
+      return;
     }
-    blockCompiler.ib.emitCall(lhs, blockCompiler.symbols.vmBinaryUpdate, lhs, lambda, rhs);
+    String fnName = Symbols.FUNCTION_NAME_FROM_ASSIGNMENT_TOKEN.get(assignType);
+    Vm.Function fn = vmCore().lookupFunction(fnName, 2);
+    blockCompiler.ib.emitCall(
+        lhs, blockCompiler.symbols.vmBinaryUpdate, lhs, fn.asLambdaExpr(), rhs);
   }
 
   @Override

@@ -22,9 +22,15 @@ function f(nums, x) = nums | -> # ** x | sum
 function f2(nums, x) = nums ^** x | sum
 
 /* COMPILE ():
+private compound iLambda@6:23{x} is Lambda
 private compound lambda@4:29{x} is Lambda
 function f2(a0, a1)
 function f(a0, a1)
+method at(_a0, _a1) _0 is iLambda@6:23 {
+    x = uniLambda@6:23(_a0)  // 6:23
+    _a0 = exponent(_a1, x)
+    return _a0
+}
 method at(_self, #) _0 is lambda@4:29 {
     x = unlambda@4:29(_self)  // 4:29
     _t0 = exponent(#, x)
@@ -37,8 +43,7 @@ method f(nums, x) {
     return _t0
 }
 method f2(nums, x) {
-    _t0 = curryLambda('exponent:2', [0, -1], [x])  // 6:23
-    _t0 = pipe(nums, _t0)
+    _t0 = pipe(nums, iLambda@6:23(x))  // 6:23
     _t1 = sum()
     _t0 = pipe(_t0, _t1)
     return _t0

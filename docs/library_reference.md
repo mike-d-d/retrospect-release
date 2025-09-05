@@ -757,37 +757,6 @@ x += 1
 
 will fail because `x` is a computed matrix and its elements cannot be updated.
 
-### `curryLambda(lambda, args, values)`
-
-(`curryLambda` is primarily intended for use by the compiler when compiling
-expressions that use distributed operators or functions (the `^` symbol); users
-are unlikely to call it directly.)
-
-Given a lambda that takes an array of arguments, `curryLambda(lambda, args,
-values)` returns a new lambda. The value of `args` must be an array of integers,
-and describes how to construct the array of arguments that will be passed to the
-original lambda, given the argument `x` to the curried lambda:
-
-*   If an element of `args` is 0, the corresponding argument will be `x`;
-*   If an element of `args` is a positive integer `i`, the corresponding
-    argument will be `x[i]`; and
-*   If an element of `args` is a negative integer `i`, the corresponding
-    argument will be `values[-i]`.
-
-Or, expressed as Retrospect code,
-
-```go
-curryLambda(lambda, args, values) @ x
-```
-
-is equivalent to
-
-```go
-lambda @ (args | i -> i == 0 ? x : i < 0 ? values[-i] : x[i] | save)
-```
-
-For example, `curry([x, y] -> x-y, [-1, 0], [z])` is equivalent to `y -> z-y`.
-
 ### U32 conversions and comparisons
 
 `number(u32)` and `u32(number)` convert values to and from U32. All U32 values

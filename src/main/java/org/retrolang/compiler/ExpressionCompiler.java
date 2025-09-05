@@ -84,38 +84,9 @@ class ExpressionCompiler extends VisitorBase<Expr> {
     return blockCompiler.symbols.vmCore;
   }
 
-  private Expr makeArray(Expr... elements) {
-    return vm().arrayOfSize(elements.length).make(elements);
-  }
-
   /** If we need to store the result in a Local, use this one. */
   Local outputLocal() {
     return blockCompiler.newTmp();
-  }
-
-  /**
-   * To compile e.g. "{@code a != 0}", we emit a call to "{@code equal(a, 0)}" and then call {@code
-   * booleanNegate()} on the result. The default implementation calls "{@code not()}" on the result,
-   * but Tester overrides this to just invert the branch.
-   */
-  Local booleanNegate(Local x) {
-    // We can do the negate in place, since our argument is always the result of
-    // an immediately preceding call instruction.
-    blockCompiler.ib.emitCall(x, blockCompiler.symbols.vmNot, x);
-    return x;
-  }
-
-  /** Applies the given IntFunction to each int in 0 .. n-1 and returns the results as an array. */
-  private Expr[] toArray(IntFunction<Expr> intFunc, int n) {
-    return IntStream.range(0, n).mapToObj(intFunc).toArray(Expr[]::new);
-  }
-
-  /** Compiles a function call, given a function to compile each arg. */
-  Local compileFnCall(Vm.Function fn, IntFunction<Expr> args) {
-    int tmpState = blockCompiler.saveTmpState();
-    Expr[] compiledArgs = toArray(args, fn.numArgs());
-    blockCompiler.resetTmps(tmpState);
-    return fnCall(fn, compiledArgs);
   }
 
   /**
@@ -201,11 +172,7 @@ class ExpressionCompiler extends VisitorBase<Expr> {
     Bits distribute = Bits.fromPredicate(n - 1, i -> pairs.get(i).y.dist != null);
     // An IntFunction to get the value of the i'th element.
     IntFunction<Expr> elements = i -> compileStructElement(pairs.get(i).y);
-    if (distribute.isEmpty()) {
-      return dict.make(toArray(elements, n));
-    } else {
-      return compileDistributed(dict.asLambdaExpr(), distribute, elements, n);
-    }
+    return compileDistributable(new Distributable.FromCompound(dict, n), distribute, elements);
   }
 
   private Expr compileStructElement(StructElementContext element) {
@@ -285,31 +252,17 @@ class ExpressionCompiler extends VisitorBase<Expr> {
       leftArgNum = 0;
     }
     Vm.Function fn = vmCore().lookupFunction(fnName, 2);
+    Distributable distributable = new Distributable.FromFunction(fn);
+    if (invert) {
+      distributable = new Distributable.NestedFunction(blockCompiler.symbols.vmNot, distributable);
+    }
     IntFunction<Expr> args =
         i -> {
           ExpressionContext expr = (i == leftArgNum) ? ctx.left : ctx.right;
           return (expr == null) ? blockCompiler.symbols.vmNone : blockCompiler.compile(expr);
         };
     Bits distribute = Bits.fromPredicate(1, i -> (i == leftArgNum) ? lDistribute : rDistribute);
-    if (distribute.isEmpty()) {
-      Local result = compileFnCall(fn, args);
-      return invert ? booleanNegate(result) : result;
-    } else {
-      Local result = compileDistributed(fn.asLambdaExpr(), distribute, args, 2);
-      if (invert) {
-        // e.g. "x ^!= 3" will compile to "x | -> # == 3 | -> not #"
-        // We could instead add a builtin like
-        //    function lambdaNot(lambda) = -> not (lambda @ #)
-        // and distribute the result of that instead, but I don't think there would be any
-        // performance benefit to doing so.
-        blockCompiler.ib.emitCall(
-            result,
-            blockCompiler.symbols.vmPipe,
-            result,
-            blockCompiler.symbols.vmNot.asLambdaExpr());
-      }
-      return result;
-    }
+    return compileDistributable(distributable, distribute, args);
   }
 
   @Override
@@ -458,19 +411,13 @@ class ExpressionCompiler extends VisitorBase<Expr> {
         // language doesn't support calling them directly.
         throw error("'%s' returns %s results", name, numResults);
       }
+    } else if (numResults == 0 && !distribute.isEmpty()) {
+      throw error("Cannot distribute a procedure");
     }
     if (inOut.isEmpty()) {
-      IntFunction<Expr> compiledArgs = i -> blockCompiler.compile(args.get(i).expression());
-      if (distribute.isEmpty()) {
-        return compileFnCall(fn, compiledArgs);
-      } else {
-        Expr lambda = fn.asLambdaExpr();
-        if (lambda == null) {
-          // I don't think this can happen?
-          throw error("Cannot distribute '%s'", fnName.getText());
-        }
-        return compileDistributed(lambda, distribute, compiledArgs, numArgs);
-      }
+      IntFunction<Expr> argsSupplier = i -> blockCompiler.compile(args.get(i).expression());
+      Distributable distributable = new Distributable.FromFunction(fn);
+      return compileDistributable(distributable, distribute, argsSupplier);
     } else if (!distribute.isEmpty()) {
       throw error("Cannot distribute a function with inout parameters");
     }
@@ -518,89 +465,149 @@ class ExpressionCompiler extends VisitorBase<Expr> {
   }
 
   /**
-   * Compiles a call to a function that is distributed over one or more arguments.
+   * Compiles a call to a Distributable that may be distributed over one or more arguments.
    *
-   * @param lambda a lambda for the function to distribute, or null to just construct an array from
-   *     the arguments
-   * @param distribute indicates which of the arguments are to be distributed; should be non-empty
+   * @param distribute indicates which of the arguments are to be distributed
    * @param args an IntFunction to compile the nth argument
-   * @param n the number of arguments to the lambda
    */
-  private Local compileDistributed(Expr lambda, Bits distribute, IntFunction<Expr> args, int n) {
-    assert distribute.max() < n;
+  private Expr compileDistributable(
+      Distributable distributable, Bits distribute, IntFunction<Expr> args) {
     int nDistribute = distribute.count();
-    if (nDistribute > 2) {
+    int numArgs = distributable.numArgs();
+    int tmpState = blockCompiler.saveTmpState();
+    if (nDistribute == 0) {
+      Expr[] compiledArgs = IntStream.range(0, numArgs).mapToObj(args).toArray(Expr[]::new);
+      if (!distributable.applyResultReferencesArgs()) {
+        blockCompiler.resetTmps(tmpState);
+      }
+      if (distributable instanceof Distributable.NestedFunction nested
+          && this instanceof Tester tester
+          && nested.outer == blockCompiler.symbols.vmNot) {
+        // Instead of calling not() on the the inner result and then testing that, just do an
+        // inverted test on the inner result.
+        Local innerResult =
+            (Local) nested.inner.compileApply(compiledArgs, blockCompiler.ib, this::outputLocal);
+        tester.emitBranch(innerResult, !tester.branchIfTrue);
+        return null;
+      }
+      return distributable.compileApply(compiledArgs, blockCompiler.ib, this::outputLocal);
+    } else if (nDistribute > 2) {
       throw error("Cannot distribute over more than two parameters");
     }
-    // Knowing that we're constructing an array allows us to optimize "[^a, ^b]" (it can just be
-    // a join, instead of a join piped into "[x, y] -> [x, y]").
-    boolean toArray = (lambda == null);
-    if (toArray) {
-      lambda = vm().arrayOfSize(n).asLambdaExpr();
-    }
-    // Unless all the arguments are distributed we need to curry the lambda; for example,
-    // to compile "f(a, b, ^c, ^d, e)" we'll emit
-    //    join(c, d) | curryLambda(fLambda, [-1, -2, 1, 2, -3], [a, b, e])
-    //
-    // See http://docs/library_reference.md?cl=head#currylambdalambda-args-values for
-    // the full explanation of curryLambda; the short version is that
-    // curryLambda(lambda, args, values), where
-    //   lambda is a Lambda that accepts an array of length n as an argument,
-    //   args is an array of n ints
-    //   values is an array
-    // returns a Lambda such that
-    //   curryLambda(lambda, args, values) @ x
-    // is equivalent to
-    //   lambda @ (newArg(^args, values, x) | save)
-    // where newArg is
-    //   function newArg(arg, values, x) {
-    //     if i == 0 { return x }
-    //     else if i > 0 { return x[i] }
-    //     else { return values[-i] }
-    //  }
-
-    // If we're going to call curry, curryArgs will contain the elements of the second ("args")
-    // array (the values array will be constructed later).
-    Expr[] curryArgs = (n == nDistribute) ? null : new Expr[n];
-    int tmpState = blockCompiler.saveTmpState();
+    // Save the top-level token before we start descending into the arguments
+    Token startToken = currentToken();
     int d1 = distribute.min();
+    int d2 = distribute.max();
+    assert d2 < numArgs && (d1 != d2) == (nDistribute == 2);
     Expr pipeFrom = args.apply(d1);
-    if (nDistribute == 1) {
-      if (curryArgs != null) {
-        curryArgs[d1] = vm().asExpr(0);
-      }
-    } else {
-      assert nDistribute == 2;
-      int d2 = distribute.max();
-      if (curryArgs != null) {
-        curryArgs[d1] = vm().asExpr(1);
-        curryArgs[d2] = vm().asExpr(2);
-      }
+    if (d1 != d2) {
       Expr pipeFrom2 = args.apply(d2);
-      blockCompiler.resetTmps(tmpState);
-      if (toArray && curryArgs == null) {
-        return fnCall(vmCore().lookupFunction("join", 2), pipeFrom, pipeFrom2);
-      }
-      Local joined = blockCompiler.newTmp();
-      blockCompiler.ib.emitCall(joined, vmCore().lookupFunction("join", 2), pipeFrom, pipeFrom2);
-      pipeFrom = joined;
-    }
-    if (curryArgs != null) {
-      Expr[] values = new Expr[n - nDistribute];
-      int nextValue = 0;
-      for (int i = 0; i < n; i++) {
-        if (!distribute.test(i)) {
-          values[nextValue++] = args.apply(i);
-          curryArgs[i] = vm().asExpr(-nextValue);
+      if (pipeFrom2.equals(pipeFrom)) {
+        // Joining a collection with itself, we don't actually need a join
+        nDistribute = 1;
+      } else {
+        blockCompiler.resetTmps(tmpState);
+        Vm.Function join = vmCore().lookupFunction("join", 2);
+        if (numArgs == 2 && distributable instanceof Distributable.FromArray) {
+          // `[^a, ^b]` is just `join(a, b)`, we don't need to pipe it through `[x, y] -> [x, y]`
+          return fnCall(join, pipeFrom, pipeFrom2);
         }
+        Local joined = blockCompiler.newTmp();
+        blockCompiler.ib.emitCall(joined, join, pipeFrom, pipeFrom2);
+        pipeFrom = joined;
       }
-      Local curried = blockCompiler.newTmp();
-      Vm.Function curry = blockCompiler.symbols.vmCore.lookupFunction("curryLambda", 3);
-      blockCompiler.ib.emitCall(curried, curry, lambda, makeArray(curryArgs), makeArray(values));
-      lambda = curried;
     }
+    Symbols symbols = blockCompiler.symbols;
+    // If all the args are distributed and the distributable has a corresponding lambda,
+    // we can just use it.
+    Vm.Expr lambda = (nDistribute == numArgs) ? distributable.asLambda() : null;
+    if (lambda == null) {
+      // Otherwise we need to define a new lambda type
+      Vm.InstructionBlock ib = symbols.module.newInstructionBlock(2, 1, symbols.source);
+      ib.setLineNumber(startToken.getLine(), startToken.getCharPositionInLine());
+      Vm.Local self = ib.addArg("_a0");
+      Vm.Local input = ib.addArg("_a1");
+      // The elements of the lambda compound we will create
+      List<Vm.Expr> lambdaElements = new ArrayList<>();
+      // A local in our InstructionBlock corresponding to each lambda element
+      List<Vm.Local> locals = new ArrayList<>();
+      // A name for each element; if initialized from a local we'll use its name, otherwise
+      // something like "e42"
+      List<String> elementNames = new ArrayList<>();
+      // The arguments that the Distributable will be applied to in the lambda body
+      Vm.Expr[] applyArgs = new Vm.Expr[numArgs];
+      applyArgs[distribute.min()] = input;
+      if (nDistribute == 2) {
+        // Input is a pair, extract the elements
+        Vm.Local input2 = ib.newLocal("_a2");
+        Vm.Function unPair = symbols.vm.arrayOfSize(2).extract();
+        ib.emitCall(new Vm.Local[] {input, input2}, unPair, input);
+        applyArgs[distribute.max()] = input2;
+      } else {
+        // Usually redundant (since the preceding statement assigned the same value to
+        // distribute.min(), which is usually the same if nDistribute == 1) *but* if the input was
+        // a collection joined with itself we reduced nDistribute above and we want to use the same
+        // input value for both distributable args.
+        applyArgs[distribute.max()] = input;
+      }
+      for (int i = 0; i < numArgs; i++) {
+        assert (applyArgs[i] != null) == distribute.test(i);
+        if (distribute.test(i)) {
+          // Already handled above
+          continue;
+        }
+        Vm.Expr arg = args.apply(i);
+        if (arg instanceof Vm.Value) {
+          // Constant arguments don't need to be lamba elements
+          applyArgs[i] = arg;
+          continue;
+        } else {
+          // If the same arg appears more than once we don't need to use another element for it.
+          int j = lambdaElements.indexOf(arg);
+          if (j >= 0) {
+            applyArgs[i] = locals.get(j);
+            continue;
+          }
+        }
+        // This argument needs to be saved as an element of the lambda compound
+        String name = (arg instanceof Vm.Local) ? arg.toString() : "e" + lambdaElements.size();
+        Vm.Local newLocal = ib.newLocal(name);
+        lambdaElements.add(arg);
+        elementNames.add(name);
+        locals.add(newLocal);
+        applyArgs[i] = newLocal;
+      }
+      // Generate a name for the new lambda type ("iLambda" for implicit lambda).
+      // The name doesn't need to be unique (since it's private to this module), but putting the
+      // token position in there might help with debugging.
+      String name =
+          String.format("iLambda@%s:%s", startToken.getLine(), startToken.getCharPositionInLine());
+      Vm.Type type;
+      if (lambdaElements.isEmpty()) {
+        Vm.Singleton singleton =
+            symbols.module.newSingleton(name, Vm.Access.PRIVATE, symbols.vmLambda);
+        type = singleton.asType();
+        lambda = singleton;
+      } else {
+        Vm.Compound compound =
+            symbols.module.newCompoundType(
+                name, elementNames.toArray(String[]::new), Vm.Access.PRIVATE, symbols.vmLambda);
+        type = compound.asType();
+        lambda = compound.make(lambdaElements.toArray(Vm.Expr[]::new));
+        // Add an instruction to the lambda body to extract the elements from the compound
+        ib.emitCall(locals.toArray(Vm.Local[]::new), compound.extract(), self);
+      }
+      // Finish the lambda body by applying the distributable and returning the result.
+      // We can use the "self" argument to store the result (rather than a temp), since we're about
+      // to return anyway.
+      Vm.Expr lambdaResult = distributable.compileApply(applyArgs, ib, () -> self);
+      ib.emitReturn(lambdaResult);
+      ib.done();
+      ib.addMethod(symbols.vmAt, type.argType(0, true), false);
+    }
+    // For the original (distributed) call we need a call to "pipe".
     blockCompiler.resetTmps(tmpState);
-    return fnCall(blockCompiler.symbols.vmPipe, pipeFrom, lambda);
+    return fnCall(symbols.vmPipe, pipeFrom, lambda);
   }
 
   /**
@@ -613,13 +620,9 @@ class ExpressionCompiler extends VisitorBase<Expr> {
       assert distributed.isEmpty();
       return vm().arrayOfSize(0).make();
     }
-    // An IntFunction to get the value of the i'th entry.
     IntFunction<Expr> compiledEntries = i -> blockCompiler.compile(exprs.get(i).expression());
-    if (distributed.isEmpty()) {
-      return makeArray(toArray(compiledEntries, n));
-    } else {
-      return compileDistributed(null, distributed, compiledEntries, n);
-    }
+    Distributable distributable = new Distributable.FromArray(vm().arrayOfSize(n), n);
+    return compileDistributable(distributable, distributed, compiledEntries);
   }
 
   @Override
@@ -631,14 +634,10 @@ class ExpressionCompiler extends VisitorBase<Expr> {
     if (indexDistributed == null) {
       // The index is "_"
       Vm.Function uncompound = blockCompiler.symbols.module.unCompound();
-      int tmpState = blockCompiler.saveTmpState();
-      Expr base = blockCompiler.compile(baseExpr);
-      blockCompiler.resetTmps(tmpState);
-      if (!distributeBase) {
-        return fnCall(uncompound, base);
-      } else {
-        return fnCall(blockCompiler.symbols.vmPipe, base, uncompound.asLambdaExpr());
-      }
+      IntFunction<Expr> uncompoundArg = i -> blockCompiler.compile(baseExpr);
+      Bits distributeUncompound = Bits.fromBooleans(distributeBase);
+      return compileDistributable(
+          new Distributable.FromFunction(uncompound), distributeUncompound, uncompoundArg);
     }
     // "a.x", "a[...]", and "a @ x" all turn into a (possibly distributed) call to at()
     IntFunction<Expr> atArgs =
@@ -647,11 +646,8 @@ class ExpressionCompiler extends VisitorBase<Expr> {
                 ? blockCompiler.compile(baseExpr)
                 : blockCompiler.compileIndex(indexExpr, indexDistributed);
     Bits distributeAt = Bits.fromBooleans(distributeBase, !indexDistributed.isEmpty());
-    if (distributeAt.isEmpty()) {
-      return compileFnCall(blockCompiler.symbols.vmAt, atArgs);
-    } else {
-      return compileDistributed(blockCompiler.symbols.vmAt.asLambdaExpr(), distributeAt, atArgs, 2);
-    }
+    return compileDistributable(
+        new Distributable.FromFunction(blockCompiler.symbols.vmAt), distributeAt, atArgs);
   }
 
   /**
@@ -777,12 +773,6 @@ class ExpressionCompiler extends VisitorBase<Expr> {
           throw Compiler.error(token, "Not a sensible condition to test");
         }
       }
-    }
-
-    @Override
-    @Nullable Local booleanNegate(Local x) {
-      emitBranch(x, !branchIfTrue);
-      return null;
     }
 
     /**

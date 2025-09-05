@@ -244,7 +244,11 @@ class BlockCompiler {
   Expr compileIndex(IndexContext index, Bits distributed) {
     int tokenType = index.start.getType();
     if (tokenType == TokenType.LEFT_SQUARE) {
-      return expressionCompiler.compileExpressions(index.arrayElement(), distributed);
+      return expressionCompiler.visitWithCurrentNode(
+          index,
+          unused -> {
+            return expressionCompiler.compileExpressions(index.arrayElement(), distributed);
+          });
     } else if (tokenType == TokenType.AT) {
       return compile(index.expression());
     } else {

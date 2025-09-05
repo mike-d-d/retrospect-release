@@ -20,26 +20,10 @@ import static org.retrolang.impl.Value.addRef;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
-import org.retrolang.impl.BaseType;
-import org.retrolang.impl.BuiltinMethod;
+import org.retrolang.impl.*;
 import org.retrolang.impl.BuiltinMethod.Caller;
 import org.retrolang.impl.BuiltinMethod.Fn;
-import org.retrolang.impl.CodeGen;
-import org.retrolang.impl.Condition;
-import org.retrolang.impl.Core;
-import org.retrolang.impl.Err;
 import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.impl.FrameLayout;
-import org.retrolang.impl.NumValue;
-import org.retrolang.impl.RC;
-import org.retrolang.impl.RValue;
-import org.retrolang.impl.RefCounted;
-import org.retrolang.impl.ResultsInfo;
-import org.retrolang.impl.TProperty;
-import org.retrolang.impl.TState;
-import org.retrolang.impl.Value;
-import org.retrolang.impl.ValueUtil;
-import org.retrolang.impl.VmFunctionBuilder;
 
 /** Core methods for Matrix. */
 public final class MatrixCore {
@@ -934,11 +918,7 @@ public final class MatrixCore {
         CollectionCore.TRANSFORMED_ITERATOR,
         iteratorForNonEmptyBaseMatrixWithSizes(tstate, sizes, eKind),
         eKind,
-        tstate.compound(
-            Core.CURRIED_LAMBDA,
-            element.asLambdaExpr(),
-            tstate.arrayValue(NumValue.NEGATIVE_ONE, NumValue.ZERO),
-            tstate.arrayValue(m)));
+        tstate.compound(BinaryOp.ELEMENT.partialLeft, m));
   }
 
   /**
@@ -1660,22 +1640,54 @@ public final class MatrixCore {
     }
   }
 
-  private static final Value ZERO_NEG1 =
-      Core.FixedArrayType.withSize(2).uncountedOf(NumValue.ZERO, NumValue.NEGATIVE_ONE);
-  private static final Value NEG1_ZERO =
-      Core.FixedArrayType.withSize(2).uncountedOf(NumValue.NEGATIVE_ONE, NumValue.ZERO);
-
   /**
-   * Returns {@code lambda[arg, ^m]} (if {@code argIsLeft} is true) or {@code lambda[^m, arg]} (if
-   * {@code argIsLeft} is false).
+   * A wrapper for a binary VmFunction that supports mapping it over a Matrix with a constant left
+   * or right argument.
+   *
+   * <p>Calls to these functions with a Matrix as one argument and a Number as the other are
+   * implicitly distributed, but the usual implementation of distributed operations (where the
+   * compiler defines a new lambda type) would be awkward here, so instead we create
+   * PartialApplication baseTypes (which were defined just to support this use).
    */
-  @RC.Out
-  private static Value curryBinaryOp(
-      TState tstate, @RC.In Value m, @RC.In Value lambda, @RC.In Value arg, boolean argIsLeft) {
-    Value curriedLambda =
-        tstate.compound(
-            Core.CURRIED_LAMBDA, lambda, argIsLeft ? NEG1_ZERO : ZERO_NEG1, tstate.arrayValue(arg));
-    return tstate.compound(CollectionCore.TRANSFORMED_MATRIX, m, curriedLambda);
+  private enum BinaryOp {
+    ADD(Core.add.fn()),
+    SUBTRACT(Core.subtract.fn()),
+    MULTIPLY(Core.multiply.fn()),
+    DIVIDE(Core.divide.fn()),
+    MODULO(Core.modulo.fn()),
+    EXPONENT(Core.exponent.fn()),
+    ELEMENT(element.fn());
+
+    /**
+     * A single-element Lambda baseType whose {@code at(self, arg)} method calls {@code op(self_,
+     * arg)}.
+     */
+    final BaseType partialLeft;
+
+    /**
+     * A single-element Lambda baseType whose {@code at(self, arg)} method calls {@code op(arg,
+     * self_)}.
+     */
+    final BaseType partialRight;
+
+    BinaryOp(VmFunction function) {
+      partialLeft = function.partialApplication(1);
+      partialRight = function.partialApplication(0);
+    }
+
+    /** Returns {@code fn(^m, rightValue)} (aka {@code m | # -> function(#, rightValue)}). */
+    @RC.Out
+    Value applyMatrixLeft(TState tstate, @RC.In Value m, @RC.In Value rightValue) {
+      return tstate.compound(
+          CollectionCore.TRANSFORMED_MATRIX, m, tstate.compound(partialRight, rightValue));
+    }
+
+    /** Returns {@code fn(leftValue, ^m)} (aka {@code m | # -> function(leftValue, #)}). */
+    @RC.Out
+    Value applyMatrixRight(TState tstate, @RC.In Value m, @RC.In Value leftValue) {
+      return tstate.compound(
+          CollectionCore.TRANSFORMED_MATRIX, m, tstate.compound(partialLeft, leftValue));
+    }
   }
 
   /**
@@ -1707,7 +1719,7 @@ public final class MatrixCore {
    */
   @Core.Method("add(Matrix, Number)")
   static Value addMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.add.asLambdaExpr(), x, false);
+    return BinaryOp.ADD.applyMatrixLeft(tstate, m, x);
   }
 
   /**
@@ -1717,7 +1729,7 @@ public final class MatrixCore {
    */
   @Core.Method("add(Number, Matrix)")
   static Value addNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.add.asLambdaExpr(), x, true);
+    return BinaryOp.ADD.applyMatrixRight(tstate, m, x);
   }
 
   /**
@@ -1738,7 +1750,7 @@ public final class MatrixCore {
    */
   @Core.Method("subtract(Matrix, Number)")
   static Value subtractMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.subtract.asLambdaExpr(), x, false);
+    return BinaryOp.SUBTRACT.applyMatrixLeft(tstate, m, x);
   }
 
   /**
@@ -1748,7 +1760,7 @@ public final class MatrixCore {
    */
   @Core.Method("subtract(Number, Matrix)")
   static Value subtractNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.subtract.asLambdaExpr(), x, true);
+    return BinaryOp.SUBTRACT.applyMatrixRight(tstate, m, x);
   }
 
   /**
@@ -1769,7 +1781,7 @@ public final class MatrixCore {
    */
   @Core.Method("multiply(Matrix, Number)")
   static Value multiplyMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.multiply.asLambdaExpr(), x, false);
+    return BinaryOp.MULTIPLY.applyMatrixLeft(tstate, m, x);
   }
 
   /**
@@ -1779,7 +1791,7 @@ public final class MatrixCore {
    */
   @Core.Method("multiply(Number, Matrix)")
   static Value multiplyNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.multiply.asLambdaExpr(), x, true);
+    return BinaryOp.MULTIPLY.applyMatrixRight(tstate, m, x);
   }
 
   /**
@@ -1800,7 +1812,7 @@ public final class MatrixCore {
    */
   @Core.Method("divide(Matrix, Number)")
   static Value divideMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.divide.asLambdaExpr(), x, false);
+    return BinaryOp.DIVIDE.applyMatrixLeft(tstate, m, x);
   }
 
   /**
@@ -1810,7 +1822,7 @@ public final class MatrixCore {
    */
   @Core.Method("divide(Number, Matrix)")
   static Value divideNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.divide.asLambdaExpr(), x, true);
+    return BinaryOp.DIVIDE.applyMatrixRight(tstate, m, x);
   }
 
   /**
@@ -1831,7 +1843,7 @@ public final class MatrixCore {
    */
   @Core.Method("modulo(Matrix, Number)")
   static Value moduloMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.modulo.asLambdaExpr(), x, false);
+    return BinaryOp.MODULO.applyMatrixLeft(tstate, m, x);
   }
 
   /**
@@ -1841,7 +1853,7 @@ public final class MatrixCore {
    */
   @Core.Method("modulo(Number, Matrix)")
   static Value moduloNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.modulo.asLambdaExpr(), x, true);
+    return BinaryOp.MODULO.applyMatrixRight(tstate, m, x);
   }
 
   /**
@@ -1862,7 +1874,7 @@ public final class MatrixCore {
    */
   @Core.Method("exponent(Matrix, Number)")
   static Value exponentMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.exponent.asLambdaExpr(), x, false);
+    return BinaryOp.EXPONENT.applyMatrixLeft(tstate, m, x);
   }
 
   /**
@@ -1872,7 +1884,7 @@ public final class MatrixCore {
    */
   @Core.Method("exponent(Number, Matrix)")
   static Value exponentNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.exponent.asLambdaExpr(), x, true);
+    return BinaryOp.EXPONENT.applyMatrixRight(tstate, m, x);
   }
 
   private MatrixCore() {}

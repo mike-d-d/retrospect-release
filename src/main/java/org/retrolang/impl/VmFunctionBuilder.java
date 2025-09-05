@@ -66,7 +66,7 @@ public abstract class VmFunctionBuilder {
    * after the module has been initialized.
    */
   public final Singleton asLambdaExpr() {
-    return fn().asLambdaExpr;
+    return fn().asLambdaExpr();
   }
 
   /** Creates a zero-arg function that always returns the given value. */

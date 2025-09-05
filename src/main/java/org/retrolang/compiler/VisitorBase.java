@@ -20,6 +20,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.FormatMethod;
 import java.util.function.Function;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.retrolang.compiler.RetrospectParser.ParenExpressionContext;
 
@@ -74,14 +75,19 @@ class VisitorBase<T> extends RetrospectBaseVisitor<T> {
     return visit(ctx.expression());
   }
 
+  /** Returns the first token of the current node. */
+  Token currentToken() {
+    return ((ParserRuleContext) currentNode).start;
+  }
+
   /** Returns a {@link CompileError} pointing at the current node. */
   CompileError error(String msg) {
-    return Compiler.error(((ParserRuleContext) currentNode).start, msg);
+    return Compiler.error(currentToken(), msg);
   }
 
   /** Returns a {@link CompileError} pointing at the current node. */
   @FormatMethod
   CompileError error(String fmt, Object... fmtArgs) {
-    return Compiler.error(((ParserRuleContext) currentNode).start, fmt, fmtArgs);
+    return Compiler.error(currentToken(), fmt, fmtArgs);
   }
 }

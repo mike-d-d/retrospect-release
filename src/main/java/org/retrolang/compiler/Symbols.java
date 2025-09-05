@@ -285,7 +285,9 @@ class Symbols {
       opBuilder.put(opTokenType, entry.getValue());
       Integer assignmentTokenType = TokenType.MAP.get("'" + entry.getKey() + "='");
       if (assignmentTokenType != null) {
-        assignmentBuilder.put(assignmentTokenType, entry.getValue());
+        // "|=" is a special case; rather than using "pipe" it uses "reversedAt"
+        String fnName = entry.getKey().equals("|") ? "reversedAt" : entry.getValue();
+        assignmentBuilder.put(assignmentTokenType, fnName);
       }
     }
     FUNCTION_NAME_FROM_BINOP_TOKEN = opBuilder.buildOrThrow();

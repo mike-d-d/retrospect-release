@@ -16,5 +16,5 @@ function mmult(x, y) {
 /* RUN () RETURNS
   ReshapedArray([2, 1], [18, 1])
 ---
-allocated=16464/631, peak=144
+allocated=15824/605, peak=144
 */
