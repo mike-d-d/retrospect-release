@@ -20,12 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static org.retrolang.impl.Value.addRef;
 
-import org.retrolang.impl.Template.NumVar;
 import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.impl.Template.NumVar;
 
 @RunWith(JUnit4.class)
 public class FrameTest {

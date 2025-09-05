@@ -19,15 +19,6 @@ package org.retrolang.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.retrolang.code.Loop;
-import org.retrolang.impl.BaseType.SimpleStackEntryType;
-import org.retrolang.impl.BuiltinMethod.BuiltinStatic;
-import org.retrolang.impl.BuiltinMethod.Caller;
-import org.retrolang.impl.BuiltinMethod.Continuation;
-import org.retrolang.impl.BuiltinMethod.LoopContinuation;
-import org.retrolang.impl.BuiltinMethod.Saved;
-import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.util.Bits;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -44,6 +35,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.retrolang.code.Loop;
+import org.retrolang.impl.BaseType.SimpleStackEntryType;
+import org.retrolang.impl.BuiltinMethod.BuiltinStatic;
+import org.retrolang.impl.BuiltinMethod.Caller;
+import org.retrolang.impl.BuiltinMethod.Continuation;
+import org.retrolang.impl.BuiltinMethod.LoopContinuation;
+import org.retrolang.impl.BuiltinMethod.Saved;
+import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.util.Bits;
 
 /**
  * Statics-only class to enable scanning designated classes for definitions of Retrospect built-in
@@ -502,11 +502,6 @@ class BuiltinSupport {
     for (Class<?> nestedClass : klass.getDeclaredClasses()) {
       if (BuiltinMethod.class.isAssignableFrom(nestedClass)) {
         addMethodFromNestedClass(cName, nestedClass, types, functions);
-      } else {
-        // Core includes definitions of other classes (e.g. FixedArrayType), but none of the other
-        // classes are expected to.
-        Preconditions.checkArgument(
-            klass == Core.class, "%s does not extend BuiltinMethod", nestedClass);
       }
     }
   }

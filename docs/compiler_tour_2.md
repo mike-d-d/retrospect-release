@@ -108,7 +108,7 @@ Compound with its element set to the value of the local `x`.
 
 ## Defining the Lambda Method
 
-In order for the `lambda@4:29` values to be useable as Lambdas, they need a
+In order for the `lambda@4:29` values to be usable as Lambdas, they need a
 method for the standard `at(lambda, arg)` function. The compiler emits this
 method as well:
 
@@ -169,42 +169,12 @@ function f2(nums, x) = nums ^** x | sum
 
 This uses Retrospect's "`^`" notation for distributing a function or operator
 across a collection — in this case, across the left-hand argument to the "`**`"
-operator. A distributed function compiles to a call that pipes the collection
-through a Lambda, but instead of defining the Lambda with a new Compound and
-assocatied method for `at`, the compiler uses the `curryLambda` function to
-create an appropriate Lambda value.
+operator. A distributed function call compiles to essentially the same instructions
+as the equivalent pipe-through-a-lambda-expression, but the method for the new
+Lambda type is generated automatically by the compiler.
 
-`curryLambda` takes a Lambda (in this case, the one corresponding to the
-`exponent` function) and returns a new Lambda derived from it by fixing one or
-more of its arguments (in this case, fixing its second argument to the value of
-`x`, creating a single-argument Lambda). (Pedants might point out that this is
-more properly known as "partial application").
-
-The resulting code for `f2`:
-
-```
-method f2(nums, x) {
-    _t0 = curryLambda('exponent:2', [0, -1], [x])
-    _t0 = pipe(nums, _t0)
-    _t1 = sum()
-    _t0 = pipe(_t0, _t1)
-    return _t0
-}
-```
-
-`ExpressionCompiler.visitOpExpression` uses
-`ExpressionCompiler.compileDistributed` to emit the appropriate calls to
-`curryLambda` and `pipe`.
-
-Using `curryLambda` for distributed functions wasn't necessary — we could have
-chosen to have the compiler emit a new Compound and `at` method equivalent to
-the pipe-through-a-lambda-expression version. I don't expect there to be any
-performance difference, but using `curryLambda`
-
-*   reduces the complexity of the generated code (one less compound, one less
-    method definition), and
-*   is a step toward making some Lambdas inspectable by the Retrospect code that
-    uses them, which I anticipate being useful in the future.
+(`ExpressionCompiler.visitOpExpression` uses
+`ExpressionCompiler.compileDistributable` to emit the appropriate instructions.)
 
 --------------------------------------------------------------------------------
 

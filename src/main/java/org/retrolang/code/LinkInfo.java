@@ -16,18 +16,18 @@
 
 package org.retrolang.code;
 
-import org.retrolang.code.CodeValue.Const;
-import org.retrolang.code.ValueInfo.BinaryOps;
-import org.retrolang.util.Bits;
-import org.retrolang.util.SmallIntMap;
-import org.retrolang.util.SmallIntMap.EntryUpdater;
-import org.retrolang.util.SmallIntMapBase;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import org.retrolang.code.CodeValue.Const;
+import org.retrolang.code.ValueInfo.BinaryOps;
+import org.retrolang.util.Bits;
+import org.retrolang.util.SmallIntMap;
+import org.retrolang.util.SmallIntMap.EntryUpdater;
+import org.retrolang.util.SmallIntMapBase;
 
 /**
  * A LinkInfo represents what the CodeBuilder is able to infer about the state of execution at the

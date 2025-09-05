@@ -18,11 +18,6 @@ package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.retrolang.Vm;
-import org.retrolang.impl.BaseType.SimpleStackEntryType;
-import org.retrolang.impl.BaseType.StackEntryType;
-import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.util.Bits;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
@@ -30,6 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
+import org.retrolang.impl.BaseType.SimpleStackEntryType;
+import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.util.Bits;
 
 /** Implements Vm.Function. */
 public abstract class VmFunction implements Vm.Function {
@@ -46,7 +45,7 @@ public abstract class VmFunction implements Vm.Function {
   final int numArgs;
   final Bits inout;
   final int numResults;
-  final Singleton asLambdaExpr;
+  final Lambdas.AsLambdaExpr asLambdaExpr;
 
   VmFunction(String name, int numArgs, Bits inout, int numResults) {
     this.name = name;
@@ -54,7 +53,19 @@ public abstract class VmFunction implements Vm.Function {
     this.inout = inout;
     this.numResults = numResults;
     this.asLambdaExpr =
-        (numResults == 1 && inout.isEmpty()) ? new AsLambdaExpr(this).asValue() : null;
+        (numResults == 1 && inout.isEmpty()) ? new Lambdas.AsLambdaExpr(this) : null;
+  }
+
+  /**
+   * Returns a new compound baseType that is a subtype of {@link Core#LAMBDA}. The compound's size
+   * is one less than {@link #numArgs}, and its {@code at()} method will call this function, using
+   * the value passed to {@code at()} as the {@code i}th argument and taking the rest of the
+   * arguments (in order) from the compound's elements.
+   *
+   * <p>Only valid on functions with at least two arguments (none inout) and exactly one result.
+   */
+  public BaseType partialApplication(int i) {
+    return asLambdaExpr.partialApplication(i);
   }
 
   @Override
@@ -74,73 +85,12 @@ public abstract class VmFunction implements Vm.Function {
 
   @Override
   public Singleton asLambdaExpr() {
-    return asLambdaExpr;
+    return asLambdaExpr.asValue();
   }
 
   @Override
   public String toString() {
     return key(name, numArgs);
-  }
-
-  /**
-   * A singleton BaseType that can be passed as the first argument to {@code at()} to execute the
-   * given VmFunction. Only created for functions with one result and no inouts. Also used as the
-   * StackEntryType for the tail calls made by {@code at()}.
-   */
-  static class AsLambdaExpr extends StackEntryType {
-    final VmFunction function;
-
-    AsLambdaExpr(VmFunction function) {
-      super(0);
-      this.function = function;
-    }
-
-    @Override
-    VmType vmType() {
-      return Core.FUNCTION_LAMBDA;
-    }
-
-    void at(TState tstate, @RC.In Value arg, BuiltinMethod.Caller caller) throws BuiltinException {
-      int numArgs = function.numArgs;
-      // If numArgs != 1, arg must be an array of that length
-      if (numArgs != 1) {
-        Err.INVALID_ARGUMENT.unless(arg.isArrayOfLength(numArgs));
-      }
-      Object[] args = tstate.allocObjectArray(numArgs);
-      if (numArgs == 1) {
-        args[0] = arg;
-      } else {
-        for (int i = 0; i < numArgs; i++) {
-          args[i] = arg.element(i);
-        }
-        tstate.dropValue(arg);
-      }
-      tstate.startCall(caller, function, this, args);
-    }
-
-    @Override
-    String localName(int i) {
-      // Tail call, so no locals
-      throw new AssertionError();
-    }
-
-    @Override
-    VmFunction called() {
-      return function;
-    }
-
-    @Override
-    void resume(TState tstate, @RC.In Value entry, ResultsInfo results, MethodMemo mMemo) {
-      assert entry.baseType() == this;
-      // Since this is a tail call we just return its results as our own.
-      // We're responsible for calling dropValue(entry), but we know it's a singleton so that would
-      // be a no-op.
-    }
-
-    @Override
-    public String toString() {
-      return String.format("`%s:%s`", function.name, function.numArgs);
-    }
   }
 
   /** Thrown by {@link VmFunction#findMethod} if more than one method matches. */

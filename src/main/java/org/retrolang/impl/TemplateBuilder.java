@@ -16,6 +16,12 @@
 
 package org.retrolang.impl;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.impl.Template.Compound;
 import org.retrolang.impl.Template.Constant;
 import org.retrolang.impl.Template.Empty;
@@ -23,12 +29,6 @@ import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.impl.Template.Union;
 import org.retrolang.util.Ordered;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A TemplateBuilder is used to build Templates. The basic flow is <nl>

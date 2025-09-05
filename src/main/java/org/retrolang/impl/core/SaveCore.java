@@ -84,8 +84,6 @@ public final class SaveCore {
   static final VmFunctionBuilder saverSetup = VmFunctionBuilder.create("saverSetup", 3);
 
   /**
-   *
-   *
    * <pre>
    * method saveWithDefault(x) = SaveWithDefault_(x)
    * </pre>
@@ -96,8 +94,6 @@ public final class SaveCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method collectorSetup(SaveWithDefault swd, collection) {
    *   if swd_ is not Absent {
@@ -150,8 +146,6 @@ public final class SaveCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method saverSetup(EnumerationKind eKind, Loop loop, initialState) {
    *   assert initialState is not SaverUpdates
@@ -171,8 +165,6 @@ public final class SaveCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(SaveElements, state, [key, value]) = replaceElement(state, key, value)
    * </pre>
@@ -192,8 +184,6 @@ public final class SaveCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(SaveWithOffset swo, Array state, [[index], value]) =
    *     replaceElement(state, [index + swo_], value)
@@ -214,8 +204,6 @@ public final class SaveCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(SaverLoop loop, state, element) {
    *   if state is SaverUpdates {

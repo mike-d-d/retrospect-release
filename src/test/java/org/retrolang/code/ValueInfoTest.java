@@ -20,14 +20,14 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.retrolang.code.CodeValue.NONE;
 import static org.retrolang.code.ValueInfo.ANY;
 
-import org.retrolang.code.CodeValue.Const;
-import org.retrolang.code.ValueInfo.IntRange;
-import org.retrolang.code.ValueInfo.SmallIntSet;
-import org.retrolang.util.Bits;
 import java.util.function.IntFunction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.code.CodeValue.Const;
+import org.retrolang.code.ValueInfo.IntRange;
+import org.retrolang.code.ValueInfo.SmallIntSet;
+import org.retrolang.util.Bits;
 
 @RunWith(JUnit4.class)
 public class ValueInfoTest {

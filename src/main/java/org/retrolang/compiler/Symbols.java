@@ -18,6 +18,15 @@ package org.retrolang.compiler;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountedCompleter;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.Vm;
 import org.retrolang.Vm.Expr;
 import org.retrolang.Vm.InstructionBlock;
@@ -49,15 +58,6 @@ import org.retrolang.compiler.RetrospectParser.UnionTypeDeclContext;
 import org.retrolang.compiler.RetrospectParser.UnitContext;
 import org.retrolang.util.Bits;
 import org.retrolang.util.Pair;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountedCompleter;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A Symbols instance holds the global context while compiling a Retrospect program, including
@@ -285,7 +285,9 @@ class Symbols {
       opBuilder.put(opTokenType, entry.getValue());
       Integer assignmentTokenType = TokenType.MAP.get("'" + entry.getKey() + "='");
       if (assignmentTokenType != null) {
-        assignmentBuilder.put(assignmentTokenType, entry.getValue());
+        // "|=" is a special case; rather than using "pipe" it uses "reversedAt"
+        String fnName = entry.getKey().equals("|") ? "reversedAt" : entry.getValue();
+        assignmentBuilder.put(assignmentTokenType, fnName);
       }
     }
     FUNCTION_NAME_FROM_BINOP_TOKEN = opBuilder.buildOrThrow();

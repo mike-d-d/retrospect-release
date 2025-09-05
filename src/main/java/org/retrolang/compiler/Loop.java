@@ -17,6 +17,9 @@
 package org.retrolang.compiler;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.retrolang.Vm;
 import org.retrolang.Vm.BranchTarget;
 import org.retrolang.Vm.Compound;
@@ -30,9 +33,6 @@ import org.retrolang.compiler.RetrospectParser.ForLoopContext;
 import org.retrolang.compiler.RetrospectParser.LowerIdContext;
 import org.retrolang.compiler.RetrospectParser.SimpleExtractContext;
 import org.retrolang.util.Bits;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * A subclass of BlockCompiler used to create the InstructionBlock for a loop body. The resulting

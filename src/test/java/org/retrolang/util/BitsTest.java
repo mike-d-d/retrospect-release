@@ -24,7 +24,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.util.Bits.Op;
 import java.util.Arrays;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
@@ -33,6 +32,7 @@ import junitparams.Parameters;
 import junitparams.naming.TestCaseName;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.retrolang.util.Bits.Op;
 
 @RunWith(JUnitParamsRunner.class)
 public class BitsTest {

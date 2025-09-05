@@ -16,9 +16,9 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
 import java.lang.invoke.MethodHandle;
 import java.util.Arrays;
+import org.retrolang.util.SizeOf;
 
 /** Implementations of Value for ints and doubles. */
 public abstract class NumValue extends RefCounted implements Value {

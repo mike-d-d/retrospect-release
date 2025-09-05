@@ -18,12 +18,6 @@ package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeValue;
-import org.retrolang.code.Op;
-import org.retrolang.code.Op.OpEmit;
-import org.retrolang.code.Register;
-import org.retrolang.impl.Frame.Replacement;
-import org.retrolang.util.SizeOf;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleProxies;
 import java.lang.invoke.MethodHandles;
@@ -34,6 +28,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.Op;
+import org.retrolang.code.Op.OpEmit;
+import org.retrolang.code.Register;
+import org.retrolang.impl.Frame.Replacement;
+import org.retrolang.util.SizeOf;
 
 /**
  * Each subclass of Frame has a corresponding instance of FrameClass that provides information and

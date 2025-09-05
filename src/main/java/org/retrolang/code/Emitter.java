@@ -16,9 +16,6 @@
 
 package org.retrolang.code;
 
-import org.retrolang.code.CodeBuilder.OpCodeType;
-import org.retrolang.util.Bits;
-import org.retrolang.util.SmallIntMap;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -26,6 +23,9 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.retrolang.code.CodeBuilder.OpCodeType;
+import org.retrolang.util.Bits;
+import org.retrolang.util.SmallIntMap;
 
 /**
  * An Emitter is used by {@link CodeBuilder#load} to manage the details of emitting JVM bytecode for

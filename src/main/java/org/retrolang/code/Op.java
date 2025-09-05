@@ -18,12 +18,6 @@ package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.Block.SubstitutionOutcome;
-import org.retrolang.code.CodeBuilder.OpCodeType;
-import org.retrolang.code.CodeBuilder.PrintOptions;
-import org.retrolang.code.CodeValue.Const;
-import org.retrolang.code.ValueInfo.IntRange;
-import org.retrolang.util.Bits;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -40,6 +34,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+import org.retrolang.code.Block.SubstitutionOutcome;
+import org.retrolang.code.CodeBuilder.OpCodeType;
+import org.retrolang.code.CodeBuilder.PrintOptions;
+import org.retrolang.code.CodeValue.Const;
+import org.retrolang.code.ValueInfo.IntRange;
+import org.retrolang.util.Bits;
 
 /**
  * An Op represents an operation that can be performed by the JVM, typically by a simple opcode or

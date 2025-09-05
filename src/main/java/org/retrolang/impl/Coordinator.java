@@ -16,13 +16,13 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.impl.Evolver.Evolution;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
+import org.retrolang.impl.Evolver.Evolution;
 
 /**
  * A Coordinator enables operations that must involve all of the Java threads currently executing on

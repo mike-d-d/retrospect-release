@@ -16,10 +16,10 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.Vm;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import org.retrolang.Vm;
 
 /**
  * A base class for implementations of Vm.Expr.

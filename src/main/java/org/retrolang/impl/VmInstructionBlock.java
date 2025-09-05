@@ -18,13 +18,13 @@ package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.Vm;
-import org.retrolang.util.Bits;
-import org.retrolang.util.Bits.Op;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
+import org.retrolang.util.Bits;
+import org.retrolang.util.Bits.Op;
 
 /** Implementation of Vm.InstructionBlock. A builder for an {@link InstructionBlock}. */
 class VmInstructionBlock implements Vm.InstructionBlock {

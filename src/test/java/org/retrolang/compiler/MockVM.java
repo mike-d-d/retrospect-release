@@ -19,8 +19,6 @@ package org.retrolang.compiler;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import org.retrolang.Vm;
-import org.retrolang.util.Pair;
 import com.google.errorprone.annotations.FormatMethod;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +28,9 @@ import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.retrolang.Vm;
+import org.retrolang.util.Bits;
+import org.retrolang.util.Pair;
 
 /**
  * MockVM implements the Retrospect VM interface but isn't able to execute any instructions; instead
@@ -167,6 +168,7 @@ class MockVM implements Vm.VirtualMachine {
         "anotherRw",
         "finalResultHelper",
         "at",
+        "reversedAt",
         "iterateUnbounded",
         "join",
         "matrix",
@@ -186,7 +188,6 @@ class MockVM implements Vm.VirtualMachine {
         "combineStates",
         "finalResultHelper",
         "combineStatesHelper",
-        "curryLambda",
         "replaceElement");
     // function f(x, y, z, w)
     addFunctions(builder, 4, 0, 1, "iterate", "enumerate");
@@ -262,7 +263,7 @@ class MockVM implements Vm.VirtualMachine {
 
       @Override
       public Vm.Expr make(Vm.Expr... elements) {
-        return new Expr(Arrays.toString(elements));
+        return Expr.forCompound(Arrays.toString(elements), elements);
       }
 
       @Override
@@ -272,7 +273,7 @@ class MockVM implements Vm.VirtualMachine {
 
       @Override
       public Vm.Expr asLambdaExpr() {
-        return new Expr("lambda_toArray" + size);
+        return new Value("lambda_toArray" + size);
       }
     };
   }
@@ -294,10 +295,11 @@ class MockVM implements Vm.VirtualMachine {
 
       @Override
       public Vm.Expr make(Vm.Expr... elements) {
-        return new Expr(
+        String result =
             IntStream.range(0, elements.length)
                 .mapToObj(i -> String.format("%s: %s", cleanKeys[i], elements[i]))
-                .collect(Collectors.joining(", ", "{", "}")));
+                .collect(Collectors.joining(", ", "{", "}"));
+        return Expr.forCompound(result, elements);
       }
 
       @Override
@@ -307,7 +309,7 @@ class MockVM implements Vm.VirtualMachine {
 
       @Override
       public Vm.Expr asLambdaExpr() {
-        return new Expr("lambda_" + name);
+        return new Value("lambda_" + name);
       }
     };
   }
@@ -319,17 +321,17 @@ class MockVM implements Vm.VirtualMachine {
 
   @Override
   public Expr asExpr(String s) {
-    return new Expr(quote(s));
+    return new Value(quote(s));
   }
 
   @Override
   public Expr asExpr(int i) {
-    return new Expr(String.valueOf(i));
+    return new Value(String.valueOf(i));
   }
 
   @Override
   public Expr asExpr(double d) {
-    return new Expr(String.valueOf(d));
+    return new Value(String.valueOf(d));
   }
 
   @Override
@@ -354,6 +356,12 @@ class MockVM implements Vm.VirtualMachine {
   static class Expr extends Named implements Vm.Expr {
     Expr(String name) {
       super(name);
+    }
+
+    static Expr forCompound(String name, Vm.Expr[] elements) {
+      return Arrays.stream(elements).allMatch(e -> e instanceof Vm.Value)
+          ? new Value(name)
+          : new Expr(name);
     }
   }
 
@@ -454,14 +462,14 @@ class MockVM implements Vm.VirtualMachine {
     @Override
     public Vm.Function newFunction(
         String name, int numArgs, IntPredicate argIsInOut, boolean hasResult, Vm.Access access) {
+      Bits inoutBits = Bits.fromPredicate(numArgs, argIsInOut);
       String decl = accessLabel(access) + (hasResult ? "function " : "procedure ") + name;
       decl +=
           IntStream.range(0, numArgs)
-              .mapToObj(i -> "a" + i + (argIsInOut.test(i) ? "=" : ""))
+              .mapToObj(i -> "a" + i + (inoutBits.test(i) ? "=" : ""))
               .collect(Collectors.joining(", ", "(", ")"));
       addResult("b" + name + ":" + numArgs, decl);
-      int numInOut = (int) IntStream.range(0, numArgs).filter(argIsInOut).count();
-      return new Function(name, numArgs, argIsInOut, numInOut + (hasResult ? 1 : 0));
+      return new Function(name, numArgs, inoutBits, inoutBits.count() + (hasResult ? 1 : 0));
     }
 
     @Override
@@ -496,6 +504,7 @@ class MockVM implements Vm.VirtualMachine {
     final int numArgs;
     final IntPredicate argIsInOut;
     final int numResults;
+    final Value asLambdaExpr;
 
     /**
      * Creates a Function.
@@ -504,17 +513,18 @@ class MockVM implements Vm.VirtualMachine {
      *     inOut if the k-th bit of inOutArgs is 1.
      */
     Function(String name, int numArgs, int inOutArgs, int numResults) {
-      super(name);
-      this.numArgs = numArgs;
-      this.argIsInOut = i -> ((inOutArgs >>> i) & 1) != 0;
-      this.numResults = numResults;
+      this(name, numArgs, Bits.fromInt(inOutArgs), numResults);
     }
 
-    Function(String name, int numArgs, IntPredicate argIsInOut, int numResults) {
+    Function(String name, int numArgs, Bits argIsInOut, int numResults) {
       super(name);
       this.numArgs = numArgs;
       this.argIsInOut = argIsInOut;
       this.numResults = numResults;
+      this.asLambdaExpr =
+          (numResults == 1 && argIsInOut.isEmpty())
+              ? new Value(String.format("'%s:%s'", name, numArgs))
+              : null;
     }
 
     @Override
@@ -534,7 +544,8 @@ class MockVM implements Vm.VirtualMachine {
 
     @Override
     public Vm.Expr asLambdaExpr() {
-      return new Expr(String.format("'%s:%s'", name, numArgs));
+      assertThat(asLambdaExpr).isNotNull();
+      return asLambdaExpr;
     }
   }
 
@@ -568,11 +579,26 @@ class MockVM implements Vm.VirtualMachine {
 
     @Override
     public Vm.Expr testLambda() {
-      return new Expr("lambda_is" + name);
+      return new Value("lambda_is" + name);
     }
   }
 
-  static class Singleton extends Expr implements Vm.Singleton {
+  /** The only Values we see at compile time are constant expressions. */
+  static class Value extends Expr implements Vm.Value {
+    Value(String name) {
+      super(name);
+    }
+
+    @Override
+    public void close() {}
+
+    @Override
+    public Vm.Value keep() {
+      throw new AssertionError();
+    }
+  }
+
+  static class Singleton extends Value implements Vm.Singleton {
     final Type type;
 
     Singleton(String name) {
@@ -587,7 +613,7 @@ class MockVM implements Vm.VirtualMachine {
 
     @Override
     public Vm.Value asValue() {
-      throw new AssertionError();
+      return this;
     }
   }
 
@@ -613,20 +639,23 @@ class MockVM implements Vm.VirtualMachine {
 
     @Override
     public Vm.Expr make(Vm.Expr... elements) {
+      String result;
       if (elementNames == null) {
         assertThat(elements).hasLength(1);
-        return new Expr(name + "(" + elements[0] + ")");
+        result = name + "(" + elements[0] + ")";
+      } else {
+        result =
+            IntStream.range(0, elements.length)
+                .mapToObj(
+                    i -> {
+                      String element = elements[i].toString();
+                      return element.equals(elementNames[i])
+                          ? element
+                          : elementNames[i] + ": " + element;
+                    })
+                .collect(Collectors.joining(", ", name + "(", ")"));
       }
-      return new Expr(
-          IntStream.range(0, elements.length)
-              .mapToObj(
-                  i -> {
-                    String element = elements[i].toString();
-                    return element.equals(elementNames[i])
-                        ? element
-                        : elementNames[i] + ": " + element;
-                  })
-              .collect(Collectors.joining(", ", name + "(", ")")));
+      return Expr.forCompound(result, elements);
     }
 
     @Override
@@ -823,7 +852,7 @@ class MockVM implements Vm.VirtualMachine {
           String.format(
               "method %s(%s) %s%s{\n%s}",
               fn,
-              args.stream().collect(Collectors.joining(", ")),
+              String.join(", ", args),
               (predicate == null) ? "" : predicate + " ",
               isDefault ? "default " : "",
               this);

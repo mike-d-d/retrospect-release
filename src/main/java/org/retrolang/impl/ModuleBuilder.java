@@ -18,15 +18,15 @@ package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import org.retrolang.Vm;
-import org.retrolang.util.Bits;
-import org.retrolang.util.StringUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
+import org.retrolang.Vm;
+import org.retrolang.util.Bits;
+import org.retrolang.util.StringUtil;
 
 /** Implements Vm.ModuleBuilder. */
 class ModuleBuilder implements Vm.ModuleBuilder {

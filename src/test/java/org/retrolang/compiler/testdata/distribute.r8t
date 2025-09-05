@@ -8,14 +8,26 @@ both = a ^*^ a
 return [left, right, both]
 
 /* COMPILE ():
+private singleton iLambda@2:7 is Lambda
+private singleton iLambda@3:8 is Lambda
+private singleton iLambda@4:7 is Lambda
+method at(_a0, _a1) _0 is iLambda@2:7 {
+    _a0 = add(_a1, 4)  // 2:7
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@3:8 {
+    _a0 = divide(4, _a1)  // 3:8
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@4:7 {
+    _a0 = multiply(_a1, _a1)  // 4:7
+    return _a0
+}
 ---
     a = [1, 2, 3]  // 1:0
-    _t0 = curryLambda('add:2', [0, -1], [4])  // 2:0
-    left = pipe(a, _t0)
-    _t0 = curryLambda('divide:2', [-1, 0], [4])  // 3:0
-    right = pipe(a, _t0)
-    _t0 = join(a, a)  // 4:0
-    both = pipe(_t0, 'multiply:2')
+    left = pipe(a, iLambda@2:7)  // 2:0
+    right = pipe(a, iLambda@3:8)  // 3:0
+    both = pipe(a, iLambda@4:7)  // 4:0
     return [left, right, both]  // 6:0
 */
 
@@ -28,20 +40,38 @@ ne = a ^!=^ (-^a)
 return [lt, le, le2, ne]
 
 /* COMPILE ():
+private singleton iLambda@2:5 is Lambda
+private singleton iLambda@3:5 is Lambda
+private singleton iLambda@4:6 is Lambda
+private singleton iLambda@5:5 is Lambda
+method at(_a0, _a1) _0 is iLambda@2:5 {
+    _a0 = lessThan(_a1, 2)  // 2:5
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@3:5 {
+    _a0 = lessThan(2, _a1)  // 3:5
+    _a0 = not(_a0)
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@4:6 {
+    _a0 = lessThan(_a1, 2)  // 4:6
+    _a0 = not(_a0)
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@5:5 {
+    _a1, _a2 = unarray2(_a1)  // 5:5
+    _a0 = equal(_a1, _a2)
+    _a0 = not(_a0)
+    return _a0
+}
 ---
     a = [1, 2, 3]  // 1:0
-    _t0 = curryLambda('lessThan:2', [0, -1], [2])  // 2:0
-    lt = pipe(a, _t0)
-    _t0 = curryLambda('lessThan:2', [-1, 0], [2])  // 3:0
-    le = pipe(a, _t0)
-    le = pipe(le, 'not:1')
-    _t0 = curryLambda('lessThan:2', [0, -1], [2])  // 4:0
-    le2 = pipe(a, _t0)
-    le2 = pipe(le2, 'not:1')
+    lt = pipe(a, iLambda@2:5)  // 2:0
+    le = pipe(a, iLambda@3:5)  // 3:0
+    le2 = pipe(a, iLambda@4:6)  // 4:0
     _t0 = pipe(a, 'negative:1')  // 5:0
     _t0 = join(a, _t0)
-    ne = pipe(_t0, 'equal:2')
-    ne = pipe(ne, 'not:1')
+    ne = pipe(_t0, iLambda@5:5)
     return [lt, le, le2, ne]  // 7:0
 */
 
@@ -53,15 +83,24 @@ array4 = [6, ^a, ^a]
 return [array1, array2, array3, array4]
 
 /* COMPILE ():
+private singleton iLambda@3:9 is Lambda
+private singleton iLambda@4:9 is Lambda
+private singleton iLambda@5:9 is Lambda
+method at(_a0, _a1) _0 is iLambda@3:9 {
+    return [_a1, 5]  // 3:9
+}
+method at(_a0, _a1) _0 is iLambda@4:9 {
+    return [_a1, _a1]  // 4:9
+}
+method at(_a0, _a1) _0 is iLambda@5:9 {
+    return [6, _a1, _a1]  // 5:9
+}
 ---
     a = [1, 2, 3]  // 1:0
     array1 = pipe(a, lambda_toArray1)  // 2:0
-    _t0 = curryLambda(lambda_toArray2, [0, -1], [5])  // 3:0
-    array2 = pipe(a, _t0)
-    array3 = join(a, a)  // 4:0
-    _t0 = join(a, a)  // 5:0
-    _t1 = curryLambda(lambda_toArray3, [-1, 1, 2], [6])
-    array4 = pipe(_t0, _t1)
+    array2 = pipe(a, iLambda@3:9)  // 3:0
+    array3 = pipe(a, iLambda@4:9)  // 4:0
+    array4 = pipe(a, iLambda@5:9)  // 5:0
     return [array1, array2, array3, array4]  // 6:0
 */
 
@@ -72,13 +111,19 @@ struct3 = {a: ^a, b: ^a}
 return [struct1, struct2, struct3]
 
 /* COMPILE ():
+private singleton iLambda@3:10 is Lambda
+private singleton iLambda@4:10 is Lambda
+method at(_a0, _a1) _0 is iLambda@3:10 {
+    return {a: 7, b: _a1}  // 3:10
+}
+method at(_a0, _a1) _0 is iLambda@4:10 {
+    return {a: _a1, b: _a1}  // 4:10
+}
 ---
     a = [1, 2, 3]  // 1:0
     struct1 = pipe(a, lambda_struct{a})  // 2:0
-    _t0 = curryLambda(lambda_struct{a,b}, [-1, 0], [7])  // 3:0
-    struct2 = pipe(a, _t0)
-    _t0 = join(a, a)  // 4:0
-    struct3 = pipe(_t0, lambda_struct{a,b})
+    struct2 = pipe(a, iLambda@3:10)  // 3:0
+    struct3 = pipe(a, iLambda@4:10)  // 4:0
     return [struct1, struct2, struct3]  // 5:0
 */
 
@@ -92,21 +137,43 @@ fn5 = replaceElement(a, ^a, ^2 **^ a)
 return [fn1, fn2, fn3, fn4, fn5]
 
 /* COMPILE ():
+private singleton iLambda@3:6 is Lambda
+private singleton iLambda@4:6 is Lambda
+private singleton iLambda@5:6 is Lambda
+private singleton iLambda@6:29 is Lambda
+private compound iLambda@6:6{a} is Lambda
+method at(_a0, _a1) _0 is iLambda@3:6 {
+    _a0 = div(_a1, 2)  // 3:6
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@4:6 {
+    _a0 = div(2, _a1)  // 4:6
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@5:6 {
+    _a0 = div(_a1, _a1)  // 5:6
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@6:29 {
+    _a0 = exponent(2, _a1)  // 6:29
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@6:6 {
+    _a1, _a2 = unarray2(_a1)  // 6:6
+    a = uniLambda@6:6(_a0)
+    _a0 = replaceElement(a, _a1, _a2)
+    return _a0
+}
 ---
     a = [1, 2, 3]  // 1:0
     _t0 = pipe(a, 'negative:1')  // 2:0
     fn1 = pipe(_t0, 'abs:1')
-    _t0 = curryLambda('div:2', [0, -1], [2])  // 3:0
-    fn2 = pipe(a, _t0)
-    _t0 = curryLambda('div:2', [-1, 0], [2])  // 4:0
-    fn3 = pipe(a, _t0)
-    _t0 = join(a, a)  // 5:0
-    fn4 = pipe(_t0, 'div:2')
-    _t0 = curryLambda('exponent:2', [-1, 0], [2])  // 6:0
-    _t0 = pipe(a, _t0)
+    fn2 = pipe(a, iLambda@3:6)  // 3:0
+    fn3 = pipe(a, iLambda@4:6)  // 4:0
+    fn4 = pipe(a, iLambda@5:6)  // 5:0
+    _t0 = pipe(a, iLambda@6:29)  // 6:0
     _t0 = join(a, _t0)
-    _t1 = curryLambda('replaceElement:3', [-1, 1, 2], [a])
-    fn5 = pipe(_t0, _t1)
+    fn5 = pipe(_t0, iLambda@6:6(a))
     return [fn1, fn2, fn3, fn4, fn5]  // 8:0
 */
 
@@ -117,12 +184,17 @@ test = a ^is not Number | anyTrue
 return [pipe, test]
 
 /* COMPILE ():
+private compound iLambda@2:8{_t1} is Lambda
+method at(_a0, _a1) _0 is iLambda@2:8 {
+    _t1 = uniLambda@2:8(_a0)  // 2:8
+    _a0 = pipe(_a1, _t1)
+    return _a0
+}
 ---
     a = [1, 2, 3]  // 1:0
     _t0 = pipe(a, lambda_toArray1)  // 2:0
     _t1 = save()
-    _t2 = curryLambda('pipe:2', [0, -1], [_t1])
-    _t0 = pipe(_t0, _t2)
+    _t0 = pipe(_t0, iLambda@2:8(_t1))
     _t1 = save()
     pipe = pipe(_t0, _t1)
     _t0 = pipe(a, lambda_isNumber)  // 3:0
@@ -140,14 +212,26 @@ r3 = a ^..^ (a ^+ 1)
 return [r1, r2, r3]
 
 /* COMPILE ():
+private singleton iLambda@2:5 is Lambda
+private singleton iLambda@3:5 is Lambda
+private singleton iLambda@4:13 is Lambda
+method at(_a0, _a1) _0 is iLambda@2:5 {
+    _a0 = range(2, _a1)  // 2:5
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@3:5 {
+    _a0 = rangeWithSize(_a1, 2)  // 3:5
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@4:13 {
+    _a0 = add(_a1, 1)  // 4:13
+    return _a0
+}
 ---
     a = [1, 2, 3]  // 1:0
-    _t0 = curryLambda('range:2', [-1, 0], [2])  // 2:0
-    r1 = pipe(a, _t0)
-    _t0 = curryLambda('rangeWithSize:2', [0, -1], [2])  // 3:0
-    r2 = pipe(a, _t0)
-    _t0 = curryLambda('add:2', [0, -1], [1])  // 4:0
-    _t0 = pipe(a, _t0)
+    r1 = pipe(a, iLambda@2:5)  // 2:0
+    r2 = pipe(a, iLambda@3:5)  // 3:0
+    _t0 = pipe(a, iLambda@4:13)  // 4:0
     _t0 = join(a, _t0)
     r3 = pipe(_t0, 'range:2')
     return [r1, r2, r3]  // 6:0
@@ -162,14 +246,23 @@ e = b^[^a]                   // ["c", "e", "g"]
 return [c, d, e]
 
 /* COMPILE ():
+private singleton iLambda@4:4 is Lambda
+private compound iLambda@3:4{b} is Lambda
+method at(_a0, _a1) _0 is iLambda@3:4 {
+    b = uniLambda@3:4(_a0)  // 3:4
+    _a0 = at(b, _a1)
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@4:4 {
+    _a0 = at(_a1, [3])  // 4:4
+    return _a0
+}
 ---
     a = [3, 2, 1]  // 1:0
     b = ["abc", "def", "ghi"]  // 2:0
     _t0 = pipe(a, lambda_toArray1)  // 3:0
-    _t1 = curryLambda('at:2', [-1, 0], [b])
-    c = pipe(_t0, _t1)
-    _t0 = curryLambda('at:2', [0, -1], [[3]])  // 4:0
-    d = pipe(b, _t0)
+    c = pipe(_t0, iLambda@3:4(b))
+    d = pipe(b, iLambda@4:4)  // 4:0
     _t0 = pipe(a, lambda_toArray1)  // 5:0
     _t0 = join(b, _t0)
     e = pipe(_t0, 'at:2')
@@ -183,19 +276,32 @@ c = a[^1..2, ^2..3]   // [5, 9]
 return [b, c]
 
 /* COMPILE ():
+private singleton iLambda@2:5 is Lambda
+private compound iLambda@2:4{a} is Lambda
+private compound iLambda@3:4{a} is Lambda
+method at(_a0, _a1) _0 is iLambda@2:4 {
+    a = uniLambda@2:4(_a0)  // 2:4
+    _a0 = at(a, _a1)
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@2:5 {
+    return [2, _a1]  // 2:5
+}
+method at(_a0, _a1) _0 is iLambda@3:4 {
+    a = uniLambda@3:4(_a0)  // 3:4
+    _a0 = at(a, _a1)
+    return _a0
+}
 ---
     _t0 = range(4, 9)  // 1:0
     a = matrix([2, 3], _t0)
     _t0 = range(1, 2)  // 2:0
-    _t1 = curryLambda(lambda_toArray2, [-1, 0], [2])
-    _t0 = pipe(_t0, _t1)
-    _t1 = curryLambda('at:2', [-1, 0], [a])
-    b = pipe(_t0, _t1)
+    _t0 = pipe(_t0, iLambda@2:5)
+    b = pipe(_t0, iLambda@2:4(a))
     _t0 = range(1, 2)  // 3:0
     _t1 = range(2, 3)
     _t0 = join(_t0, _t1)
-    _t1 = curryLambda('at:2', [-1, 0], [a])
-    c = pipe(_t0, _t1)
+    c = pipe(_t0, iLambda@3:4(a))
     return [b, c]  // 5:0
 */
 
@@ -208,13 +314,22 @@ e = b^@^a                   // ["c", "e", "g"]
 return [c, d, e]
 
 /* COMPILE ():
+private singleton iLambda@4:4 is Lambda
+private compound iLambda@3:4{b} is Lambda
+method at(_a0, _a1) _0 is iLambda@3:4 {
+    b = uniLambda@3:4(_a0)  // 3:4
+    _a0 = at(b, _a1)
+    return _a0
+}
+method at(_a0, _a1) _0 is iLambda@4:4 {
+    _a0 = at(_a1, [3])  // 4:4
+    return _a0
+}
 ---
     a = [[3], [2], [1]]  // 1:0
     b = ["abc", "def", "ghi"]  // 2:0
-    _t0 = curryLambda('at:2', [-1, 0], [b])  // 3:0
-    c = pipe(a, _t0)
-    _t0 = curryLambda('at:2', [0, -1], [[3]])  // 4:0
-    d = pipe(b, _t0)
+    c = pipe(a, iLambda@3:4(b))  // 3:0
+    d = pipe(b, iLambda@4:4)  // 4:0
     _t0 = join(b, a)  // 5:0
     e = pipe(_t0, 'at:2')
     return [c, d, e]  // 7:0

@@ -351,8 +351,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(TrivialIterator it=) {
    *   result = it_
@@ -373,8 +371,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method splitState(loop, state=) default = emptyState(loop)
    * </pre>
@@ -394,8 +390,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method finalResult(Loop loop, finalState) default =
    *     finalState is LoopExit ? loopExitState(finalState) : finalState
@@ -409,8 +403,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function loopExit(finalState) = finalState is LoopExit ? finalState : LoopExit_(finalState)
    * </pre>
@@ -423,8 +415,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function loopExitState(exit) {
    *   assert exit is LoopExit
@@ -439,8 +429,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method collectorSetup(Reducer reducer, _) = {
    *     canParallel: True,
@@ -469,8 +457,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method enumerate(collection, eKind, loop, state) default =
    *     iterate(collection, eKind, loop, state)
@@ -488,8 +474,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function iterateUnbounded(lambda, state) {
    *   for sequential state {
@@ -519,8 +503,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function iterate(collection, eKind, loop, state) {
    *   if state is LoopExit { return state }
@@ -598,8 +580,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method pipe(Collection collection, Collector collector) {
    *   { canParallel, eKind, initialState, loop } = collectorSetup(collector, collection)
@@ -676,8 +656,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function loopHelper(collector, collection, maxEKind=, isParallel) {
    *   { canParallel, eKind, initialState, loop } = collectorSetup(collector, collection)
@@ -730,8 +708,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * // For use in unbounded loops (with no source collection)
    * function loopHelper(collector) {
@@ -770,8 +746,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function finalResultHelper(ro, rw) {
    *   {pendingValue, state} = rw_
@@ -792,8 +766,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * procedure emitValue(ro, rw=, v) {
    *   if v is Absent {
@@ -855,8 +827,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * procedure emitAll(ro, rw=, collection) {
    *   assert ro_.eKind is EnumerateValues, "Can't emitAll to keyed collector"
@@ -915,8 +885,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * procedure emitKey(ro, rw=, key) {
    *   if ro_.eKind is EnumerateValues {
@@ -967,8 +935,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function emptyStateHelper(ro) = LoopRW_({pendingValue: Absent, state: emptyState(ro_.loop)})
    * </pre>
@@ -989,8 +955,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function splitStateHelper(ro, rw=) {
    *   assert rw_.pendingValue is Absent
@@ -1034,8 +998,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function combineStatesHelper(ro, rw1, rw2) {
    *   assert rw1_.pendingValue is Absent and rw2_.pendingValue is Absent
@@ -1103,8 +1065,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * procedure verifyEV(ro) {
    *   assert ro_.eKind is EnumerateValues, "Can't inherit a keyed collector"
@@ -1118,8 +1078,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * function sequentially(Collector collector) = SequentialCollector_(collector)
    * </pre>
@@ -1130,8 +1088,6 @@ public final class LoopCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method collectorSetup(SequentialCollector sc, collection) {
    *   {canParallel, eKind, initialState, loop} = collectorSetup(sc_, collection)

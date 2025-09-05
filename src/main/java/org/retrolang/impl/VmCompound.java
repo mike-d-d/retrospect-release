@@ -17,9 +17,9 @@
 package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
+import java.util.Arrays;
 import org.retrolang.Vm;
 import org.retrolang.impl.Err.BuiltinException;
-import java.util.Arrays;
 
 /**
  * Implementation of Vm.Compound, for compounds that correspond to a simple base type.

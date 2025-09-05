@@ -16,8 +16,8 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
+import org.retrolang.util.SizeOf;
 
 /**
  * A SavedTraces saves TStacks that have been captured by a single trace instruction. It has a fixed

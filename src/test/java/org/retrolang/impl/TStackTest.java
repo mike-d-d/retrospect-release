@@ -18,10 +18,10 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.impl.BaseType.SimpleStackEntryType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.impl.BaseType.SimpleStackEntryType;
 
 @RunWith(JUnit4.class)
 public class TStackTest {

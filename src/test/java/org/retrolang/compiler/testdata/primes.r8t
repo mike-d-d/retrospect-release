@@ -13,16 +13,20 @@ for sequential next, primes {
 return [2] & primes
 
 /* COMPILE ():
+private singleton iLambda@5:5 is Lambda
 private compound loop@4{n} is Lambda
 private compound loop@4_break{primes}
 private compound loop@4_state{next,primes}
+method at(_a0, _a1) _0 is iLambda@5:5 {
+    _a0 = equal(_a1, 0)  // 5:5
+    _a0 = not(_a0)
+    return _a0
+}
 method at(_loop, _state) _0 is loop@4 {
     n = unloop@4(_loop)
     next, primes = unloop@4_state(_state)
     _t0 = modulo(next, primes)  // 5:2
-    _t1 = curryLambda('equal:2', [0, -1], [0])
-    _t0 = pipe(_t0, _t1)
-    _t0 = pipe(_t0, 'not:1')
+    _t0 = pipe(_t0, iLambda@5:5)
     _t1 = allTrue()
     _t0 = pipe(_t0, _t1)
     branch L2 if not _t0

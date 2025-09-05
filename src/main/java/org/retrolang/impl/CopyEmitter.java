@@ -16,6 +16,7 @@
 
 package org.retrolang.impl;
 
+import java.util.function.Predicate;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
@@ -26,7 +27,6 @@ import org.retrolang.impl.CopyPlan.StepType;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.util.Bits;
-import java.util.function.Predicate;
 
 /**
  * A CopyEmitter creates Blocks based on a given CopyPlan. The base class assumes that NumVars and

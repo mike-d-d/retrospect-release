@@ -16,10 +16,10 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.code.Op;
-import org.retrolang.util.ArrayUtil;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.stream.IntStream;
+import org.retrolang.code.Op;
+import org.retrolang.util.ArrayUtil;
 
 /**
  * All VM objects that represent Retrospect-language values implement Value. Other objects may also

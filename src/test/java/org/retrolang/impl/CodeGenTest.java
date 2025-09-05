@@ -21,11 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.Vm;
-import org.retrolang.code.DebugInfo;
-import org.retrolang.compiler.Compiler;
-import org.retrolang.testing.TestdataScanner;
-import org.retrolang.testing.TestdataScanner.TestProgram;
 import com.google.testing.junit.testparameterinjector.TestParameter;
 import com.google.testing.junit.testparameterinjector.TestParameterInjector;
 import java.nio.file.Path;
@@ -40,6 +35,11 @@ import java.util.stream.Collectors;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.retrolang.Vm;
+import org.retrolang.code.DebugInfo;
+import org.retrolang.compiler.Compiler;
+import org.retrolang.testing.TestdataScanner;
+import org.retrolang.testing.TestdataScanner.TestProgram;
 
 /** Generates bytecodes for each of the .r8t files in the testdata/codegen directory. */
 @RunWith(TestParameterInjector.class)

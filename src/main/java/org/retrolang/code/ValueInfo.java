@@ -16,10 +16,10 @@
 
 package org.retrolang.code;
 
-import org.retrolang.code.CodeValue.Const;
-import org.retrolang.util.Bits;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.code.CodeValue.Const;
+import org.retrolang.util.Bits;
 
 /**
  * A ValueInfo represents information about the possible values of a register or other CodeValue.
@@ -91,8 +91,8 @@ public interface ValueInfo {
    *
    * <p>The default implementation returns {@code this.equals(other)}. Only ValueInfo
    * implementations that have large numbers of almost-identical instances need worry about
-   * overriding this method. See
-   * docs/code.md#the-valueinfo-interface-and-codevalue-simplification for more details.
+   * overriding this method. See docs/code.md#the-valueinfo-interface-and-codevalue-simplification
+   * for more details.
    */
   default boolean isCloseEnoughTo(ValueInfo other) {
     return equals(other);

@@ -19,6 +19,7 @@ package org.retrolang.impl;
 import static org.retrolang.impl.CopyPlan.EMPTY;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import org.retrolang.impl.CopyOptimizer.Policy;
 import org.retrolang.impl.CopyPlan.Basic;
 import org.retrolang.impl.CopyPlan.Step;
@@ -27,7 +28,6 @@ import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.util.ArrayUtil;
 import org.retrolang.util.Bits;
-import java.util.Arrays;
 
 /**
  * VArrayReplacer provides an optimized implementation of {@link Evolver.FrameReplacer} for copying

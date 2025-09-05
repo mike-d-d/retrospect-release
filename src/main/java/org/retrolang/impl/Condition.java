@@ -16,6 +16,7 @@
 
 package org.retrolang.impl;
 
+import java.util.function.Supplier;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
@@ -23,7 +24,6 @@ import org.retrolang.code.TestBlock;
 import org.retrolang.code.TestBlock.IsEq;
 import org.retrolang.code.TestBlock.IsLessThan;
 import org.retrolang.impl.Err.BuiltinException;
-import java.util.function.Supplier;
 
 /**
  * A Condition represents a boolean value. There are two constant Conditions (TRUE and FALSE); all

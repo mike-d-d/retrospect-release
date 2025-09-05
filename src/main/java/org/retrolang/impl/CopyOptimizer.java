@@ -17,6 +17,8 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
+import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import org.retrolang.impl.CopyPlan.Basic;
 import org.retrolang.impl.CopyPlan.Step;
 import org.retrolang.impl.CopyPlan.StepType;
@@ -28,8 +30,6 @@ import org.retrolang.impl.Template.RefVar;
 import org.retrolang.util.Bits;
 import org.retrolang.util.Bits.Op;
 import org.retrolang.util.SmallIntMap;
-import java.util.function.UnaryOperator;
-import java.util.stream.IntStream;
 
 /**
  * CopyOptimizer identifies cases where a CopyPlan can be optimized by promoting one or more

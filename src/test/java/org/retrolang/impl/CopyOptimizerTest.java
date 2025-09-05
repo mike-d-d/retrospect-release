@@ -18,10 +18,6 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.impl.CopyOptimizer.Policy;
-import org.retrolang.impl.Template.Constant;
-import org.retrolang.impl.Template.NumVar;
-import org.retrolang.impl.TemplateBuilder.VarAllocator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +25,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.impl.CopyOptimizer.Policy;
+import org.retrolang.impl.Template.Constant;
+import org.retrolang.impl.Template.NumVar;
+import org.retrolang.impl.TemplateBuilder.VarAllocator;
 
 @RunWith(JUnit4.class)
 public class CopyOptimizerTest {

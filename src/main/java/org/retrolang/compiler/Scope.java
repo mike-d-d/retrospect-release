@@ -16,6 +16,15 @@
 
 package org.retrolang.compiler;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import org.antlr.v4.runtime.Token;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.Vm;
 import org.retrolang.Vm.Access;
 import org.retrolang.Vm.Compound;
@@ -30,15 +39,6 @@ import org.retrolang.compiler.RetrospectParser.LowerIdContext;
 import org.retrolang.compiler.RetrospectParser.SimpleExtractContext;
 import org.retrolang.compiler.RetrospectParser.StructExtractContext;
 import org.retrolang.util.Bits;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import org.antlr.v4.runtime.Token;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A Scope's primary function is to map variable names to the corresponding Locals, but it has

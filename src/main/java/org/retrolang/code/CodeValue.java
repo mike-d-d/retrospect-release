@@ -16,14 +16,14 @@
 
 package org.retrolang.code;
 
+import java.util.Objects;
+import java.util.function.IntFunction;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.code.Block.SubstitutionOutcome;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeBuilder.PrintOptions;
 import org.retrolang.util.Bits;
 import org.retrolang.util.StringUtil;
-import java.util.Objects;
-import java.util.function.IntFunction;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A CodeValue represents a single value that can be pushed on the stack during execution. There are

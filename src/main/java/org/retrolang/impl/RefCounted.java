@@ -16,10 +16,10 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import org.retrolang.util.SizeOf;
 
 /**
  * RefCounted objects maintain a per-instance reference count to enable accurate memory use tracking

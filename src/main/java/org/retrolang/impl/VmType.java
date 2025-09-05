@@ -21,12 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import org.retrolang.Vm;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
 
 /**
  * The implementation of Vm.Type; subclasses are responsible for defining {@link #contains}.

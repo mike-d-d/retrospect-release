@@ -18,10 +18,10 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.Vm.Access;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.Vm.Access;
 
 @RunWith(JUnit4.class)
 public class MethodPredicateTest {

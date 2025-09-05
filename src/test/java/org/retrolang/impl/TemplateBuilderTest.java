@@ -20,6 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static org.retrolang.impl.Value.addRef;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.util.Arrays;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.retrolang.impl.Template.Constant;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
@@ -27,12 +33,6 @@ import org.retrolang.impl.TemplateBuilder.CompoundBase;
 import org.retrolang.impl.TemplateBuilder.CompoundBuilder;
 import org.retrolang.impl.TemplateBuilder.UnionBuilder;
 import org.retrolang.util.SizeOf;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.Arrays;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class TemplateBuilderTest {

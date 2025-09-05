@@ -18,28 +18,12 @@ package org.retrolang.impl.core;
 
 import static org.retrolang.impl.Value.addRef;
 
-import org.retrolang.impl.BaseType;
-import org.retrolang.impl.BuiltinMethod;
-import org.retrolang.impl.BuiltinMethod.Caller;
-import org.retrolang.impl.BuiltinMethod.Fn;
-import org.retrolang.impl.CodeGen;
-import org.retrolang.impl.Condition;
-import org.retrolang.impl.Core;
-import org.retrolang.impl.Err;
-import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.impl.FrameLayout;
-import org.retrolang.impl.NumValue;
-import org.retrolang.impl.RC;
-import org.retrolang.impl.RValue;
-import org.retrolang.impl.RefCounted;
-import org.retrolang.impl.ResultsInfo;
-import org.retrolang.impl.TProperty;
-import org.retrolang.impl.TState;
-import org.retrolang.impl.Value;
-import org.retrolang.impl.ValueUtil;
-import org.retrolang.impl.VmFunctionBuilder;
 import java.util.Arrays;
 import java.util.stream.IntStream;
+import org.retrolang.impl.*;
+import org.retrolang.impl.BuiltinMethod.Caller;
+import org.retrolang.impl.BuiltinMethod.Fn;
+import org.retrolang.impl.Err.BuiltinException;
 
 /** Core methods for Matrix. */
 public final class MatrixCore {
@@ -223,8 +207,6 @@ public final class MatrixCore {
       Core.newBaseType("BinaryUpdateWithCollection", 1, Core.LOOP);
 
   /**
-   *
-   *
    * <pre>
    * method size(Matrix m) default {
    *   sizes = sizes(m)
@@ -270,8 +252,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method matrix(Array sizes) {
    *   assert sizes | -&gt; # is Integer and # &gt;= 0 | allTrue
@@ -305,8 +285,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method matrix(Array newSizes, Matrix base) {
    *   assert newSizes | -&gt; # is Integer and # &gt;= 0 | allTrue
@@ -373,8 +351,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(Matrix m, Array key) =
    *   (key^ is Number | allTrue) ? element(m, Key) : subMatrix(m, key)
@@ -405,8 +381,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method subMatrix(Matrix m, Array key) default {
    *   sizes = sizes(m)
@@ -714,8 +688,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(m, Array key) (m is Reshaped or m is ReshapedArray) =
    *     element(m_.elements, convertKey(key, m_.sizes, sizes(m_.elements))
@@ -741,8 +713,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method replaceElement(ReshapedArray m, Array key, value) {
    *   arrayKey = convertKey(key, m_.sizes, sizes(m_.elements))
@@ -767,8 +737,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method startUpdate(ReshapedArray m=, Array key) { ... }
    * </pre>
@@ -792,8 +760,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(MatrixUpdater updater, newElement) = ...
    * </pre>
@@ -810,8 +776,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(m, EnumerationKind eKind) (m is Reshaped or m is ReshapedArray) {
    *   it = iterator(m_.elements, eKind)
@@ -854,8 +818,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(ReshapedIterator it=) {
    *   x = next(it_.it=)
@@ -900,8 +862,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(SubMatrix m, Array key) = element(m_.matrix, offsetKey(key, m))
    * </pre>
@@ -946,8 +906,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(SubMatrix m, EnumerationKind eKind) =
    *     iterator(matrix(m_.sizes), eKind) | -&gt; element(m, #)
@@ -960,16 +918,10 @@ public final class MatrixCore {
         CollectionCore.TRANSFORMED_ITERATOR,
         iteratorForNonEmptyBaseMatrixWithSizes(tstate, sizes, eKind),
         eKind,
-        tstate.compound(
-            Core.CURRIED_LAMBDA,
-            element.asLambdaExpr(),
-            tstate.arrayValue(NumValue.NEGATIVE_ONE, NumValue.ZERO),
-            tstate.arrayValue(m)));
+        tstate.compound(BinaryOp.ELEMENT.partialLeft, m));
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(BaseMatrix m, EnumerationKind eKind) {
    *   sizes = m_
@@ -1007,8 +959,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(BaseIterator it=) {
    *   {eKind, prev: key, sizes} = it_
@@ -1092,8 +1042,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method join(Matrix c1, Matrix c2) {
    *   assert sizes(c1) == sizes(c2)
@@ -1137,8 +1085,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method sizes(JoinedMatrix m) = sizes(m_.c1)
    * </pre>
@@ -1149,8 +1095,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method concat(Matrix v1, Matrix v2) {
    *   [len1] = sizes(v1)
@@ -1197,8 +1141,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method sizes(ConcatVector cv) = [cv_.size]
    * </pre>
@@ -1209,8 +1151,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(ConcatVector cv, [index]) {
    *   [len1] = sizes(cv_.v1)
@@ -1244,8 +1184,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(ConcatVector cv, EnumerationKind eKind) {
    *   size1 = eKind is EnumerateValues ? None : size(cv_.v1)
@@ -1294,8 +1232,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(ConcatIterator it=) {
    *   if it_.it1 is not None {
@@ -1397,8 +1333,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method concatUpdate(Array lhs, Matrix rhs) = ...
    * </pre>
@@ -1504,8 +1438,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method binaryUpdate(Matrix lhs=, Lambda lambda, rhs) {
    *   if rhs is Matrix {
@@ -1594,8 +1526,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(BinaryUpdateWithScalar loop, lhs, key) {
    *   { lambda, rhs } = loop_
@@ -1639,8 +1569,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(BinaryUpdateWithCollection loop, lhs, [key, rhsElement]) {
    *   element = startUpdate(lhs=, key)
@@ -1694,8 +1622,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method joinAndPipe(Matrix m1, Matrix m2, Lambda lambda) = join(m1, m2) | lambda
    * </pre>
@@ -1714,27 +1640,57 @@ public final class MatrixCore {
     }
   }
 
-  private static final Value ZERO_NEG1 =
-      Core.FixedArrayType.withSize(2).uncountedOf(NumValue.ZERO, NumValue.NEGATIVE_ONE);
-  private static final Value NEG1_ZERO =
-      Core.FixedArrayType.withSize(2).uncountedOf(NumValue.NEGATIVE_ONE, NumValue.ZERO);
-
   /**
-   * Returns {@code lambda[arg, ^m]} (if {@code argIsLeft} is true) or {@code lambda[^m, arg]} (if
-   * {@code argIsLeft} is false).
+   * A wrapper for a binary VmFunction that supports mapping it over a Matrix with a constant left
+   * or right argument.
+   *
+   * <p>Calls to these functions with a Matrix as one argument and a Number as the other are
+   * implicitly distributed, but the usual implementation of distributed operations (where the
+   * compiler defines a new lambda type) would be awkward here, so instead we create
+   * PartialApplication baseTypes (which were defined just to support this use).
    */
-  @RC.Out
-  private static Value curryBinaryOp(
-      TState tstate, @RC.In Value m, @RC.In Value lambda, @RC.In Value arg, boolean argIsLeft) {
-    Value curriedLambda =
-        tstate.compound(
-            Core.CURRIED_LAMBDA, lambda, argIsLeft ? NEG1_ZERO : ZERO_NEG1, tstate.arrayValue(arg));
-    return tstate.compound(CollectionCore.TRANSFORMED_MATRIX, m, curriedLambda);
+  private enum BinaryOp {
+    ADD(Core.add.fn()),
+    SUBTRACT(Core.subtract.fn()),
+    MULTIPLY(Core.multiply.fn()),
+    DIVIDE(Core.divide.fn()),
+    MODULO(Core.modulo.fn()),
+    EXPONENT(Core.exponent.fn()),
+    ELEMENT(element.fn());
+
+    /**
+     * A single-element Lambda baseType whose {@code at(self, arg)} method calls {@code op(self_,
+     * arg)}.
+     */
+    final BaseType partialLeft;
+
+    /**
+     * A single-element Lambda baseType whose {@code at(self, arg)} method calls {@code op(arg,
+     * self_)}.
+     */
+    final BaseType partialRight;
+
+    BinaryOp(VmFunction function) {
+      partialLeft = function.partialApplication(1);
+      partialRight = function.partialApplication(0);
+    }
+
+    /** Returns {@code fn(^m, rightValue)} (aka {@code m | # -> function(#, rightValue)}). */
+    @RC.Out
+    Value applyMatrixLeft(TState tstate, @RC.In Value m, @RC.In Value rightValue) {
+      return tstate.compound(
+          CollectionCore.TRANSFORMED_MATRIX, m, tstate.compound(partialRight, rightValue));
+    }
+
+    /** Returns {@code fn(leftValue, ^m)} (aka {@code m | # -> function(leftValue, #)}). */
+    @RC.Out
+    Value applyMatrixRight(TState tstate, @RC.In Value m, @RC.In Value leftValue) {
+      return tstate.compound(
+          CollectionCore.TRANSFORMED_MATRIX, m, tstate.compound(partialLeft, leftValue));
+    }
   }
 
   /**
-   *
-   *
    * <pre>
    * method negative(Matrix m) = m | -&gt; -#
    * </pre>
@@ -1746,8 +1702,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method add(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x + y)  // x ^+^ y
    * </pre>
@@ -1759,32 +1713,26 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method add(Matrix m, Number x) = m | -&gt; # + x
    * </pre>
    */
   @Core.Method("add(Matrix, Number)")
   static Value addMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.add.asLambdaExpr(), x, false);
+    return BinaryOp.ADD.applyMatrixLeft(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method add(Number x, Matrix m) = m | -&gt; x + #
    * </pre>
    */
   @Core.Method("add(Number, Matrix)")
   static Value addNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.add.asLambdaExpr(), x, true);
+    return BinaryOp.ADD.applyMatrixRight(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method subtract(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x - y)  // x ^-^ y
    * </pre>
@@ -1796,32 +1744,26 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method subtract(Matrix m, Number x) = m | -&gt; # - x
    * </pre>
    */
   @Core.Method("subtract(Matrix, Number)")
   static Value subtractMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.subtract.asLambdaExpr(), x, false);
+    return BinaryOp.SUBTRACT.applyMatrixLeft(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method subtract(Number x, Matrix m) = m | -&gt; x - #
    * </pre>
    */
   @Core.Method("subtract(Number, Matrix)")
   static Value subtractNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.subtract.asLambdaExpr(), x, true);
+    return BinaryOp.SUBTRACT.applyMatrixRight(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method multiply(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x * y)  // x ^*^ y
    * </pre>
@@ -1833,32 +1775,26 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method multiply(Matrix m, Number x) = m | -&gt; # * x
    * </pre>
    */
   @Core.Method("multiply(Matrix, Number)")
   static Value multiplyMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.multiply.asLambdaExpr(), x, false);
+    return BinaryOp.MULTIPLY.applyMatrixLeft(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method multiply(Number x, Matrix m) = m | -&gt; x * #
    * </pre>
    */
   @Core.Method("multiply(Number, Matrix)")
   static Value multiplyNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.multiply.asLambdaExpr(), x, true);
+    return BinaryOp.MULTIPLY.applyMatrixRight(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method divide(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x / y)  // x ^/^ y
    * </pre>
@@ -1870,32 +1806,26 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method divide(Matrix m, Number x) = m | -&gt; # / x
    * </pre>
    */
   @Core.Method("divide(Matrix, Number)")
   static Value divideMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.divide.asLambdaExpr(), x, false);
+    return BinaryOp.DIVIDE.applyMatrixLeft(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method divide(Number x, Matrix m) = m | -&gt; x / #
    * </pre>
    */
   @Core.Method("divide(Number, Matrix)")
   static Value divideNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.divide.asLambdaExpr(), x, true);
+    return BinaryOp.DIVIDE.applyMatrixRight(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method modulo(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x % y)  // x ^%^ y
    * </pre>
@@ -1907,32 +1837,26 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method modulo(Matrix m, Number x) = m | -&gt; # % x
    * </pre>
    */
   @Core.Method("modulo(Matrix, Number)")
   static Value moduloMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.modulo.asLambdaExpr(), x, false);
+    return BinaryOp.MODULO.applyMatrixLeft(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method modulo(Number x, Matrix m) = m | -&gt; x % #
    * </pre>
    */
   @Core.Method("modulo(Number, Matrix)")
   static Value moduloNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.modulo.asLambdaExpr(), x, true);
+    return BinaryOp.MODULO.applyMatrixRight(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method exponent(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x ** y)  // x ^**^ y
    * </pre>
@@ -1944,27 +1868,23 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method exponent(Matrix m, Number x) = m | -&gt; # ** x
    * </pre>
    */
   @Core.Method("exponent(Matrix, Number)")
   static Value exponentMatrixNumber(TState tstate, @RC.In Value m, @RC.In Value x) {
-    return curryBinaryOp(tstate, m, Core.exponent.asLambdaExpr(), x, false);
+    return BinaryOp.EXPONENT.applyMatrixLeft(tstate, m, x);
   }
 
   /**
-   *
-   *
    * <pre>
    * method exponent(Number x, Matrix m) = m | -&gt; x ** #
    * </pre>
    */
   @Core.Method("exponent(Number, Matrix)")
   static Value exponentNumberMatrix(TState tstate, @RC.In Value x, @RC.In Value m) {
-    return curryBinaryOp(tstate, m, Core.exponent.asLambdaExpr(), x, true);
+    return BinaryOp.EXPONENT.applyMatrixRight(tstate, m, x);
   }
 
   private MatrixCore() {}

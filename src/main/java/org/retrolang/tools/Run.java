@@ -16,9 +16,6 @@
 
 package org.retrolang.tools;
 
-import org.retrolang.Vm;
-import org.retrolang.compiler.Compiler;
-import org.retrolang.impl.VirtualMachine;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -26,6 +23,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.antlr.v4.runtime.CharStreams;
+import org.retrolang.Vm;
+import org.retrolang.compiler.Compiler;
+import org.retrolang.impl.VirtualMachine;
 
 /** A simple command-line tool for running a single Retrospect program. */
 public class Run {

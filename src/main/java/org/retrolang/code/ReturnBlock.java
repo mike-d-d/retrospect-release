@@ -17,11 +17,11 @@
 package org.retrolang.code;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeBuilder.OpCodeType;
-import org.retrolang.code.CodeBuilder.PrintOptions;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+import org.retrolang.code.CodeBuilder.OpCodeType;
+import org.retrolang.code.CodeBuilder.PrintOptions;
 
 /**
  * A Block that emits a return opcode (RETURN, IRETURN, LRETURN, FRETURN, DRETURN, or ARETURN, as

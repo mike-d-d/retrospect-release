@@ -18,6 +18,9 @@ package org.retrolang.impl.core;
 
 import static org.retrolang.impl.Value.addRef;
 
+import java.util.Arrays;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.IntBinaryOperator;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
 import org.retrolang.code.Register;
@@ -37,9 +40,6 @@ import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
 import org.retrolang.impl.VmFunctionBuilder;
-import java.util.Arrays;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.IntBinaryOperator;
 
 /** Core methods on Numbers. */
 public final class NumberCore {

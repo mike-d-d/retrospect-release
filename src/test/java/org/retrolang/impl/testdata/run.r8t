@@ -206,7 +206,7 @@ return [a, a | sum]
 /* RUN () RETURNS
   [[1, 1, 9, 16], 27]
 ---
-allocated=5496/205, peak=104
+allocated=5216/194, peak=104
 */
 
 x = 0
@@ -243,7 +243,7 @@ return m[2..3, 3..] | save
 /* RUN () RETURNS
   ReshapedArray([2, 2], [5, 6, 6, 7])
 ---
-allocated=5008/191, peak=152
+allocated=4616/175, peak=152
 */
 
 x = {a: newMatrix([2, 1], "yet")}
@@ -377,7 +377,7 @@ return {a, a2}
   {a: ReshapedArray([2, 2], [1, 8, 9, 20]),
    a2: ReshapedArray([2, 2], [101, 8, 9, 120])}
 ---
-allocated=23216/882, peak=304
+allocated=21688/821, peak=304
 */
 
 // Make sure that TState.dropOnThrow() works as expected

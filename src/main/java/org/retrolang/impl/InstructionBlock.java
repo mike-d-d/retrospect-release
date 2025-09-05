@@ -18,13 +18,13 @@ package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.Vm;
-import org.retrolang.impl.Instruction.BranchTarget;
-import org.retrolang.util.Bits;
 import java.util.Arrays;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.retrolang.Vm;
+import org.retrolang.impl.Instruction.BranchTarget;
+import org.retrolang.util.Bits;
 
 /**
  * A sequence of Instructions that can be executed. Constructed by a VmInstructionBlock.

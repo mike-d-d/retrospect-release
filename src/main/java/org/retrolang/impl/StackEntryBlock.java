@@ -17,6 +17,9 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.retrolang.code.Block;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeBuilder.PrintOptions;
@@ -34,9 +37,6 @@ import org.retrolang.impl.Template.Union;
 import org.retrolang.impl.TemplateBuilder.VarAllocator;
 import org.retrolang.util.Bits;
 import org.retrolang.util.SmallIntMap;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
 /**
  * A Block that allocates a new stack entry frame, initializes it, and saves it in a register.

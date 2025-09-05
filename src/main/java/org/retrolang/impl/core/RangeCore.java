@@ -69,8 +69,6 @@ public class RangeCore {
       Core.newBaseType("ReversedRangeIterator", 3, LoopCore.ITERATOR);
 
   /**
-   *
-   *
    * <pre>
    * method range(min, max) {
    *   assert (min is None or min is Integer) and (max is None or max is Integer)
@@ -127,8 +125,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method rangeWithSize(Number min, Number size) {
    *   assert min is Integer and size is Integer and size &gt= 0
@@ -170,8 +166,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method reverse(Range r) = ReversedRange_(r_)
    * </pre>
@@ -182,8 +176,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method reverse(ReversedRange r) = Range_(r_)
    * </pre>
@@ -194,8 +186,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method min(Range r) = r_.min
    * method min(ReversedRange r) = r_.min
@@ -207,8 +197,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method max(Range r) = r_.max
    * method max(ReversedRange r) = r_.max
@@ -220,8 +208,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method size(Range r) = r_.max - r_.min + 1
    * method size(ReversedRange r) = r_.max - r_.min + 1
@@ -244,8 +230,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method sizes(Range r) = [size(r)]
    * method sizes(ReversedRange r) = [size(r)]
@@ -263,8 +247,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(Range r, [index]) = r_.min + index - 1
    * </pre>
@@ -275,8 +257,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(ReversedRange r, [index]) = r_.max - (index - 1)
    * </pre>
@@ -309,8 +289,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(Range r, EnumerationKind eKind) {
    *   { min, max } = r_
@@ -330,8 +308,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(ReversedRange r, EnumerationKind eKind) {
    *   { min, max } = r_
@@ -366,8 +342,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(RangeIterator it=) {
    *   { next, max, keyOffset } = it_
@@ -386,8 +360,6 @@ public class RangeCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(ReversedRangeIterator it=) {
    *   { next, min, keyOffset } = it_

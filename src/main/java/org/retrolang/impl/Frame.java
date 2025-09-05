@@ -16,13 +16,13 @@
 
 package org.retrolang.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import org.retrolang.code.Op;
 import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.Evolver.Evolution;
 import org.retrolang.util.SizeOf;
 import org.retrolang.util.StringUtil;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 
 /**
  * Frame is the base class for a set of generic subclasses (defined in Frames) of varying sizes,

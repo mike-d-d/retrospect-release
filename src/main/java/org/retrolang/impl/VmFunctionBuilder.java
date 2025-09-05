@@ -16,12 +16,12 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.code.CodeValue;
-import org.retrolang.code.Op;
-import org.retrolang.util.Bits;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.Op;
+import org.retrolang.util.Bits;
 
 /**
  * Used to create a builtin function, optionally with an associated method. Instances of
@@ -66,7 +66,7 @@ public abstract class VmFunctionBuilder {
    * after the module has been initialized.
    */
   public final Singleton asLambdaExpr() {
-    return fn().asLambdaExpr;
+    return fn().asLambdaExpr();
   }
 
   /** Creates a zero-arg function that always returns the given value. */

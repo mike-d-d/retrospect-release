@@ -18,6 +18,11 @@ package org.retrolang.compiler;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+import org.antlr.v4.runtime.Token;
 import org.retrolang.Vm.InstructionBlock;
 import org.retrolang.Vm.Local;
 import org.retrolang.compiler.RetrospectParser.ArgContext;
@@ -67,11 +72,6 @@ import org.retrolang.compiler.RetrospectParser.TypeCheckExpressionContext;
 import org.retrolang.compiler.RetrospectParser.TypeNameExpressionContext;
 import org.retrolang.util.Bits;
 import org.retrolang.util.Bits.Op;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
-import org.antlr.v4.runtime.Token;
 
 /**
  * The second pass through a statement block <nl>

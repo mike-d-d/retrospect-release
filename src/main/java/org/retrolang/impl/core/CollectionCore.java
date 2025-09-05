@@ -188,8 +188,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(WithKeys wk, key) {
    *   v = wk_ @ key
@@ -218,8 +216,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(WithKeysMatrix wk, Array key) {
    *   v = element(wk_, key)
@@ -248,8 +244,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(wk, eKind) (wk is WithKeys or wk is WithKeysMatrix) {
    *   if eKind is EnumerateValues {
@@ -278,8 +272,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(WithKeysIterator it=) {
    *   result = next(it_=)
@@ -316,8 +308,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method pipe(Lambda left, Lambda right) default {
    *   if left is not Collection {
@@ -364,8 +354,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(TransformedLambda tLambda, x) {
    *   x = tLambda_.first @ x
@@ -401,8 +389,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(TransformedMatrix tm, Array x) {
    *   x = element(tm_.base, x)
@@ -426,8 +412,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method keys(tc) (tc is TransformedCollection or tc is TransformedMatrix) = keys(tc_.base)
    * </pre>
@@ -438,8 +422,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(tc, eKind) (tc is TransformedCollection or tc is TransformedMatrix) =
    *     TransformedIterator_({it: iterator(tc_.base, eKind), eKind, lambda: tc_.lambda})
@@ -464,8 +446,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(TransformedIterator it=) {
    *   for sequential it {
@@ -563,8 +543,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(JoinedCollection c, key) {
    *   x1 = c_.c1 @ key
@@ -597,8 +575,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(JoinedMatrixc, key) {
    *   x1 = element(c_.c1, key)
@@ -631,8 +607,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(c, eKind) (c is JoinedCollection or c is JoinedMatrix) {
    *   return JoinedIterator_({it: iterator(c_.c1, EnumerateAllKeys), c2: c_.c2, eKind})
@@ -657,8 +631,6 @@ public final class CollectionCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(JoinedIterator it=) {
    *   for sequential it {

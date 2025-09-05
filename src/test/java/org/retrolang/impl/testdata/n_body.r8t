@@ -90,7 +90,7 @@ function potentialEnergy(b1, b2) =
 /* RUN (nSteps=1000) RETURNS
   [-0.16907516382852442, -0.16908760523460617]
 ---
-allocated=206349280/7859678, peak=96
+allocated=196815680/7474127, peak=96
 $0 = *[]Struct(["mass", "pos", "v"], [d0, [d1, d2, d3], [d4, d5, d6]])
 $1 = *[]Struct(["mass", "pos", "v"], [d0, [d1, d2, d3], [d4, d5, d6]])
 $2 = *[]Struct(["mass", "pos", "v"], [d0, [d1, d2, d3], [d4, d5, d6]])

@@ -17,13 +17,13 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.List;
 import org.retrolang.code.Block.NonTerminal;
 import org.retrolang.code.Block.Split;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeBuilder.Phase;
 import org.retrolang.util.Bits;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Assigns a Java local index to each register. We could just assign distinct indices to each

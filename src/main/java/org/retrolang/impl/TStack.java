@@ -16,9 +16,9 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.retrolang.util.SizeOf;
 
 /**
  * A TStack represents an in-progress computation, unwound into a sequence of stack entry Values.

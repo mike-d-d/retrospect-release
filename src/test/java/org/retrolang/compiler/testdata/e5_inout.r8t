@@ -23,14 +23,18 @@ function count(key, counts=) {
 function binarySearch(_, _) = 1
 
 /* COMPILE ():
+private singleton iLambda@7:24 is Lambda
 function binarySearch(a0, a1)
 function count(a0, a1=)
+method at(_a0, _a1) _0 is iLambda@7:24 {
+    _a0 = at(_a1, "key")  // 7:24
+    return _a0
+}
 method binarySearch(_, _) {
     return 1  // 21:30
 }
 method count(key, counts) {
-    _t0 = curryLambda('at:2', [0, -1], ["key"])  // 7:2
-    _t0 = pipe(counts, _t0)
+    _t0 = pipe(counts, iLambda@7:24)  // 7:2
     i = binarySearch(key, _t0)
     _t0 = lessThan(0, i)  // 8:2
     branch L1 if not _t0

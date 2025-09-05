@@ -17,8 +17,6 @@
 package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
-import org.retrolang.Vm;
-import org.retrolang.util.SizeOf;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.lang.invoke.MethodHandles;
@@ -30,6 +28,8 @@ import java.util.Formatter;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import org.retrolang.Vm;
+import org.retrolang.util.SizeOf;
 
 /**
  * A ResourceTracker tracks the total memory use of a Retrospect computation and compares it with a

@@ -382,7 +382,7 @@ public class Vm {
     /**
      * Returns a lambda value that calls this function.
      *
-     * <p>Returns null if this function does not correspond to a lambda, either because it has inout
+     * <p>Errors if this function does not correspond to a lambda, either because it has inout
      * arguments (i.e. {@code argIsInout(i)} is true for any {@code i}) or because {@code
      * numResults()} is not 1.
      *

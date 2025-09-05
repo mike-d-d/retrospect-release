@@ -17,11 +17,11 @@
 package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
-import org.retrolang.Vm;
-import org.retrolang.impl.Err.BuiltinException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.retrolang.Vm;
+import org.retrolang.impl.Err.BuiltinException;
 
 /**
  * The implementation of VirtualMachine.structWithKeys(), i.e. a Vm.Compound for structs with a

@@ -17,9 +17,9 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.FutureBlock;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.Arrays;
+import org.retrolang.code.FutureBlock;
 
 /**
  * A Destination represents yet-to-be-generated code that may be branched to from multiple points,

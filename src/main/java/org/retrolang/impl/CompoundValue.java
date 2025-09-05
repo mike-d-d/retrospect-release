@@ -16,9 +16,9 @@
 
 package org.retrolang.impl;
 
+import java.util.Arrays;
 import org.retrolang.util.ArrayUtil;
 import org.retrolang.util.SizeOf;
-import java.util.Arrays;
 
 /**
  * An implementation of Value for BaseTypes with {@code size() > 0}, i.e. those that are

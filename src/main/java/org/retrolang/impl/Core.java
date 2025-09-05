@@ -19,6 +19,17 @@ package org.retrolang.impl;
 import static org.retrolang.impl.Value.addRef;
 
 import com.google.common.collect.ImmutableMap;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.retrolang.impl.BuiltinMethod.AnyFn;
 import org.retrolang.impl.BuiltinMethod.Caller;
 import org.retrolang.impl.BuiltinMethod.Fn;
@@ -33,18 +44,6 @@ import org.retrolang.impl.core.ReducerCore;
 import org.retrolang.impl.core.SaveCore;
 import org.retrolang.impl.core.StructCore;
 import org.retrolang.util.StringUtil;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
 
 /**
  * The Core module defines the types and functions that are available to all Retrospect programs;
@@ -312,15 +311,6 @@ public class Core {
       };
 
   /**
-   * {@code private compound CurriedLambda is Lambda}
-   *
-   * <p>Elements are {@code lambda}, {@code args}, {@code values}.
-   */
-  @Private
-  public static final BaseType.Named CURRIED_LAMBDA =
-      Core.newBaseType("CurriedLambda", 3, Core.LAMBDA);
-
-  /**
    * {@code private compound StructLambda is Lambda}
    *
    * <p>Element is an array of keys suitable as the first element of a STRUCT.
@@ -336,13 +326,28 @@ public class Core {
 
   /**
    * A private union that contains baseTypes created by the core for {@link
-   * VmFunction#asLambdaExpr}.
+   * VmFunction#asLambdaExpr()}.
    */
   @Private static final VmType.Union FUNCTION_LAMBDA = newUnion("FunctionLambda", LAMBDA);
+
+  /**
+   * A private union that contains baseTypes created by the core for {@link
+   * VmFunction#partialApplication}.
+   */
+  @Private
+  static final VmType PARTIAL_APPLICATION_LAMBDA =
+      new VmType(CORE, "PartialApplication", LAMBDA) {
+        @Override
+        boolean contains(BaseType type) {
+          return type instanceof Lambdas.PartialApplication;
+        }
+      };
 
   @Public static final VmFunctionBuilder not = VmFunctionBuilder.create("not", 1);
 
   @Public static final VmFunctionBuilder at = VmFunctionBuilder.create("at", 2).isOpen();
+
+  @Public static final VmFunctionBuilder reversedAt = VmFunctionBuilder.create("reversedAt", 2);
 
   @Public
   static final VmFunctionBuilder binaryUpdate =
@@ -400,8 +405,6 @@ public class Core {
 
   @Public static final VmFunctionBuilder new2 = VmFunctionBuilder.create("new", 2).isOpen();
 
-  @Public static final VmFunctionBuilder curryLambda = VmFunctionBuilder.create("curryLambda", 3);
-
   @Core.Method("not(Boolean)")
   public static Value not(@RC.Singleton Value in) {
     if (in instanceof RValue) {
@@ -412,9 +415,20 @@ public class Core {
   }
 
   /**
+   * <pre>
+   * method reversedAt(x, y) = at(y, x)
+   * </pre>
+   */
+  @Core.Method("reversedAt(_, _)")
+  static void reversedAt(
+      TState tstate, @RC.In Value arg, @RC.In Value lambda, @Fn("at:2") Caller at) {
+    tstate.startCall(at, lambda, arg);
+  }
+
+  /**
    * A subclass of BaseType that implements {@code at()}. Useful for lambdas whose behavior is
    * determined by an object that's not a Value (e.g. a VmFunction or a VmType), and hence can't
-   * just be an element of a compositional basetype.
+   * just be an element of a compositional baseType.
    */
   abstract static class CoreLambda extends BaseType {
     CoreLambda(int size) {
@@ -437,75 +451,13 @@ public class Core {
   @Core.Method("at(FunctionLambda, _)")
   static void atFunctionLambda(TState tstate, Value lambda, @RC.In Value arg, @AnyFn Caller caller)
       throws BuiltinException {
-    ((VmFunction.AsLambdaExpr) lambda.baseType()).at(tstate, arg, caller);
+    ((Lambdas.AsLambdaExpr) lambda.baseType()).at(tstate, arg, caller);
   }
 
-  /**
-   *
-   *
-   * <pre>
-   * method curryLambda(Lambda lambda, Array args, Array values) =
-   *     CurriedLambda({lambda, args, values})
-   * </pre>
-   */
-  @Core.Method("curryLambda(Lambda, Array, Array)")
-  static Value curryLambda(
-      TState tstate, @RC.In Value lambda, @RC.In Value args, @RC.In Value values)
-      throws BuiltinException {
-    int argsSize = args.numElements();
-    int valuesSize = values.numElements();
-    if (IntStream.range(0, argsSize)
-        .allMatch(i -> isValidCurryArg(args.peekElement(i), valuesSize))) {
-      return tstate.compound(CURRIED_LAMBDA, lambda, args, values);
-    } else {
-      throw Err.INVALID_ARGUMENT.asException();
-    }
-  }
-
-  /** Returns true if arg is an integer and is not less than -valuesSize. */
-  private static boolean isValidCurryArg(Value arg, int valuesSize) {
-    if (!NumValue.isInt(arg)) {
-      return false;
-    }
-    int i = NumValue.asInt(arg);
-    return i >= -valuesSize;
-  }
-
-  /**
-   *
-   *
-   * <pre>
-   * method at(CurriedLambda curried, x) {
-   *   x = curried_.args | i -&gt; i == 0 ? x : i &lt; 0 ? curried_.values[-i] : x[i] | save
-   *   return curried_.lambda @ x
-   * }
-   * </pre>
-   */
-  @Core.Method("at(CurriedLambda, _)")
-  static void atCurried(TState tstate, Value curried, Value x, @Fn("at:2") Caller at)
-      throws BuiltinException {
-    Value lambda = curried.element(0);
-    Value args = curried.peekElement(1);
-    Value values = curried.peekElement(2);
-    int argsSize = args.numElements();
-    @RC.Counted Object[] newArgs = tstate.allocObjectArray(argsSize);
-    for (int i = 0; i < argsSize; i++) {
-      int intArg = args.elementAsInt(i);
-      Value v;
-      if (intArg == 0) {
-        v = addRef(x);
-      } else if (intArg < 0) {
-        v = values.element(-(intArg + 1));
-      } else if (x.baseType().isArray() && x.numElements() >= intArg) {
-        v = x.element(intArg - 1);
-      } else {
-        tstate.dropValue(lambda);
-        tstate.dropReference(newArgs);
-        throw Err.INVALID_ARGUMENT.asException();
-      }
-      newArgs[i] = v;
-    }
-    tstate.startCall(at, lambda, tstate.asArrayValue(newArgs, argsSize));
+  @Core.Method("at(PartialApplication, _)")
+  static void atPartialApplication(
+      TState tstate, Value lambda, @RC.In Value arg, @AnyFn Caller caller) throws BuiltinException {
+    ((Lambdas.PartialApplication) lambda.baseType()).at(tstate, lambda, arg, caller);
   }
 
   /**
@@ -526,8 +478,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method min(x, y) default = y &lt; x ? y : x
    * </pre>
@@ -547,8 +497,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method max(x, y) default = x &lt; y ? y : x
    * </pre>
@@ -568,8 +516,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method binaryUpdate(lhs=, Lambda lambda, rhs) default {
    *   lhs = lambda[lhs, rhs]

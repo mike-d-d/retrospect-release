@@ -17,10 +17,6 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeValue;
-import org.retrolang.code.Op;
-import org.retrolang.impl.Template.VarSink;
-import org.retrolang.impl.TemplateBuilder.VarAllocator;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MutableCallSite;
@@ -29,6 +25,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.Op;
+import org.retrolang.impl.Template.VarSink;
+import org.retrolang.impl.TemplateBuilder.VarAllocator;
 
 /**
  * A CodeGenTarget is used to configure a CodeGen. Once code generation is complete it will become
