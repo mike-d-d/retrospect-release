@@ -17,13 +17,6 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.impl.Template.Compound;
-import org.retrolang.impl.Template.Constant;
-import org.retrolang.impl.Template.NumVar;
-import org.retrolang.impl.Template.RefVar;
-import org.retrolang.impl.Template.Union;
-import org.retrolang.impl.Template.VarSink;
-import org.retrolang.impl.Template.VarSource;
 import com.google.errorprone.annotations.Keep;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -33,6 +26,13 @@ import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.retrolang.impl.Template.Compound;
+import org.retrolang.impl.Template.Constant;
+import org.retrolang.impl.Template.NumVar;
+import org.retrolang.impl.Template.RefVar;
+import org.retrolang.impl.Template.Union;
+import org.retrolang.impl.Template.VarSink;
+import org.retrolang.impl.Template.VarSource;
 
 /**
  * A CopyPlan is used to optimize repeated calls of the form

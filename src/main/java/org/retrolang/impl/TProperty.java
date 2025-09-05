@@ -16,9 +16,9 @@
 
 package org.retrolang.impl;
 
+import java.util.function.Function;
 import org.retrolang.impl.TemplateBuilder.TestOption;
 import org.retrolang.impl.TemplateBuilder.VarAllocator;
-import java.util.function.Function;
 
 /**
  * A TProperty identifies some aspect of how a Template or TemplateBuilder represents values, such

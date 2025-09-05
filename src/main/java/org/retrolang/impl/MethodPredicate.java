@@ -17,8 +17,8 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableSet;
-import org.retrolang.Vm;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
 
 /**
  * Implements Vm.MethodPredicate, and provides support for determining when a method is attachable

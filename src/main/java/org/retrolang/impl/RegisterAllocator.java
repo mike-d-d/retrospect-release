@@ -16,11 +16,11 @@
 
 package org.retrolang.impl;
 
+import java.util.Arrays;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.Register;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.TemplateBuilder.VarAllocator;
-import java.util.Arrays;
 
 /** A VarAllocator that allocates registers in a given CodeBuilder to represent values. */
 class RegisterAllocator implements VarAllocator {

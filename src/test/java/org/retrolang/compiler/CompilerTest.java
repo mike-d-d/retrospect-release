@@ -19,9 +19,6 @@ package org.retrolang.compiler;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import org.retrolang.Vm;
-import org.retrolang.testing.TestdataScanner;
-import org.retrolang.testing.TestdataScanner.TestProgram;
 import com.google.testing.junit.testparameterinjector.TestParameter;
 import com.google.testing.junit.testparameterinjector.TestParameterInjector;
 import java.nio.file.Path;
@@ -30,6 +27,9 @@ import java.util.regex.Pattern;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.retrolang.Vm;
+import org.retrolang.testing.TestdataScanner;
+import org.retrolang.testing.TestdataScanner.TestProgram;
 
 /**
  * Compiles Retrospect source code from each of the .r8t files in the testdata directory, based on

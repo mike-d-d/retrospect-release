@@ -16,11 +16,11 @@
 
 package org.retrolang.code;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.util.function.IntFunction;
 import org.retrolang.code.Block.NonTerminal;
 import org.retrolang.code.Block.Split;
 import org.retrolang.code.Loop.BackRef;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.function.IntFunction;
 
 /**
  * A static-only class that implements the "duplicate simple blocks to enable skipping a test"

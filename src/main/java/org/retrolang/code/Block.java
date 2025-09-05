@@ -18,15 +18,15 @@ package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeBuilder.PrintOptions;
-import org.retrolang.code.Loop.BackRef;
-import org.retrolang.code.TestBlock.IsEq;
-import org.retrolang.util.Bits;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
+import org.retrolang.code.CodeBuilder.PrintOptions;
+import org.retrolang.code.Loop.BackRef;
+import org.retrolang.code.TestBlock.IsEq;
+import org.retrolang.util.Bits;
 
 /**
  * A Block represents one step in the program being constructed; when the program is emitted each

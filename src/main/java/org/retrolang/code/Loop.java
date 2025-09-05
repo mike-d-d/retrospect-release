@@ -17,8 +17,6 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
-import org.retrolang.code.CodeBuilder.Phase;
-import org.retrolang.util.Bits;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -26,6 +24,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.retrolang.code.CodeBuilder.Phase;
+import org.retrolang.util.Bits;
 
 /**
  * A Loop provides a controlled way to override the usual limitation that blocks can only branch

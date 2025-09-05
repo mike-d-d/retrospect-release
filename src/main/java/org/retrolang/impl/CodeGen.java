@@ -16,6 +16,15 @@
 
 package org.retrolang.impl;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.lang.invoke.VarHandle.AccessMode;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
@@ -31,15 +40,6 @@ import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.util.ArrayUtil;
 import org.retrolang.util.Bits;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.lang.invoke.VarHandle.AccessMode;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 /**
  * A CodeGen instance manages the process of generating one Java method corresponding to one

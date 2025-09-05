@@ -16,7 +16,6 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.impl.TemplateBuilder.CompoundBase;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +26,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.retrolang.impl.TemplateBuilder.CompoundBase;
 
 /**
  * An Evolver implements two operations for updating FrameLayouts:

@@ -18,6 +18,8 @@ package org.retrolang.impl.core;
 
 import static org.retrolang.impl.Value.addRef;
 
+import java.util.Arrays;
+import java.util.stream.IntStream;
 import org.retrolang.impl.BaseType;
 import org.retrolang.impl.BuiltinMethod;
 import org.retrolang.impl.BuiltinMethod.Caller;
@@ -38,8 +40,6 @@ import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
 import org.retrolang.impl.ValueUtil;
 import org.retrolang.impl.VmFunctionBuilder;
-import java.util.Arrays;
-import java.util.stream.IntStream;
 
 /** Core methods for Matrix. */
 public final class MatrixCore {
@@ -223,8 +223,6 @@ public final class MatrixCore {
       Core.newBaseType("BinaryUpdateWithCollection", 1, Core.LOOP);
 
   /**
-   *
-   *
    * <pre>
    * method size(Matrix m) default {
    *   sizes = sizes(m)
@@ -270,8 +268,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method matrix(Array sizes) {
    *   assert sizes | -&gt; # is Integer and # &gt;= 0 | allTrue
@@ -305,8 +301,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method matrix(Array newSizes, Matrix base) {
    *   assert newSizes | -&gt; # is Integer and # &gt;= 0 | allTrue
@@ -373,8 +367,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(Matrix m, Array key) =
    *   (key^ is Number | allTrue) ? element(m, Key) : subMatrix(m, key)
@@ -405,8 +397,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method subMatrix(Matrix m, Array key) default {
    *   sizes = sizes(m)
@@ -714,8 +704,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(m, Array key) (m is Reshaped or m is ReshapedArray) =
    *     element(m_.elements, convertKey(key, m_.sizes, sizes(m_.elements))
@@ -741,8 +729,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method replaceElement(ReshapedArray m, Array key, value) {
    *   arrayKey = convertKey(key, m_.sizes, sizes(m_.elements))
@@ -767,8 +753,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method startUpdate(ReshapedArray m=, Array key) { ... }
    * </pre>
@@ -792,8 +776,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(MatrixUpdater updater, newElement) = ...
    * </pre>
@@ -810,8 +792,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(m, EnumerationKind eKind) (m is Reshaped or m is ReshapedArray) {
    *   it = iterator(m_.elements, eKind)
@@ -854,8 +834,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(ReshapedIterator it=) {
    *   x = next(it_.it=)
@@ -900,8 +878,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(SubMatrix m, Array key) = element(m_.matrix, offsetKey(key, m))
    * </pre>
@@ -946,8 +922,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(SubMatrix m, EnumerationKind eKind) =
    *     iterator(matrix(m_.sizes), eKind) | -&gt; element(m, #)
@@ -968,8 +942,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(BaseMatrix m, EnumerationKind eKind) {
    *   sizes = m_
@@ -1007,8 +979,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(BaseIterator it=) {
    *   {eKind, prev: key, sizes} = it_
@@ -1092,8 +1062,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method join(Matrix c1, Matrix c2) {
    *   assert sizes(c1) == sizes(c2)
@@ -1137,8 +1105,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method sizes(JoinedMatrix m) = sizes(m_.c1)
    * </pre>
@@ -1149,8 +1115,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method concat(Matrix v1, Matrix v2) {
    *   [len1] = sizes(v1)
@@ -1197,8 +1161,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method sizes(ConcatVector cv) = [cv_.size]
    * </pre>
@@ -1209,8 +1171,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method element(ConcatVector cv, [index]) {
    *   [len1] = sizes(cv_.v1)
@@ -1244,8 +1204,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(ConcatVector cv, EnumerationKind eKind) {
    *   size1 = eKind is EnumerateValues ? None : size(cv_.v1)
@@ -1294,8 +1252,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(ConcatIterator it=) {
    *   if it_.it1 is not None {
@@ -1397,8 +1353,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method concatUpdate(Array lhs, Matrix rhs) = ...
    * </pre>
@@ -1504,8 +1458,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method binaryUpdate(Matrix lhs=, Lambda lambda, rhs) {
    *   if rhs is Matrix {
@@ -1594,8 +1546,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(BinaryUpdateWithScalar loop, lhs, key) {
    *   { lambda, rhs } = loop_
@@ -1639,8 +1589,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(BinaryUpdateWithCollection loop, lhs, [key, rhsElement]) {
    *   element = startUpdate(lhs=, key)
@@ -1694,8 +1642,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method joinAndPipe(Matrix m1, Matrix m2, Lambda lambda) = join(m1, m2) | lambda
    * </pre>
@@ -1733,8 +1679,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method negative(Matrix m) = m | -&gt; -#
    * </pre>
@@ -1746,8 +1690,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method add(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x + y)  // x ^+^ y
    * </pre>
@@ -1759,8 +1701,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method add(Matrix m, Number x) = m | -&gt; # + x
    * </pre>
@@ -1771,8 +1711,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method add(Number x, Matrix m) = m | -&gt; x + #
    * </pre>
@@ -1783,8 +1721,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method subtract(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x - y)  // x ^-^ y
    * </pre>
@@ -1796,8 +1732,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method subtract(Matrix m, Number x) = m | -&gt; # - x
    * </pre>
@@ -1808,8 +1742,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method subtract(Number x, Matrix m) = m | -&gt; x - #
    * </pre>
@@ -1820,8 +1752,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method multiply(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x * y)  // x ^*^ y
    * </pre>
@@ -1833,8 +1763,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method multiply(Matrix m, Number x) = m | -&gt; # * x
    * </pre>
@@ -1845,8 +1773,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method multiply(Number x, Matrix m) = m | -&gt; x * #
    * </pre>
@@ -1857,8 +1783,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method divide(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x / y)  // x ^/^ y
    * </pre>
@@ -1870,8 +1794,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method divide(Matrix m, Number x) = m | -&gt; # / x
    * </pre>
@@ -1882,8 +1804,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method divide(Number x, Matrix m) = m | -&gt; x / #
    * </pre>
@@ -1894,8 +1814,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method modulo(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x % y)  // x ^%^ y
    * </pre>
@@ -1907,8 +1825,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method modulo(Matrix m, Number x) = m | -&gt; # % x
    * </pre>
@@ -1919,8 +1835,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method modulo(Number x, Matrix m) = m | -&gt; x % #
    * </pre>
@@ -1931,8 +1845,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method exponent(Matrix m1, Matrix m2) = joinAndPipe(m1, m2, [x, y] -&gt; x ** y)  // x ^**^ y
    * </pre>
@@ -1944,8 +1856,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method exponent(Matrix m, Number x) = m | -&gt; # ** x
    * </pre>
@@ -1956,8 +1866,6 @@ public final class MatrixCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method exponent(Number x, Matrix m) = m | -&gt; x ** #
    * </pre>

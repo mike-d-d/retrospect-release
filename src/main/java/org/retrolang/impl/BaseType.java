@@ -16,10 +16,10 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.Vm;
-import org.retrolang.util.StringUtil;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
+import org.retrolang.Vm;
+import org.retrolang.util.StringUtil;
 
 /**
  * Every Value has a BaseType; whether the value is included in some VmType can be answered just by

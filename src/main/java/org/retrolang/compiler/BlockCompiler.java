@@ -16,6 +16,13 @@
 
 package org.retrolang.compiler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Function;
+import org.antlr.v4.runtime.Token;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.Vm.BranchTarget;
 import org.retrolang.Vm.Compound;
 import org.retrolang.Vm.Expr;
@@ -33,13 +40,6 @@ import org.retrolang.compiler.RetrospectParser.LowerIdContext;
 import org.retrolang.compiler.RetrospectParser.SimpleExtractContext;
 import org.retrolang.compiler.RetrospectParser.StructExtractContext;
 import org.retrolang.util.Bits;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.Function;
-import org.antlr.v4.runtime.Token;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A BlockCompiler holds the state associated with compiling a method body, lambda body, or main

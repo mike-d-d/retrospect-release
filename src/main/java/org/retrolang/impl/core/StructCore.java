@@ -45,8 +45,6 @@ public class StructCore {
   static final BaseType.Named STRUCT_UPDATER = Core.newBaseType("StructUpdater", 3, Core.LAMBDA);
 
   /**
-   *
-   *
    * <pre>
    * method at(Struct struct, String key) = ...
    * </pre>
@@ -75,8 +73,6 @@ public class StructCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterator(Struct struct, EnumerationKind eKind) {
    *   if eKind is EnumerateValues {
@@ -97,8 +93,6 @@ public class StructCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(StructIterator it=) {
    *   index = it_.prevIndex
@@ -143,8 +137,6 @@ public class StructCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method replaceElement(Struct struct, String key, v) = ...
    * </pre>
@@ -162,8 +154,6 @@ public class StructCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method startUpdate(Struct struct, String key) = ...
    * </pre>
@@ -183,8 +173,6 @@ public class StructCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(StructUpdater updater, newElement) = ...
    * </pre>

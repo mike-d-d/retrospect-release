@@ -19,6 +19,18 @@ package org.retrolang.impl;
 import static org.retrolang.impl.Value.addRef;
 
 import com.google.common.collect.ImmutableMap;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
 import org.retrolang.impl.BuiltinMethod.AnyFn;
 import org.retrolang.impl.BuiltinMethod.Caller;
 import org.retrolang.impl.BuiltinMethod.Fn;
@@ -33,18 +45,6 @@ import org.retrolang.impl.core.ReducerCore;
 import org.retrolang.impl.core.SaveCore;
 import org.retrolang.impl.core.StructCore;
 import org.retrolang.util.StringUtil;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
 
 /**
  * The Core module defines the types and functions that are available to all Retrospect programs;
@@ -441,8 +441,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method curryLambda(Lambda lambda, Array args, Array values) =
    *     CurriedLambda({lambda, args, values})
@@ -472,8 +470,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(CurriedLambda curried, x) {
    *   x = curried_.args | i -&gt; i == 0 ? x : i &lt; 0 ? curried_.values[-i] : x[i] | save
@@ -526,8 +522,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method min(x, y) default = y &lt; x ? y : x
    * </pre>
@@ -547,8 +541,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method max(x, y) default = x &lt; y ? y : x
    * </pre>
@@ -568,8 +560,6 @@ public class Core {
   }
 
   /**
-   *
-   *
    * <pre>
    * method binaryUpdate(lhs=, Lambda lambda, rhs) default {
    *   lhs = lambda[lhs, rhs]

@@ -17,8 +17,8 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.DebugInfo;
 import java.util.ArrayList;
+import org.retrolang.code.DebugInfo;
 
 /**
  * A CodeGenGroup contains one or more CodeGenTargets that we are generating code for. Once code

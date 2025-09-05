@@ -17,6 +17,8 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.function.Consumer;
 import org.retrolang.code.Block;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeValue;
@@ -29,8 +31,6 @@ import org.retrolang.code.Register;
 import org.retrolang.code.ValueInfo;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * A custom Block type for an exlined call to a code-generated method.

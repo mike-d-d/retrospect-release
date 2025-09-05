@@ -16,12 +16,12 @@
 
 package org.retrolang.code;
 
-import org.retrolang.code.CodeBuilder.PrintOptions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.code.CodeBuilder.PrintOptions;
 
 /**
  * A Sequencer assigns a sequential ordering to a block graph, trying to maximize the number of

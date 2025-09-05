@@ -16,6 +16,10 @@
 
 package org.retrolang.impl;
 
+import com.google.errorprone.annotations.Keep;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
 import org.retrolang.code.Register;
@@ -23,10 +27,6 @@ import org.retrolang.code.ValueInfo;
 import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.Evolver.Evolution;
 import org.retrolang.util.StringUtil;
-import com.google.errorprone.annotations.Keep;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A FrameLayout determines the interpretation of the fields in an instance of Frame. It has two

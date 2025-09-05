@@ -16,6 +16,15 @@
 
 package org.retrolang.compiler;
 
+import com.google.errorprone.annotations.FormatMethod;
+import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.retrolang.Vm;
 import org.retrolang.Vm.InstructionBlock;
 import org.retrolang.Vm.ModuleBuilder;
@@ -28,15 +37,6 @@ import org.retrolang.compiler.RetrospectParser.LowerIdContext;
 import org.retrolang.compiler.RetrospectParser.StructElementContext;
 import org.retrolang.compiler.RetrospectParser.UnitContext;
 import org.retrolang.util.StringUtil;
-import com.google.errorprone.annotations.FormatMethod;
-import org.antlr.v4.runtime.BaseErrorListener;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 /** Parses Retrospect source code and calls the appropriate methods on a VirtualMachine. */
 public final class Compiler {

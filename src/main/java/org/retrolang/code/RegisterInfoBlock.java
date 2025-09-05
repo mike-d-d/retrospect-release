@@ -16,11 +16,11 @@
 
 package org.retrolang.code;
 
+import java.util.function.IntFunction;
 import org.retrolang.code.CodeBuilder.PrintOptions;
 import org.retrolang.code.ValueInfo.BinaryOps;
 import org.retrolang.util.SmallIntMap;
 import org.retrolang.util.SmallIntMapBase;
-import java.util.function.IntFunction;
 
 /**
  * A Block that emits no byte codes but adds ValueInfos for one or more registers. Subsequent

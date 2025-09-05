@@ -18,8 +18,6 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.Vm;
-import org.retrolang.compiler.Compiler;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import junitparams.JUnitParamsRunner;
@@ -27,6 +25,8 @@ import org.antlr.v4.runtime.CharStreams;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.retrolang.Vm;
+import org.retrolang.compiler.Compiler;
 
 @RunWith(JUnitParamsRunner.class)
 public class StressTest {

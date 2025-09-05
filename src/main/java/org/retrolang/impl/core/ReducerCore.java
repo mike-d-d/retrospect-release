@@ -102,8 +102,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(Sum, state, value) {
    *   state += value
@@ -124,8 +122,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method combineStates(Sum, state1, state2) {
    *   state1 += state2
@@ -173,8 +169,6 @@ public final class ReducerCore {
           "anyFalse", BOOLEAN_REDUCER.uncountedOf(Core.FALSE, Core.FALSE));
 
   /**
-   *
-   *
    * <pre>
    * method nextState(BooleanReducer br, Absent, Boolean value) =
    *     (value == br_.exitOn) ? loopExit(not br_.initial) : Absent
@@ -196,8 +190,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method finalResult(BooleanReducer br, state) =
    *   state is Absent ? br_.initial : loopExitState(state)
@@ -244,8 +236,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(Top reducer, state, value) {
    *   if state is Absent or reducer_.preferFirst @ (r_.swap ? [state, value] : [value, state]) {
@@ -294,8 +284,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method combineStates(Top reducer, state1, state2) {
    *   return state2 is Absent ? state1 : nextState(reducer, state1, state2)
@@ -394,8 +382,6 @@ public final class ReducerCore {
       VmFunctionBuilder.fromConstant("saveUnordered", SAVE_UNORDERED);
 
   /**
-   *
-   *
    * <pre>
    * method emptyState(SaveUnordered) = []
    * </pre>
@@ -406,8 +392,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method nextState(SaveUnordered, state, value) = state &amp; [value]
    * </pre>
@@ -425,8 +409,6 @@ public final class ReducerCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method combineStates(SaveUnordered, state1, state2) = state1 &amp; state2
    * </pre>

@@ -16,11 +16,11 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.StringUtil;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.function.BiConsumer;
+import org.retrolang.util.StringUtil;
 
 /**
  * A MethodMemo saves information from prior executions of a VmMethod. Its primary state is

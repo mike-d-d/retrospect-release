@@ -16,6 +16,8 @@
 
 package org.retrolang.compiler;
 
+import java.util.List;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.retrolang.Vm;
 import org.retrolang.Vm.BranchTarget;
 import org.retrolang.Vm.Expr;
@@ -43,8 +45,6 @@ import org.retrolang.compiler.RetrospectParser.StatementContext;
 import org.retrolang.compiler.RetrospectParser.TraceStatementContext;
 import org.retrolang.util.Bits;
 import org.retrolang.util.StringUtil;
-import java.util.List;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
  * The final pass emits instructions. Most of the work is done by BlockCompiler and

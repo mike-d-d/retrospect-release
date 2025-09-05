@@ -20,6 +20,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
 import org.retrolang.code.Op;
@@ -31,12 +37,6 @@ import org.retrolang.impl.Template.Compound;
 import org.retrolang.impl.Template.Constant;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.Union;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /** Some minimal tests for the components of code generation. */
 @RunWith(JUnit4.class)

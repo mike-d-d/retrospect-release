@@ -17,9 +17,9 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
+import java.util.function.IntFunction;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.util.Bits;
-import java.util.function.IntFunction;
 
 /**
  * A Register represents an entry in the local variable array of the JVM when running the code being

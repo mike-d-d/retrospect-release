@@ -19,8 +19,6 @@ package org.retrolang.compiler;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import org.retrolang.Vm;
-import org.retrolang.util.Pair;
 import com.google.errorprone.annotations.FormatMethod;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +28,8 @@ import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.retrolang.Vm;
+import org.retrolang.util.Pair;
 
 /**
  * MockVM implements the Retrospect VM interface but isn't able to execute any instructions; instead

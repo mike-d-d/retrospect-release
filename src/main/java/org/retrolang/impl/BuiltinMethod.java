@@ -17,15 +17,15 @@
 package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
-import org.retrolang.impl.BaseType.SimpleStackEntryType;
-import org.retrolang.impl.BuiltinSupport.BuiltinImpl;
-import org.retrolang.impl.BuiltinSupport.ContinuationMethod;
-import org.retrolang.impl.Err.BuiltinException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Map;
+import org.retrolang.impl.BaseType.SimpleStackEntryType;
+import org.retrolang.impl.BuiltinSupport.BuiltinImpl;
+import org.retrolang.impl.BuiltinSupport.ContinuationMethod;
+import org.retrolang.impl.Err.BuiltinException;
 
 /**
  * Each subclass of BuiltinMethod implements a single built-in method for a Core function.

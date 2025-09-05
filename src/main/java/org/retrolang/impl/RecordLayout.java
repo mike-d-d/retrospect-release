@@ -19,6 +19,7 @@ package org.retrolang.impl;
 import static org.retrolang.impl.Value.addRef;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.function.ObjIntConsumer;
 import org.retrolang.code.Block;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeValue;
@@ -32,7 +33,6 @@ import org.retrolang.impl.TemplateBuilder.CompoundBase;
 import org.retrolang.util.ArrayUtil;
 import org.retrolang.util.Bits;
 import org.retrolang.util.SizeOf;
-import java.util.function.ObjIntConsumer;
 
 /**
  * Frames using this FrameLayout represent the compound value described by the template, with

@@ -16,10 +16,10 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.Vm;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
 
 /** A subclass of Vm.RuntimeError that saves the ResourceTracker and Retrospect thread stack. */
 class RuntimeError extends Vm.RuntimeError {

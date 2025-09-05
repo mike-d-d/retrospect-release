@@ -17,11 +17,11 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.code.CodeBuilder.PrintOptions;
 import org.retrolang.util.Bits;
 import org.retrolang.util.StringUtil;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A Link is a directed connection between two Blocks (the Link's {@link #origin}, which is fixed,

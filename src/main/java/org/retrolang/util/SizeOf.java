@@ -96,9 +96,7 @@ public class SizeOf {
     return (array == null) ? 0 : SizeOf.array(array.length, BYTE);
   }
 
-  /**
-   * Returns the number of bytes required to hold a given String.
-   */
+  /** Returns the number of bytes required to hold a given String. */
   public static long string(String string) {
     return SizeOf.object(SizeOf.PTR + SizeOf.INT) + SizeOf.array(string.length(), 2);
   }

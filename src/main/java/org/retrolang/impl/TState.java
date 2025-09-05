@@ -21,6 +21,10 @@ import static org.retrolang.impl.Value.addRef;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.util.Arrays;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
 import org.retrolang.impl.BaseType.StackEntryType;
@@ -29,10 +33,6 @@ import org.retrolang.impl.BuiltinSupport.BuiltinImpl;
 import org.retrolang.impl.BuiltinSupport.ContinuationMethod;
 import org.retrolang.impl.Template.VarSource;
 import org.retrolang.util.ArrayUtil;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-import java.util.Arrays;
 
 /** A TState is a ThreadLocal that holds all the per-thread state of a computation. */
 public final class TState extends MemoryHelper {
@@ -962,8 +962,8 @@ public final class TState extends MemoryHelper {
    * </ul>
    *
    * <p>(See also the "five things a begin or continuation method must do when called" list at
-   * docs/builtins.md#general-nested-function-calls; the first two leave the TState in state
-   * "done", and each of the others corresponds to a different state in this list.)
+   * docs/builtins.md#general-nested-function-calls; the first two leave the TState in state "done",
+   * and each of the others corresponds to a different state in this list.)
    */
   void finishBuiltin(ResultsInfo results, MethodMemo mMemo, BuiltinImpl impl) {
     int previousOrder = 0;

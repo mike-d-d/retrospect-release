@@ -18,17 +18,17 @@ package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeBuilder.OpCodeType;
-import org.retrolang.code.CodeValue.Const;
-import org.retrolang.code.ValueInfo.IntRange;
-import org.retrolang.code.ValueInfo.SmallIntSet;
-import org.retrolang.util.Bits;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.List;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.retrolang.code.CodeBuilder.OpCodeType;
+import org.retrolang.code.CodeValue.Const;
+import org.retrolang.code.ValueInfo.IntRange;
+import org.retrolang.code.ValueInfo.SmallIntSet;
+import org.retrolang.util.Bits;
 
 /**
  * A TestBlock is a Split that just evaluates some condition and chooses one of the outlinks; it has

@@ -16,6 +16,9 @@
 
 package org.retrolang.impl;
 
+import java.util.Arrays;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import org.retrolang.code.CodeValue.Const;
 import org.retrolang.code.Register;
 import org.retrolang.code.TestBlock;
@@ -25,9 +28,6 @@ import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.impl.Template.Union;
 import org.retrolang.util.Bits;
-import java.util.Arrays;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
 
 /**
  * RValue is a Value implementation that is only used during code generation; an RValue depends on

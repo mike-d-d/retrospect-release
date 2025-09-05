@@ -16,6 +16,13 @@
 
 package org.retrolang.impl;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
@@ -31,13 +38,6 @@ import org.retrolang.util.ArrayUtil;
 import org.retrolang.util.Bits;
 import org.retrolang.util.SizeOf;
 import org.retrolang.util.StringUtil;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.IntStream;
 
 /**
  * Frames using this FrameLayout represent a Retrospect array using parallel Java arrays. Each

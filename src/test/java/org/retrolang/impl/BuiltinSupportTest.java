@@ -17,20 +17,20 @@
 package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.retrolang.impl.Value.addRef;
 import static org.junit.Assert.assertThrows;
+import static org.retrolang.impl.Value.addRef;
 
 import com.google.common.collect.ImmutableMap;
-import org.retrolang.Vm.Access;
-import org.retrolang.impl.BuiltinMethod.Caller;
-import org.retrolang.impl.BuiltinMethod.Fn;
-import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.util.Bits;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.Vm.Access;
+import org.retrolang.impl.BuiltinMethod.Caller;
+import org.retrolang.impl.BuiltinMethod.Fn;
+import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.util.Bits;
 
 @RunWith(JUnit4.class)
 public class BuiltinSupportTest {
@@ -115,8 +115,6 @@ public class BuiltinSupportTest {
     }
 
     /**
-     *
-     *
      * <pre>
      * method fn(x, y=, Enum1) {
      *   y = x
@@ -130,8 +128,6 @@ public class BuiltinSupportTest {
     }
 
     /**
-     *
-     *
      * <pre>
      * method fn(x, y=, z) default {
      *   y = z
@@ -146,8 +142,6 @@ public class BuiltinSupportTest {
     }
 
     /**
-     *
-     *
      * <pre>
      * method fn(x, MyUnion y=, z) {
      *   assert z is Singleton // not actually a Retrospect type

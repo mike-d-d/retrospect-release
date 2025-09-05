@@ -17,6 +17,13 @@
 package org.retrolang.compiler;
 
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
+import org.antlr.v4.runtime.Token;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.Vm;
 import org.retrolang.Vm.BranchTarget;
 import org.retrolang.Vm.Compound;
@@ -52,13 +59,6 @@ import org.retrolang.compiler.RetrospectParser.TypeNameExpressionContext;
 import org.retrolang.util.Bits;
 import org.retrolang.util.Pair;
 import org.retrolang.util.StringUtil;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
-import org.antlr.v4.runtime.Token;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Emits instructions to compute the value of a Retrospect expression.

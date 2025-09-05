@@ -16,11 +16,11 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.retrolang.util.SizeOf;
 
 /**
  * A MemoryHelper handles memory allocation and deallocation for a single thread; MemoryHelpers are

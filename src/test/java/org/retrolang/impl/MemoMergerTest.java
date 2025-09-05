@@ -18,8 +18,6 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.Vm;
-import org.retrolang.util.Bits;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +34,8 @@ import junitparams.Parameters;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.retrolang.Vm;
+import org.retrolang.util.Bits;
 
 @RunWith(JUnitParamsRunner.class)
 public class MemoMergerTest {

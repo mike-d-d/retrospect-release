@@ -16,13 +16,13 @@
 
 package org.retrolang.impl;
 
+import java.util.Arrays;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
 import org.retrolang.code.Op;
 import org.retrolang.code.Register;
 import org.retrolang.code.ValueInfo;
-import java.util.Arrays;
 
 /** A static-only class with simple value operations that work equally well with RValues. */
 public class ValueUtil {

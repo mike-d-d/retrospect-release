@@ -16,12 +16,12 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.code.Op;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import org.retrolang.code.Op;
 
 /** A static utility class with convenience methods for creating MethodHandles and VarHandles. */
 class Handle {

@@ -16,11 +16,11 @@
 
 package org.retrolang.impl;
 
+import java.lang.reflect.Field;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Emitter;
 import org.retrolang.code.Op;
 import org.retrolang.util.SizeOf;
-import java.lang.reflect.Field;
 
 /**
  * A statics-only class providing a simpler API for the parts of sun.misc.Unsafe that we use.

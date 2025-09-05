@@ -18,12 +18,12 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.impl.Template.NumVar;
-import org.retrolang.impl.TemplateBuilder.VarAllocator;
 import java.util.function.Consumer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.impl.Template.NumVar;
+import org.retrolang.impl.TemplateBuilder.VarAllocator;
 
 @RunWith(JUnit4.class)
 public class RecordLayoutTest {

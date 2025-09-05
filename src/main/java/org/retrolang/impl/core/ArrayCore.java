@@ -75,8 +75,6 @@ public final class ArrayCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method iterate(Array array, EnumerationKind eKind) =
    *     ArrayIterator_({array, eKind, prevIndex: 0})
@@ -88,8 +86,6 @@ public final class ArrayCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method next(ArrayIterator it=) {
    *   index = it_.prevIndex
@@ -162,8 +158,6 @@ public final class ArrayCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method replaceElement(Array array, [index], value) {
    *   if index is Integer {
@@ -257,8 +251,6 @@ public final class ArrayCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method startUpdate(Array array=, Array key) { ... }
    * </pre>
@@ -286,8 +278,6 @@ public final class ArrayCore {
   }
 
   /**
-   *
-   *
    * <pre>
    * method at(ArrayUpdater updater, newElement) =
    *     replaceElement(updater_.array, [updater_.index], newElement)

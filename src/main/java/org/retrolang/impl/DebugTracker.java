@@ -16,7 +16,6 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.io.PrintWriter;
@@ -25,6 +24,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import org.retrolang.util.SizeOf;
 
 /**
  * Used by a debug ResourceTracker to save information about each live object and do additional

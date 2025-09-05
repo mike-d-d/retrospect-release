@@ -18,9 +18,6 @@ package org.retrolang.impl;
 
 import static org.retrolang.impl.Value.addRef;
 
-import org.retrolang.impl.TemplateBuilder.CompoundBase;
-import org.retrolang.impl.TemplateBuilder.UnionBase;
-import org.retrolang.util.Ordered;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -31,6 +28,9 @@ import java.util.Objects;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.impl.TemplateBuilder.CompoundBase;
+import org.retrolang.impl.TemplateBuilder.UnionBase;
+import org.retrolang.util.Ordered;
 
 /**
  * There are exactly six classes that implement Template, all defined in this file: Empty, Constant,

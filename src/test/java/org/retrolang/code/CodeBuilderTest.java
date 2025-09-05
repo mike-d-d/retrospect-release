@@ -19,9 +19,6 @@ package org.retrolang.code;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeBuilder.OpCodeType;
-import org.retrolang.code.ValueInfo.IntRange;
-import org.retrolang.util.Bits;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -33,6 +30,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.code.CodeBuilder.OpCodeType;
+import org.retrolang.code.ValueInfo.IntRange;
+import org.retrolang.util.Bits;
 
 @RunWith(JUnit4.class)
 public class CodeBuilderTest {

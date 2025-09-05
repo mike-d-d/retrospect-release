@@ -16,12 +16,12 @@
 
 package org.retrolang.compiler;
 
-import org.retrolang.compiler.RetrospectParser.ParenExpressionContext;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.FormatMethod;
 import java.util.function.Function;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.retrolang.compiler.RetrospectParser.ParenExpressionContext;
 
 /**
  * A base class for ANTLR visitors that provides two useful functions:

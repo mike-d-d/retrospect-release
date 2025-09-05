@@ -18,18 +18,18 @@ package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.retrolang.Vm;
-import org.retrolang.code.FutureBlock;
-import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.impl.InstructionBlock.EmitState;
-import org.retrolang.impl.InstructionBlock.TargetInfo;
-import org.retrolang.util.Bits;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
+import org.retrolang.code.FutureBlock;
+import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.impl.InstructionBlock.EmitState;
+import org.retrolang.impl.InstructionBlock.TargetInfo;
+import org.retrolang.util.Bits;
 
 /**
  * A VM instruction. There are nine subclasses: {@link Set}, {@link Call}, {@link Return}, {@link

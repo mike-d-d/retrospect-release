@@ -21,13 +21,6 @@ import static com.google.common.flogger.LazyArgs.lazy;
 import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.flogger.FluentLogger;
-import org.retrolang.code.Block.Initial;
-import org.retrolang.code.Block.NonTerminal;
-import org.retrolang.code.Block.Split;
-import org.retrolang.code.Block.Terminal;
-import org.retrolang.code.Loop.BackRef;
-import org.retrolang.code.ValueInfo.BinaryOps;
-import org.retrolang.util.Bits;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -39,6 +32,13 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.stream.IntStream;
 import org.objectweb.asm.Opcodes;
+import org.retrolang.code.Block.Initial;
+import org.retrolang.code.Block.NonTerminal;
+import org.retrolang.code.Block.Split;
+import org.retrolang.code.Block.Terminal;
+import org.retrolang.code.Loop.BackRef;
+import org.retrolang.code.ValueInfo.BinaryOps;
+import org.retrolang.util.Bits;
 
 /**
  * A CodeBuilder is used to assemble the bytecode for a single Java method. The lifecycle of a

@@ -18,11 +18,6 @@ package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.retrolang.Vm;
-import org.retrolang.impl.BaseType.SimpleStackEntryType;
-import org.retrolang.impl.BaseType.StackEntryType;
-import org.retrolang.impl.Err.BuiltinException;
-import org.retrolang.util.Bits;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
@@ -30,6 +25,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
+import org.retrolang.Vm;
+import org.retrolang.impl.BaseType.SimpleStackEntryType;
+import org.retrolang.impl.BaseType.StackEntryType;
+import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.util.Bits;
 
 /** Implements Vm.Function. */
 public abstract class VmFunction implements Vm.Function {

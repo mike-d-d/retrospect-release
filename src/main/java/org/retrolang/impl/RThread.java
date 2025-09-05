@@ -16,13 +16,13 @@
 
 package org.retrolang.impl;
 
-import org.retrolang.util.SizeOf;
-import org.retrolang.util.StringUtil;
 import com.google.errorprone.annotations.Keep;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
+import org.retrolang.util.SizeOf;
+import org.retrolang.util.StringUtil;
 
 /**
  * An RThread represents a Retrospect thread of computation. It may be

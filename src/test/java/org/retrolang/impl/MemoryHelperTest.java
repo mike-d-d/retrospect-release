@@ -19,12 +19,12 @@ package org.retrolang.impl;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import org.retrolang.util.SizeOf;
 import java.util.stream.IntStream;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.retrolang.util.SizeOf;
 
 @RunWith(JUnitParamsRunner.class)
 public class MemoryHelperTest {

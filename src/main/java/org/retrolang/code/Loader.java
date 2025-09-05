@@ -17,7 +17,6 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
-import org.retrolang.util.Pair;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -30,6 +29,7 @@ import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.retrolang.util.Pair;
 
 /**
  * A Loader implements the low-level operation of creating a new MethodHandle from the bytecode for

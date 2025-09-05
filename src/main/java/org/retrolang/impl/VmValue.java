@@ -17,8 +17,8 @@
 package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
-import org.retrolang.Vm;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import org.retrolang.Vm;
 
 /**
  * Implements Vm.Value.

@@ -18,13 +18,13 @@ package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.retrolang.code.CodeBuilder.OpCodeType;
-import org.retrolang.code.CodeValue.Const;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.retrolang.code.CodeBuilder.OpCodeType;
+import org.retrolang.code.CodeValue.Const;
 
 /** A block that sets the value of a register. */
 public class SetBlock extends Block.NonTerminal {

@@ -18,11 +18,11 @@ package org.retrolang.impl;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import org.retrolang.impl.Template.Constant;
-import org.retrolang.impl.Template.NumVar;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.retrolang.impl.Template.Constant;
+import org.retrolang.impl.Template.NumVar;
 
 @RunWith(JUnit4.class)
 public class CopyPlanTest {

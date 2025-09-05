@@ -17,9 +17,9 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableMap;
+import org.jspecify.annotations.Nullable;
 import org.retrolang.Vm;
 import org.retrolang.impl.Err.BuiltinException;
-import org.jspecify.annotations.Nullable;
 
 /**
  * The primary function of a VmModule is to hold maps of its public types and functions.
