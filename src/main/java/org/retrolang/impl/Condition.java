@@ -247,6 +247,25 @@ public abstract class Condition {
     }
   }
 
+  /**
+   * Returns a Condition that is true if {@code v1} and {@code v2} are equal; both must be of type
+   * int.
+   */
+  public static Condition intEq(CodeValue v1, CodeValue v2) {
+    if ((v1 instanceof CodeValue.Const) && (v2 instanceof CodeValue.Const)) {
+      return Condition.of(v1.iValue() == v2.iValue());
+    }
+    return fromTest(() -> new IsEq(OpCodeType.INT, v1, v2));
+  }
+
+  /**
+   * Returns a Condition that is true if {@code v} (which must be of type int) is not zero (or is
+   * true, if {@code v} represents a boolean).
+   */
+  public static Condition isNonZero(CodeValue v) {
+    return intEq(v, CodeValue.ZERO).not();
+  }
+
   /** Returns a Condition that is true if {@code v} is null. */
   public static Condition isNull(CodeValue v) {
     if (v instanceof CodeValue.Const c) {

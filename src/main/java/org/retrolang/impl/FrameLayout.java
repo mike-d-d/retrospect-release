@@ -19,6 +19,7 @@ package org.retrolang.impl;
 import com.google.errorprone.annotations.Keep;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
@@ -399,35 +400,44 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
     }
   }
 
+  // "hasSideEffect" doesn't seem exactly right here, but we want to stop the optimizer from moving
+  // operations that reference the pointer from before a call to after it
   private static final Op ENSURE_UNSHARED_OP =
-      Handle.opForMethod(
-              FrameLayout.class, "ensureUnshared", TState.class, Frame.class, boolean.class)
+      Handle.opForMethod(FrameLayout.class, "ensureUnshared", TState.class, Frame.class)
+          .hasSideEffect()
           .withOpSimplifier(
-              (args, registerInfos) -> {
+              ((args, registerInfo) -> {
                 // If we already know that the frame is unshared we can simplify away this call.
-                // args are (FrameLayout, TState, Frame, boolean)
+                // args are (FrameLayout, TState, Frame)
                 CodeValue frameArg = args.get(2);
-                if (frameArg instanceof Register r) {
-                  if (PtrInfo.isUnshared(registerInfos.apply(r.index))) {
-                    return frameArg;
-                  }
-                }
-                return null;
-              })
+                return isUnshared(frameArg, registerInfo) ? frameArg : null;
+              }))
           .build();
 
-  /**
-   * If {@code f} is unshared, returns {@code f}. Otherwise, if {@code checkFirst} is true and
-   * either there is insufficient memory to duplicate {@code f} or this layout has evolved, returns
-   * null. Otherwise, returns a duplicate of {@code f}.
-   */
+  // "hasSideEffect" doesn't seem exactly right here, but we want to stop the optimizer from moving
+  // operations that reference the pointer from before a call to after it
+  private static final Op CHECK_BEFORE_DUPLICATE_OP =
+      Handle.opForMethod(FrameLayout.class, "checkBeforeDuplicate", TState.class, Frame.class)
+          .hasSideEffect()
+          .withOpSimplifier(
+              ((args, registerInfo) -> {
+                // If we already know that the frame is unshared we can simplify away this call.
+                // args are (FrameLayout, TState, Frame)
+                CodeValue frameArg = args.get(2);
+                return isUnshared(frameArg, registerInfo) ? CodeValue.ONE : null;
+              }))
+          .build();
+
+  private static boolean isUnshared(CodeValue arg, IntFunction<ValueInfo> registerInfo) {
+    return arg instanceof Register r && PtrInfo.isUnshared(registerInfo.apply(r.index));
+  }
+
+  /** If {@code f} is unshared, returns {@code f}; otherwise, returns a duplicate of {@code f}. */
   @RC.Out
-  Frame ensureUnshared(TState tstate, @RC.In Frame f, boolean checkFirst) {
+  Frame ensureUnshared(TState tstate, @RC.In Frame f) {
     assert f.layout() == this;
     if (f.isNotShared()) {
       return f;
-    } else if (checkFirst && (hasEvolved() || !tstate.tryReserve(bytesForDuplicate(f)))) {
-      return null;
     }
     Frame result = duplicate(tstate, f);
     tstate.dropReference(f);
@@ -435,26 +445,43 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
   }
 
   /**
-   * If {@code f} is known to be unshared, returns it; otherwise returns the result of a call to
-   * {@link #ensureUnshared}. Escapes if {@code checkFirst} is true and the call returns null.
+   * If a call to {@link #ensureUnshared} would not require duplication, returns true; otherwise
+   * returns true if this layout has not evolved and we are able to reserve memory for the
+   * duplicate.
    */
-  Register emitEnsureUnshared(CodeGen codeGen, CodeValue f, boolean checkFirst) {
+  boolean checkBeforeDuplicate(TState tstate, Frame f) {
+    assert f.layout() == this;
+    return f.isNotShared() || (!hasEvolved() && tstate.tryReserve(bytesForDuplicate(f)));
+  }
+
+  /** If {@code f} is unshared, returns {@code f}; otherwise, returns a duplicate of {@code f}. */
+  public Register emitEnsureUnshared(CodeGen codeGen, CodeValue f) {
     if (f instanceof Register r && PtrInfo.isUnshared(codeGen.cb.nextInfoResolved(r.index))) {
       return r;
     }
     Register result = codeGen.cb.newRegister(Frame.class);
     CodeValue rhs =
         ENSURE_UNSHARED_OP.resultWithInfo(
-            notSharedInfo,
-            CodeValue.of(this),
-            codeGen.tstateRegister(),
-            f,
-            CodeValue.of(checkFirst));
+            notSharedInfo, CodeValue.of(this), codeGen.tstateRegister(), f);
     codeGen.emitSet(result, rhs);
-    if (checkFirst) {
-      codeGen.escapeUnless(Condition.isNull(result).not());
-    }
+    // Reusing an escape from before the call to ensureUnshared will require keeping a reference
+    // to f, which we'd like to avoid.
+    codeGen.setPreferNewEscape();
     return result;
+  }
+
+  /**
+   * Like {@link #emitEnsureUnshared}, but escapes if duplication would be needed and either the
+   * layout has evolved or we are unable to reserve enough memory for the duplicate.
+   */
+  public Register emitEnsureUnsharedWithCheck(CodeGen codeGen, CodeValue f) {
+    if (f instanceof Register r && PtrInfo.isUnshared(codeGen.cb.nextInfoResolved(r.index))) {
+      return r;
+    }
+    CodeValue check =
+        CHECK_BEFORE_DUPLICATE_OP.result(CodeValue.of(this), codeGen.tstateRegister(), f);
+    codeGen.escapeUnless(Condition.isNonZero(check));
+    return emitEnsureUnshared(codeGen, f);
   }
 
   /** Implements {@link Value#replaceElement} for a Frame that uses this FrameLayout. */
@@ -490,7 +517,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
    */
   CodeValue emitReplaceElement(CodeGen codeGen, CodeValue f, CodeValue index, Value newElement) {
     // TODO: should we sometimes be checking here?
-    f = emitEnsureUnshared(codeGen, f, false);
+    f = emitEnsureUnshared(codeGen, f);
     emitClearElement(codeGen, f, index);
     if (newElement != Core.TO_BE_SET) {
       emitSetElement(codeGen, f, index, RValue.toTemplate(newElement));
