@@ -71,7 +71,7 @@ public class CodeGen {
   final CodeGenGroup group;
   final CodeGenTarget target;
 
-  public final CodeBuilder cb;
+  public final RcCodeBuilder cb;
 
   /**
    * For the duration of the {@link #emit} call the CodeGen is bound to the thread's TState, so that
@@ -100,7 +100,7 @@ public class CodeGen {
   CodeGen(CodeGenGroup group, CodeGenTarget target) {
     this.group = group;
     this.target = target;
-    this.cb = new CodeBuilder(BINARY_OPS);
+    this.cb = new RcCodeBuilder(BINARY_OPS);
     // We can add the first arg here, since it's always the TState; the rest of the args will be
     // added by our caller.
     Register tstateRegister = cb.newArg(TState.class);
@@ -171,8 +171,8 @@ public class CodeGen {
   }
 
   /**
-   * Returns a CodeValue representing the given Value. {@code v} must be representable by a simple
-   * CodeValue, i.e. it may not be a compound or union RValue.
+   * Returns a CodeValue representing the given Value. After simplification {@code v} must be
+   * representable by a simple CodeValue, i.e. it may not be a compound or union RValue.
    */
   public CodeValue asCodeValue(Value v) {
     v = simplify(v);
@@ -208,14 +208,6 @@ public class CodeGen {
     return link;
   }
 
-  /** Adds all the blocks that were queued by calls to {@link #addAtEnd}. */
-  void runAllAtEnd() {
-    for (int i = atEnd.size() - 1; i >= 0; --i) {
-      atEnd.get(i).run();
-    }
-    atEnd.clear();
-  }
-
   /**
    * If v refers to one or more registers whose values are known (or perhaps even partly known) we
    * can simplify it.
@@ -235,7 +227,11 @@ public class CodeGen {
       addBlocks.run();
       // Emit all the escape handlers
       invalidateEscape();
-      runAllAtEnd();
+      // Add all the blocks that were queued by calls to addAtEnd()
+      for (int i = atEnd.size() - 1; i >= 0; --i) {
+        atEnd.get(i).run();
+      }
+      atEnd.clear();
     } finally {
       this.tstate = null;
       tstate.setCodeGen(null);
@@ -302,7 +298,7 @@ public class CodeGen {
               resultsArray = fnResultBytes;
               position = nv.index;
             } else {
-              setter = Op.SET_OBJ_ARRAY_ELEMENT;
+              setter = RcOp.SET_OBJ_ARRAY_ELEMENT;
               resultsArray = fnResults;
               position = ((RefVar) t).index;
             }
@@ -585,14 +581,57 @@ public class CodeGen {
    */
   private FutureBlock escape;
 
+  /** If true, we would prefer to set a new escape rather than reusing the current one. */
+  private boolean preferNewEscape;
+
+  record EscapeState(FutureBlock escape, boolean preferNewEscape) {
+    EscapeState combine(EscapeState other) {
+      return (other.escape == escape && !preferNewEscape && !other.preferNewEscape)
+          ? this
+          : NO_ESCAPE;
+    }
+  }
+
+  static final EscapeState NO_ESCAPE = new EscapeState(null, true);
+
+  /** Returns the current escape state. */
+  EscapeState escapeState() {
+    return (escape == null) ? NO_ESCAPE : new EscapeState(escape, preferNewEscape);
+  }
+
+  /** Requests that a new escaper be created at the next opportunity. */
+  void setPreferNewEscape() {
+    preferNewEscape = true;
+  }
+
+  /** Returns true if this is a good time to call {@link #setNewEscape}. */
+  boolean needNewEscape() {
+    return escape == null || preferNewEscape;
+  }
+
+  /** Restores a previously-saved escape handler. */
+  void restore(EscapeState escapeState) {
+    this.escape = escapeState.escape;
+    this.preferNewEscape = escapeState.preferNewEscape;
+  }
+
+  /** Equivalent to {@code restore(getEscape().combine(escapeState))}. */
+  void merge(EscapeState escapeState) {
+    if (escapeState.escape != escape || escapeState.preferNewEscape) {
+      escape = null;
+    }
+  }
+
   /** Returns the current escape handler. */
-  FutureBlock getEscape() {
+  FutureBlock escapeLink() {
+    assert escape != null;
     return escape;
   }
 
-  /** Sets the current escape handler. */
-  void setEscape(FutureBlock escape) {
-    this.escape = escape;
+  /** Defines an escape handler that will be emitted by the given Runnable. */
+  void setNewEscape(Runnable addBlocks) {
+    escape = addAtEnd(addBlocks);
+    preferNewEscape = false;
   }
 
   /** Defines an escape handler that starts unwinding with the given stack entry. */
@@ -601,13 +640,12 @@ public class CodeGen {
     // is run.
     CurrentCall cc = this.currentCall;
     MethodMemo mMemo = cc.methodMemo;
-    escape =
-        addAtEnd(
-            () -> {
-              cb.setNextSrc("startUnwind");
-              cc.emitFillStackEntry(CodeValue.NULL, stackEntry, mMemo);
-              cb.branchTo(cc.continueUnwinding);
-            });
+    setNewEscape(
+        () -> {
+          cb.setNextSrc("startUnwind");
+          cc.emitFillStackEntry(CodeValue.NULL, stackEntry, mMemo);
+          cb.branchTo(cc.continueUnwinding);
+        });
   }
 
   /** Invalidates the current escape handler. */

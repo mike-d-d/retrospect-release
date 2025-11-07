@@ -86,9 +86,9 @@ findRoot_0(lambda@42:30⸨continuous=i1⸨0:False; 1:True⸩⸩, d2, d3, 1.0E-6)
 -31: D4 ← 0;
  32: I1 ← 1;
 =33: TState.setResultTemplates(X0, [i0⸨0:d8; 1:None⸩]);
- 34: X0 ← TState.fnResultBytes(X0, 16);
- 35: setDouble[](X0, 8, D4);
- 36: setInt[](X0, 0, I1);
+ 34: X2 ← TState.fnResultBytes(X0, 16);
+ 35: setDouble[](X2, 8, D4);
+ 36: setInt[](X2, 0, I1);
  37: return
 -38: D4 ← 0;
  39: I1 ← 1; → 33

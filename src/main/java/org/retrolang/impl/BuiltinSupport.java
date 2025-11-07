@@ -355,7 +355,7 @@ class BuiltinSupport {
     public void emit(CodeGen codeGen, ResultsInfo results, MethodMemo mMemo, Object[] args) {
       int n = cMethodsInOrder.size();
       codeGen.setNextSrc(where);
-      if (codeGen.getEscape() == null) {
+      if (codeGen.needNewEscape()) {
         setNewEscape(codeGen, builtinEntry, args);
       }
       if (n == 0) {
@@ -408,7 +408,7 @@ class BuiltinSupport {
                 }
               };
         }
-        if (cMethod.isLoop || codeGen.getEscape() == null) {
+        if (cMethod.isLoop || codeGen.needNewEscape()) {
           setNewEscape(codeGen, cMethod.builtinEntry, destinationArgs);
         }
         codeGen.setNextSrc(cMethod.builtinEntry);

@@ -23,13 +23,13 @@ filtered_0([d1, d2, d3]):
  12: test D13 < 1; F:→ 27
  13: I1 ← 0;
 =14: TState.setResultTemplates(X0, [[i0⸨0:d8; 1:Absent⸩, i4⸨0:d16; 1:Absent⸩, i24⸨0:d32; 1:Absent⸩]]);
- 15: X0 ← TState.fnResultBytes(X0, 40);
- 16: setDouble[](X0, 8, D7);
- 17: setDouble[](X0, 16, D10);
- 18: setDouble[](X0, 32, D13);
- 19: setInt[](X0, 0, I9);
- 20: setInt[](X0, 4, I12);
- 21: setInt[](X0, 24, I1);
+ 15: X2 ← TState.fnResultBytes(X0, 40);
+ 16: setDouble[](X2, 8, D7);
+ 17: setDouble[](X2, 16, D10);
+ 18: setDouble[](X2, 32, D13);
+ 19: setInt[](X2, 0, I9);
+ 20: setInt[](X2, 4, I12);
+ 21: setInt[](X2, 24, I1);
  22: return
 -23: D7 ← 0;
  24: I9 ← 1; → 6

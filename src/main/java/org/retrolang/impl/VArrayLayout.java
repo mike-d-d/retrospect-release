@@ -612,7 +612,7 @@ class VArrayLayout extends FrameLayout {
 
   @Override
   void emitSetElement(CodeGen codeGen, CodeValue f, CodeValue pos, Template newElement) {
-    emitSetElement(codeGen, f, pos, newElement, codeGen.getEscape());
+    emitSetElement(codeGen, f, pos, newElement, codeGen.escapeLink());
   }
 
   /**
@@ -724,7 +724,7 @@ class VArrayLayout extends FrameLayout {
     if (t instanceof NumVar nv) {
       setNumericArrayElement(codeGen, elementArray, nv.encoding, pos, v);
     } else {
-      Op.SET_OBJ_ARRAY_ELEMENT.block(elementArray, pos, v).addTo(codeGen.cb);
+      RcOp.SET_OBJ_ARRAY_ELEMENT.block(elementArray, pos, v).addTo(codeGen.cb);
     }
   }
 

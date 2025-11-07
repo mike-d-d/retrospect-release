@@ -1,0 +1,140 @@
+/*
+ * Copyright 2025 The Retrospect Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.retrolang.impl;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
+import org.retrolang.code.*;
+import org.retrolang.util.Bits;
+
+/** An Op with optional @RC.In and @RC.Out annotations. */
+public class RcOp extends Op {
+
+  /**
+   * True if each caller of this Op is responsible for decrementing the root count of the Op's
+   * result. See {@link RC.Out}.
+   */
+  final boolean resultIsRcOut;
+
+  /**
+   * If {@code argIsRcIn} contains {@code i} then {@code i < argTypes.size()} and this Op takes
+   * responsibility for (eventually) decrementing root count of argument {@code i}. Unless the
+   * caller has reason to know that the reference count will still be non-zero, it should not re-use
+   * the argument after invoking the Op. See {@link RC.In}.
+   */
+  final Bits argIsRcIn;
+
+  /** A Builder is used to construct a new RcOp. */
+  public static class RcOpBuilder extends Op.Builder {
+    private boolean resultIsRcOut;
+    private Bits argIsRcIn = Bits.EMPTY;
+
+    RcOpBuilder(Op op) {
+      super(op);
+    }
+
+    @CanIgnoreReturnValue
+    RcOpBuilder resultIsRcOut() {
+      this.resultIsRcOut = true;
+      this.hasSideEffect();
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    RcOpBuilder argIsRcIn(Bits argIsRcIn) {
+      this.argIsRcIn = argIsRcIn;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    RcOpBuilder argIsRcIn(int index) {
+      argIsRcIn = argIsRcIn.set(index);
+      return this;
+    }
+
+    /**
+     * Returns an RcOp if there has been at least one call to {@link #resultIsRcOut()} or {@link
+     * #argIsRcIn(int)} or {@link #argIsRcIn(Bits)} (with a non-empty Bits); otherwise returns an
+     * Op.
+     */
+    @Override
+    public Op build() {
+      return (!resultIsRcOut && argIsRcIn.isEmpty()) ? super.build() : new RcOp(this);
+    }
+  }
+
+  private RcOp(RcOpBuilder builder) {
+    super(builder);
+    this.resultIsRcOut = builder.resultIsRcOut;
+    this.argIsRcIn = builder.argIsRcIn;
+    assert (resultType != null && !resultType.isPrimitive()) || !resultIsRcOut;
+    assert argIsRcIn.stream().noneMatch(i -> argTypes.get(i).isPrimitive());
+  }
+
+  /**
+   * A version of {@link Op#SET_OBJ_ARRAY_ELEMENT} with its third argument (the object stored)
+   * marked as @RC.In. Should always be used in preference to {@link Op#SET_OBJ_ARRAY_ELEMENT} when
+   * generating refCount-aware code.
+   */
+  static final Op SET_OBJ_ARRAY_ELEMENT =
+      new RcOpBuilder(Op.SET_OBJ_ARRAY_ELEMENT).argIsRcIn(2).build();
+
+  /**
+   * Returns an RcOpBuilder for the given MethodHandle; caller is expected to call {@code
+   * resultIsRcOut} and/or {@code argIsRcIn} on the result before calling {@code build}.
+   */
+  public static RcOpBuilder forMethodHandle(String name, MethodHandle mh) {
+    return new RcOpBuilder(Op.forMethodHandle(name, mh).build());
+  }
+
+  /**
+   * Returns an RcOpBuilder for an Op that calls the specified method, which must be public. Sets
+   * {@code resultIsRcOut} and {@code argIsRcIn} based on the method's @Rc.Out and @RC.In
+   * annotations.
+   */
+  public static RcOpBuilder forRcMethod(Class<?> klass, String name, Class<?>... argTypes) {
+    return forRcMethod(Handle.lookup, klass, name, argTypes);
+  }
+
+  /**
+   * Returns an RcOpBuilder for an Op that calls the specified method, which must be accessible with
+   * the given Lookup. Sets {@code resultIsRcOut} and {@code argIsRcIn} based on the
+   * method's @Rc.Out and @RC.In annotations.
+   */
+  public static RcOpBuilder forRcMethod(
+      MethodHandles.Lookup lookup, Class<?> klass, String name, Class<?>... argTypes) {
+    Method m = getDeclaredMethod(klass, name, argTypes);
+    Op op = Op.forMethod(lookup, m).build();
+    Parameter[] params = m.getParameters();
+    int firstParam = Modifier.isStatic(m.getModifiers()) ? 0 : 1;
+    assert firstParam + params.length == op.argTypes.size();
+    Bits argIsRcIn =
+        Bits.fromPredicate(
+            op.argTypes.size() - 1,
+            i -> (i >= firstParam && params[i - firstParam].isAnnotationPresent(RC.In.class)));
+    boolean resultIsRcOut = m.isAnnotationPresent(RC.Out.class);
+    RcOpBuilder builder = new RcOpBuilder(op).argIsRcIn(argIsRcIn);
+    if (resultIsRcOut) {
+      builder.resultIsRcOut();
+    }
+    return builder;
+  }
+}

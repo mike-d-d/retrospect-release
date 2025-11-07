@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.objectweb.asm.Opcodes;
 import org.retrolang.code.Block.Initial;
@@ -301,7 +302,7 @@ public class CodeBuilder {
   }
 
   /** Returns the block with the given index. */
-  final Block block(int i) {
+  protected final Block block(int i) {
     Block result = blocks.get(i);
     assert result.index() == i;
     return result;
@@ -615,6 +616,18 @@ public class CodeBuilder {
     return loops.get(i);
   }
 
+  /**
+   * Adds {@code newBlock} so that it is immediately followed by {@code nextBlock}. The caller is
+   * responsible for adding at least one inlink to {@code newBlock} after this method returns.
+   */
+  protected void insertBefore(NonTerminal newBlock, Block nextBlock) {
+    assert !(newBlock instanceof Split);
+    newBlock.setZone(nextBlock.zone());
+    newBlock.setOrder(nextBlock.order() - 1);
+    add(newBlock);
+    newBlock.next.setTarget(nextBlock);
+  }
+
   /** Sets the {@link Block#src} of each block added until the next call to {@code setNextSrc()}. */
   public void setNextSrc(Object src) {
     nextSrc = src;
@@ -744,13 +757,18 @@ public class CodeBuilder {
   }
 
   /** Called after optimization is complete, just before emitting. */
-  protected void finalizeBlocks() {
+  protected void finalizeBlocks(RegisterAssigner assigner) {
+    // Note that this will remove BackRefs, breaking the usual no-back-links-without-a-BackRef rule,
+    // but we only do this immediately before emitting blocks (after all optimization passes are
+    // completed) so we're OK.
+    removeNoOps(Block::isNoOp);
+  }
+
+  /** Calls {@link #removeNoOp} on each block identified by the given predicate. */
+  protected void removeNoOps(Predicate<Block> toRemove) {
     for (int i = 0; i < blocks.size(); ) {
       Block block = blocks.get(i);
-      if (block.isNoOp()) {
-        // Note that if block is a BackRef this will break the no-back-links-without-a-BackRef rule,
-        // but we only do this immediately before emitting blocks (after all optimization passes are
-        // completed) so we're OK.
+      if (toRemove.test(block)) {
         removeNoOp(block);
       } else {
         ++i;
@@ -974,6 +992,11 @@ public class CodeBuilder {
     }
   }
 
+  /** Update {@code b.live}; for use by subclasses which otherwise would not have access. */
+  protected static void setLive(Block b, Bits live) {
+    b.live = live;
+  }
+
   /**
    * Update the live state of each block to include the {@link Loop#extraLive()} of each enclosing
    * loop. Should only be done once all optimization is complete.
@@ -1020,7 +1043,7 @@ public class CodeBuilder {
     // The RegisterAssigner's construction of alias sets may cause some SetBlocks to become no-ops,
     // which will cause finalizeBlocks() to remove them.
     RegisterAssigner assigner = new RegisterAssigner(this);
-    finalizeBlocks();
+    finalizeBlocks(assigner);
     phase = Phase.EMITTING;
     int numLocals = assigner.assignJavaLocalNumbers();
     Sequencer sequencer = new Sequencer(blocks, true);

@@ -17,9 +17,7 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
@@ -61,16 +59,39 @@ public abstract class Block extends Zone.Ordered {
   }
 
   /**
-   * Returns the expressions associated with this block.
+   * Returns the number of expressions associated with this block.
    *
    * <p>For example, a {@link SetBlock} has a single input for the right hand side; a {@link
    * ReturnBlock} block has zero or one inputs (depending on whether the method being compiled has a
    * void return type or not), and an {@link IsEq} test has two inputs.
    *
-   * <p>The default implementation returns an empty list.
+   * <p>The default implementation returns zero.
    */
-  public List<CodeValue> inputs() {
-    return ImmutableList.of();
+  public int numInputs() {
+    return 0;
+  }
+
+  /**
+   * Returns one of the expressions associated with this block; {@code index} must be less than
+   * {@link #numInputs}.
+   */
+  public CodeValue input(int index) {
+    throw new AssertionError();
+  }
+
+  /**
+   * Updates one of the expressions associated with this block; {@code index} must be less than
+   * {@link #numInputs}.
+   */
+  public void setInput(int index, CodeValue input) {
+    throw new AssertionError();
+  }
+
+  /** Simplifies each of the expressions associated with this block. */
+  protected void simplifyInputs(IntFunction<ValueInfo> registerInfo) {
+    for (int i = numInputs() - 1; i >= 0; i--) {
+      setInput(i, input(i).simplify(registerInfo));
+    }
   }
 
   /**
@@ -225,7 +246,10 @@ public abstract class Block extends Zone.Ordered {
       }
     }
     forEachModifiedRegister(lhs -> live.clear(lhs.index));
-    inputs().forEach(input -> input.getLive(true, live));
+    int numInputs = numInputs();
+    for (int i = 0; i < numInputs; i++) {
+      input(i).getLive(true, live);
+    }
     this.live = live.build();
     return PropagationResult.DONE;
   }

@@ -99,7 +99,7 @@ public class ValueUtil {
       }
       CopyPlan plan = CopyPlan.create(layout.template(), result);
       plan = CopyOptimizer.toRegisters(plan, registerStart, registerEnd, result);
-      ((VArrayLayout) layout).copyFrom(arrayCV, indexCV).emit(codeGen, plan, codeGen.getEscape());
+      ((VArrayLayout) layout).copyFrom(arrayCV, indexCV).emit(codeGen, plan, codeGen.escapeLink());
     } else {
       FutureBlock done = new FutureBlock();
       codeGen.emitSwitch(

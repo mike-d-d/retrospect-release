@@ -86,7 +86,7 @@ public abstract class Condition {
       return;
     }
     FutureBlock elseBranch = new FutureBlock();
-    FutureBlock savedEscape = codeGen.getEscape();
+    CodeGen.EscapeState savedEscape = codeGen.escapeState();
     addTest(codeGen, elseBranch);
     // It is possible that the Condition is known to always be false (e.g. if it tests a register
     // whose value is known); if so, we can skip the ifTrue call.
@@ -105,8 +105,8 @@ public abstract class Condition {
       FutureBlock done = codeGen.cb.swapNext(elseBranch);
       // Running ifTrue might have changed or invalidated the escape; restore the one that was valid
       // before we ran it.
-      FutureBlock doneEscape = codeGen.getEscape();
-      codeGen.setEscape(savedEscape);
+      CodeGen.EscapeState doneEscape = codeGen.escapeState();
+      codeGen.restore(savedEscape);
       try {
         ifFalse.run();
       } catch (BuiltinException err) {
@@ -116,9 +116,7 @@ public abstract class Condition {
         codeGen.cb.mergeNext(done);
         // If both branches left the escape unchanged, we can keep it; otherwise we should
         // invalidate it.
-        if (codeGen.getEscape() != doneEscape) {
-          codeGen.invalidateEscape();
-        }
+        codeGen.merge(doneEscape);
       }
     }
   }
@@ -247,6 +245,25 @@ public abstract class Condition {
     } else {
       return Condition.of(v1.equals(v2));
     }
+  }
+
+  /**
+   * Returns a Condition that is true if {@code v1} and {@code v2} are equal; both must be of type
+   * int.
+   */
+  public static Condition intEq(CodeValue v1, CodeValue v2) {
+    if ((v1 instanceof CodeValue.Const) && (v2 instanceof CodeValue.Const)) {
+      return Condition.of(v1.iValue() == v2.iValue());
+    }
+    return fromTest(() -> new IsEq(OpCodeType.INT, v1, v2));
+  }
+
+  /**
+   * Returns a Condition that is true if {@code v} (which must be of type int) is not zero (or is
+   * true, if {@code v} represents a boolean).
+   */
+  public static Condition isNonZero(CodeValue v) {
+    return intEq(v, CodeValue.ZERO).not();
   }
 
   /** Returns a Condition that is true if {@code v} is null. */

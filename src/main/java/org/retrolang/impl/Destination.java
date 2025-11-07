@@ -49,8 +49,8 @@ class Destination implements ResultsInfo {
   /** Links to this Destination; null after this Destination has been emitted. */
   private FutureBlock links = new FutureBlock();
 
-  /** If all branches to this Destination share the same escape, this will be it; otherwise null. */
-  private FutureBlock escape;
+  /** The combined escape state from branches to this Destination. */
+  private CodeGen.EscapeState escape;
 
   /**
    * One of
@@ -157,11 +157,11 @@ class Destination implements ResultsInfo {
     if (codeGen.cb.nextIsReachable()) {
       // If all incoming links have the same non-null escape, emit() will restore it; otherwise
       // emit will setEscape() to null.
-      FutureBlock incomingEscape = codeGen.getEscape();
+      CodeGen.EscapeState incomingEscape = codeGen.escapeState();
       if (!links.hasInLink()) {
         this.escape = incomingEscape;
-      } else if (this.escape != incomingEscape) {
-        this.escape = null;
+      } else {
+        this.escape = this.escape.combine(incomingEscape);
       }
       codeGen.cb.branchTo(links);
     }
@@ -195,7 +195,7 @@ class Destination implements ResultsInfo {
       return null;
     }
     codeGen.cb.setNext(links);
-    codeGen.setEscape(escape);
+    codeGen.restore(escape);
     Value[] result = state.values();
     links = null;
     return result;

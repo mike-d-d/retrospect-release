@@ -241,9 +241,10 @@ class RecordLayout extends FrameLayout {
   }
 
   static final Op ALLOC_OP =
-      Handle.opForMethod(RecordLayout.class, "alloc", TState.class, int.class).build();
+      RcOp.forRcMethod(RecordLayout.class, "alloc", TState.class, int.class).build();
 
   @Override
+  @RC.Out
   public Frame alloc(TState tstate, int size) {
     Frame result = frameClass.alloc(tstate);
     result.layoutOrReplacement = this;
@@ -383,7 +384,7 @@ class RecordLayout extends FrameLayout {
       // Can we end up here?  if so, we should do the simple thing
       throw new UnsupportedOperationException();
     }
-    ObjIntConsumer<Template> emitElement = emitSetElement(codeGen, f, codeGen.getEscape());
+    ObjIntConsumer<Template> emitElement = emitSetElement(codeGen, f, codeGen.escapeLink());
     FutureBlock done = new FutureBlock();
     codeGen.emitSwitch(
         index,
@@ -600,7 +601,7 @@ class RecordLayout extends FrameLayout {
       } else {
         CodeValue ptrOverflow = frameClass.getPtrField.get(ptrOverflowIndex()).result(frame);
         int overflowIndex = index - frameClass.nPtrs;
-        return Op.SET_OBJ_ARRAY_ELEMENT.block(ptrOverflow, CodeValue.of(overflowIndex), v);
+        return RcOp.SET_OBJ_ARRAY_ELEMENT.block(ptrOverflow, CodeValue.of(overflowIndex), v);
       }
     }
   }

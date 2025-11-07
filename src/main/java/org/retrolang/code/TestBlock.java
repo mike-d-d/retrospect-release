@@ -17,9 +17,7 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import java.util.List;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.Label;
@@ -71,8 +69,25 @@ public abstract class TestBlock extends Block.Split {
   }
 
   @Override
-  public List<CodeValue> inputs() {
-    return (value2 == null) ? ImmutableList.of(value1) : ImmutableList.of(value1, value2);
+  public int numInputs() {
+    return (value2 == null) ? 1 : 2;
+  }
+
+  @Override
+  public CodeValue input(int index) {
+    assert index == 0 || (index == 1 && value2 != null);
+    return (index == 0) ? value1 : value2;
+  }
+
+  @Override
+  public void setInput(int index, CodeValue input) {
+    assert index == 0 || (index == 1 && value2 != null);
+    assert input != null;
+    if (index == 0) {
+      value1 = input;
+    } else {
+      value2 = input;
+    }
   }
 
   /**
@@ -129,9 +144,8 @@ public abstract class TestBlock extends Block.Split {
 
   @Override
   protected PropagationResult updateInfo() {
-    value1 = value1.simplify(next.info.registers());
+    simplifyInputs(next.info.registers());
     if (value2 != null) {
-      value2 = value2.simplify(next.info.registers());
       binarySimplify();
     }
     if (value1 instanceof Register || value2 instanceof Register) {
@@ -191,7 +205,7 @@ public abstract class TestBlock extends Block.Split {
         if (setBlock.hasMultipleInlinks() || !(setBlock.inLink.origin instanceof SetBlock)) {
           break;
         }
-        setBlock.rhs().getLive(false, moveCandidates);
+        setBlock.input(0).getLive(false, moveCandidates);
         setBlock = (SetBlock) setBlock.inLink.origin;
         // TODO(mdixon): should we bound how far back we look?
         continue;

@@ -262,7 +262,7 @@ public class RValue implements Value {
     // corresponding registers, and emit it.
     CopyPlan plan = CopyPlan.create(element, result);
     plan = CopyOptimizer.toRegisters(plan, registersStart, registersEnd, result);
-    layout.copyFrom(register, index).emit(codeGen, plan, codeGen.getEscape());
+    layout.copyFrom(register, index).emit(codeGen, plan, codeGen.escapeLink());
     return new RValue(result);
   }
 

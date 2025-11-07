@@ -303,11 +303,18 @@ public class Op {
     return resultWithInfo(infoOverride, args, i -> ValueInfo.ANY);
   }
 
+  /**
+   * Returns a new CodeValue that applies this Op to the given args. If {@code infoOverride} is
+   * non-null, asserts that the result satisfies the given ValueInfo. If {@code registerInfo} is
+   * non-null, attempts to simplify the result and if successful returns the simplification instead.
+   */
   private CodeValue resultWithInfo(
       ValueInfo infoOverride, ImmutableList<CodeValue> args, IntFunction<ValueInfo> registerInfo) {
-    CodeValue result = simplify(args, registerInfo);
-    if (result != null) {
-      return result;
+    if (registerInfo != null) {
+      CodeValue result = simplify(args, registerInfo);
+      if (result != null) {
+        return result;
+      }
     }
     return new Result(this, args, infoOverride);
   }
@@ -519,25 +526,8 @@ public class Op {
 
     @Override
     public CodeValue simplify(IntFunction<ValueInfo> registerInfo) {
-      ImmutableList.Builder<CodeValue> newArgs = null;
-      for (int i = 0; i < args.size(); i++) {
-        CodeValue arg = args.get(i);
-        CodeValue newArg = arg.simplify(registerInfo);
-        assert newArg.isCompatible(op.argTypes.get(i));
-        if (newArgs == null) {
-          if (newArg == arg) {
-            continue;
-          }
-          newArgs = ImmutableList.builder();
-          for (int j = 0; j < i; j++) {
-            newArgs.add(args.get(j));
-          }
-        }
-        newArgs.add(newArg);
-      }
-      if (newArgs != null) {
-        return op.resultWithInfo(infoOverride, newArgs.build(), registerInfo);
-      } else if (op.hasInfoSensitiveSimplifier) {
+      CodeValue result = simplify(arg -> arg.simplify(registerInfo), registerInfo);
+      if (result == this && op.hasInfoSensitiveSimplifier) {
         // This op/args combination has already been simplified once; unless its
         // simplification might depend on the registerInfo we can skip this check.
         CodeValue simplified = op.simplify(args, registerInfo);
@@ -545,7 +535,37 @@ public class Op {
           return simplified;
         }
       }
-      return this;
+      return result;
+    }
+
+    /**
+     * Applies {@code argSimplifier} to each of this Op's arguments. If all of them are returned
+     * unchanged, returns this; otherwise creates a copy with the simplified arguments.
+     *
+     * <p>The arguments are simplified in reverse order; this usually doesn't matter, but one client
+     * (RcCodeBuilder.BackwardPass) relies on it.
+     *
+     * @param registerInfo if non-null and any of the arguments simplify, passed in the {@link
+     *     Op#simplify} call to check for further optimization
+     */
+    public CodeValue simplify(
+        Function<CodeValue, CodeValue> argSimplifier, IntFunction<ValueInfo> registerInfo) {
+      CodeValue[] newArgs = null;
+      for (int i = args.size() - 1; i >= 0; i--) {
+        CodeValue arg = args.get(i);
+        CodeValue newArg = argSimplifier.apply(arg);
+        if (newArg == arg) {
+          continue;
+        }
+        assert newArg.isCompatible(op.argTypes.get(i));
+        if (newArgs == null) {
+          newArgs = args.toArray(CodeValue[]::new);
+        }
+        newArgs[i] = newArg;
+      }
+      return (newArgs != null)
+          ? op.resultWithInfo(infoOverride, ImmutableList.copyOf(newArgs), registerInfo)
+          : this;
     }
 
     @Override
