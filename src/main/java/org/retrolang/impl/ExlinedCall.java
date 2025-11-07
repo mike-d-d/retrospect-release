@@ -71,8 +71,22 @@ class ExlinedCall extends Block.Split {
   }
 
   @Override
-  public List<CodeValue> inputs() {
-    return ImmutableList.of(call);
+  public int numInputs() {
+    return 1;
+  }
+
+  @Override
+  public CodeValue input(int index) {
+    assert index == 0;
+    return call;
+  }
+
+  @Override
+  public void setInput(int index, CodeValue input) {
+    assert index == 0;
+    // The arguments might have been simplified but the top-level op should be unchanged
+    assert call.op == ((Op.Result) input).op;
+    call = (Op.Result) input;
   }
 
   @Override
@@ -82,10 +96,7 @@ class ExlinedCall extends Block.Split {
 
   @Override
   protected PropagationResult updateInfo() {
-    Op.Result beforeSimplify = call;
-    call = (Op.Result) call.simplify(next.info.registers());
-    // The arguments might have been simplified but the top-level op should be unchanged
-    assert call.op == beforeSimplify.op;
+    simplifyInputs(next.info.registers());
     // Our only output register (stackRest) could have any value, on either branch.
     next.info.updateForAssignment(stackRest, ValueInfo.ANY, cb());
     next.info.modified(stackRest, containingLoop());
@@ -171,30 +182,45 @@ class ExlinedCall extends Block.Split {
     codeGen.invalidateEscape();
     // If we fall through, the exlined method returned values with the expected template;
     // copy them into the destination registers.
-    HasVar hasVar = new HasVar();
-    target.results.forEach(hasVar);
-    CopyEmitter fromFnResults =
-        new FromFnResults(hasVar.hasNumVar ? codeGen.fnResultBytes(0) : null);
+    FromFnResults resultEmitter = new FromFnResults(codeGen, target.results);
     for (int i = 0; i < target.results.size(); i++) {
       CopyPlan plan = currentCall.done.createCopyPlan(codeGen, i, target.results.get(i));
-      fromFnResults.emit(codeGen, plan, currentCall.continueUnwinding);
+      resultEmitter.emit(codeGen, plan, currentCall.continueUnwinding);
     }
-    Op clearOp = hasVar.hasRefVar ? TState.CLEAR_RESULTS_OP : TState.CLEAR_RESULT_TEMPLATES_OP;
-    clearOp.block(codeGen.tstateRegister()).addTo(cb);
+    resultEmitter.clearResults(codeGen);
     currentCall.done.addBranch(codeGen);
   }
 
-  /**
-   * A VarVisitor that records whether the given Template contains at least one NumVar and/or at
-   * least one RefVar.
-   */
-  private static class HasVar implements Template.VarVisitor, Consumer<Template> {
-    boolean hasNumVar;
-    boolean hasRefVar;
+  /** A CopyEmitter that reads source NumVars and RefVars from the TState's function results. */
+  private static class FromFnResults extends CopyEmitter implements Template.VarVisitor {
+    private boolean hasNumVar;
+    private int maxRefVar = -1;
 
-    @Override
-    public void accept(Template t) {
-      Template.visitVars(t, this);
+    final Register fnResultBytes;
+    final Register[] fnResults;
+
+    FromFnResults(CodeGen codeGen, List<Template> templates) {
+      for (Template t : templates) {
+        Template.visitVars(t, this);
+      }
+      // Copy each of the Value results into a register before we start, since doing so involves an
+      // addRef.
+      if (maxRefVar < 0) {
+        fnResults = null;
+      } else {
+        fnResults = new Register[maxRefVar + 1];
+        for (int i = 0; i <= maxRefVar; i++) {
+          Register r = codeGen.cb.newRegister(Value.class);
+          fnResults[i] = r;
+          codeGen.emitSet(r, TState.FN_RESULT_OP.result(codeGen.tstateRegister(), CodeValue.of(i)));
+        }
+      }
+      fnResultBytes = hasNumVar ? codeGen.fnResultBytes(0) : null;
+    }
+
+    void clearResults(CodeGen codeGen) {
+      Op clearOp = (fnResults != null) ? TState.CLEAR_RESULTS_OP : TState.CLEAR_RESULT_TEMPLATES_OP;
+      clearOp.block(codeGen.tstateRegister()).addTo(codeGen.cb);
     }
 
     @Override
@@ -204,16 +230,7 @@ class ExlinedCall extends Block.Split {
 
     @Override
     public void visitRefVar(RefVar v) {
-      hasRefVar = true;
-    }
-  }
-
-  /** A CopyEmitter that reads source NumVars and RefVars from the TState's function results. */
-  private static class FromFnResults extends CopyEmitter {
-    final Register fnResultBytes;
-
-    public FromFnResults(Register fnResultBytes) {
-      this.fnResultBytes = fnResultBytes;
+      maxRefVar = Math.max(maxRefVar, v.index);
     }
 
     @Override
@@ -228,8 +245,7 @@ class ExlinedCall extends Block.Split {
         CodeValue offset = CodeValue.of(numVar.index);
         return accessOp.result(fnResultBytes, offset);
       } else {
-        CodeValue index = CodeValue.of(((RefVar) t).index);
-        return TState.FN_RESULT_OP.result(codeGen.tstateRegister(), index);
+        return fnResults[((RefVar) t).index];
       }
     }
   }

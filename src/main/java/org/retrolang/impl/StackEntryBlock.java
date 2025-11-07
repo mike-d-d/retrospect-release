@@ -17,7 +17,6 @@
 package org.retrolang.impl;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.retrolang.code.Block;
@@ -75,13 +74,13 @@ class StackEntryBlock extends Block.NonTerminal {
   private boolean needSimplify;
 
   /**
-   * The registers that will be returned by {@link #inputs}; includes everything in {@link #rhs}
-   * plus the TState register.
+   * The registers that will be returned by {@link #input}; includes all the registers in {@link
+   * #replacements} plus the TState register.
    *
-   * <p>Computed on demand; may be null if we have not yet computed it or if simplification of
-   * {@link #rhs} has invalidated it.
+   * <p>Computed on demand; may be null if we have not yet computed it or if a call to {@link
+   * #updateInfo} has invalidated it.
    */
-  private ImmutableList<CodeValue> registerList;
+  private ImmutableList<Register> registerList;
 
   /**
    * Returns a CodeValue for the given stack entry. If {@code stackEntry} is not an RValue, just
@@ -188,9 +187,9 @@ class StackEntryBlock extends Block.NonTerminal {
   }
 
   @Override
-  public List<CodeValue> inputs() {
+  public int numInputs() {
     if (registerList == null) {
-      ImmutableList.Builder<CodeValue> builder = new ImmutableList.Builder<>();
+      ImmutableList.Builder<Register> builder = new ImmutableList.Builder<>();
       builder.add(cb().register(CodeGen.TSTATE_REGISTER_INDEX));
       // We could walk the template and transform each NumVar or RefVar, but we've already done that
       // once.
@@ -199,13 +198,20 @@ class StackEntryBlock extends Block.NonTerminal {
           .forEach(
               cv -> {
                 // If this NumVar or RefVar has a known constant value, we can leave it off our list
-                if (cv instanceof Register) {
-                  builder.add(cv);
+                if (cv instanceof Register r) {
+                  builder.add(r);
                 }
               });
       registerList = builder.build();
     }
-    return registerList;
+    return registerList.size();
+  }
+
+  @Override
+  public Register input(int index) {
+    // No one should be calling this without first having called numInputs(), so registerList should
+    // be ready.
+    return registerList.get(index);
   }
 
   @Override

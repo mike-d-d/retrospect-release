@@ -191,8 +191,8 @@ public class RegisterAssigner {
             conflictsBuilder.clear(lhs.index);
             // If we're setting one register to the value of another, the lhs *could* alias the rhs,
             // and in fact we'd like it to (so that we could remove this assignment completely).
-            if (block instanceof SetBlock setBlock) {
-              CodeValue rhs = setBlock.rhs();
+            if (block instanceof SetBlock) {
+              CodeValue rhs = block.input(0);
               // We can't alias an int and a double, since different byte codes must be used to load
               // and
               // store a local depending on its type.

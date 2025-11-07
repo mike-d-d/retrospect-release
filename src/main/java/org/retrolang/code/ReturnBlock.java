@@ -16,8 +16,6 @@
 
 package org.retrolang.code;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.retrolang.code.CodeBuilder.OpCodeType;
@@ -40,14 +38,26 @@ public class ReturnBlock extends Block.Terminal {
   }
 
   @Override
-  public List<CodeValue> inputs() {
-    return (returnedValue == null) ? ImmutableList.of() : ImmutableList.of(returnedValue);
+  public int numInputs() {
+    return (returnedValue == null) ? 0 : 1;
+  }
+
+  @Override
+  public CodeValue input(int index) {
+    assert index == 0 && returnedValue != null;
+    return returnedValue;
+  }
+
+  @Override
+  public void setInput(int index, CodeValue input) {
+    assert index == 0 && returnedValue != null && input != null;
+    returnedValue = input;
   }
 
   @Override
   void runForwardProp(boolean incremental) {
     if (returnedValue != null) {
-      returnedValue = returnedValue.simplify(inlinkRegisterInfosUnresolved());
+      simplifyInputs(inlinkRegisterInfosUnresolved());
     }
   }
 

@@ -17,8 +17,6 @@
 package org.retrolang.code;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import org.objectweb.asm.Label;
@@ -57,13 +55,20 @@ public class SetBlock extends Block.NonTerminal {
   }
 
   @Override
-  public List<CodeValue> inputs() {
-    return ImmutableList.of(rhs);
+  public int numInputs() {
+    return 1;
   }
 
-  /** Equivalent to {@code inputs().get(0)}. */
-  public CodeValue rhs() {
+  @Override
+  public CodeValue input(int index) {
+    assert index == 0;
     return rhs;
+  }
+
+  @Override
+  public void setInput(int index, CodeValue input) {
+    assert index == 0;
+    rhs = input;
   }
 
   @Override
@@ -115,7 +120,7 @@ public class SetBlock extends Block.NonTerminal {
   @Override
   protected PropagationResult updateInfo() {
     CodeValue origRhs = rhs;
-    rhs = origRhs.simplify(next.info.registers());
+    simplifyInputs(next.info.registers());
     // Simplification shouldn't add a side effect to a previously side-effect-free value
     assert hasSideEffect || !rhs.hasSideEffect();
     if (hasSideEffect) {
@@ -294,14 +299,26 @@ public class SetBlock extends Block.NonTerminal {
     }
 
     @Override
-    public List<CodeValue> inputs() {
-      return ImmutableList.of(rhs);
+    public int numInputs() {
+      return 1;
+    }
+
+    @Override
+    public CodeValue input(int index) {
+      assert index == 0;
+      return rhs;
+    }
+
+    @Override
+    public void setInput(int index, CodeValue input) {
+      assert index == 0;
+      rhs = input;
     }
 
     @Override
     protected PropagationResult updateInfo() {
       CodeValue prevRhs = rhs;
-      rhs = rhs.simplify(next.info.registers());
+      simplifyInputs(next.info.registers());
       if (rhs instanceof CodeValue.Thrown) {
         // The rhs will always throw.  Unlikely, but perhaps possible.
         moveAllInLinks(alternate.target());
