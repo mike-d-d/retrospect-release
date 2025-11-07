@@ -296,7 +296,7 @@ class InstructionBlock implements MethodImpl {
         // Don't generate code for unreachable instructions
         continue;
       }
-      if (codeGen.getEscape() == null && instruction.couldEscape()) {
+      if (codeGen.needNewEscape() && instruction.couldEscape()) {
         codeGen.setNewEscape(
             instruction.stackEntryType().newStackEntry(codeGen.tstate(), emitState.locals));
       }

@@ -86,7 +86,7 @@ public abstract class Condition {
       return;
     }
     FutureBlock elseBranch = new FutureBlock();
-    FutureBlock savedEscape = codeGen.getEscape();
+    CodeGen.EscapeState savedEscape = codeGen.escapeState();
     addTest(codeGen, elseBranch);
     // It is possible that the Condition is known to always be false (e.g. if it tests a register
     // whose value is known); if so, we can skip the ifTrue call.
@@ -105,8 +105,8 @@ public abstract class Condition {
       FutureBlock done = codeGen.cb.swapNext(elseBranch);
       // Running ifTrue might have changed or invalidated the escape; restore the one that was valid
       // before we ran it.
-      FutureBlock doneEscape = codeGen.getEscape();
-      codeGen.setEscape(savedEscape);
+      CodeGen.EscapeState doneEscape = codeGen.escapeState();
+      codeGen.restore(savedEscape);
       try {
         ifFalse.run();
       } catch (BuiltinException err) {
@@ -116,9 +116,7 @@ public abstract class Condition {
         codeGen.cb.mergeNext(done);
         // If both branches left the escape unchanged, we can keep it; otherwise we should
         // invalidate it.
-        if (codeGen.getEscape() != doneEscape) {
-          codeGen.invalidateEscape();
-        }
+        codeGen.merge(doneEscape);
       }
     }
   }

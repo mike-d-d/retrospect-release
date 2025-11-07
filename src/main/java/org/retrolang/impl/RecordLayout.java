@@ -383,7 +383,7 @@ class RecordLayout extends FrameLayout {
       // Can we end up here?  if so, we should do the simple thing
       throw new UnsupportedOperationException();
     }
-    ObjIntConsumer<Template> emitElement = emitSetElement(codeGen, f, codeGen.getEscape());
+    ObjIntConsumer<Template> emitElement = emitSetElement(codeGen, f, codeGen.escapeLink());
     FutureBlock done = new FutureBlock();
     codeGen.emitSwitch(
         index,

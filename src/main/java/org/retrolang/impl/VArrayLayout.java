@@ -612,7 +612,7 @@ class VArrayLayout extends FrameLayout {
 
   @Override
   void emitSetElement(CodeGen codeGen, CodeValue f, CodeValue pos, Template newElement) {
-    emitSetElement(codeGen, f, pos, newElement, codeGen.getEscape());
+    emitSetElement(codeGen, f, pos, newElement, codeGen.escapeLink());
   }
 
   /**

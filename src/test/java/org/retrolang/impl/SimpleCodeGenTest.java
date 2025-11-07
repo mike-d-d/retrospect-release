@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.retrolang.code.CodeValue;
-import org.retrolang.code.FutureBlock;
 import org.retrolang.code.Op;
 import org.retrolang.code.Register;
 import org.retrolang.code.ReturnBlock;
@@ -99,7 +98,7 @@ public final class SimpleCodeGenTest {
 
   /** Sets codeGen's escape to return the given value. */
   private void setEscapeToReturn(int value) {
-    codeGen.setEscape(codeGen.addAtEnd(() -> emitReturnBlock(value)));
+    codeGen.setNewEscape(() -> emitReturnBlock(value));
   }
 
   private static final Op PUSH_UNWIND =
@@ -107,14 +106,12 @@ public final class SimpleCodeGenTest {
 
   /** Sets codeGen's escape to start unwinding with the given stack entry. */
   private void setEscapeToUnwind(StackEntryType entryType, Value... args) {
-    codeGen.setEscape(
-        codeGen.addAtEnd(
-            () -> {
-              CodeValue entryCv =
-                  StackEntryBlock.create(tstate.compound(entryType, args), codeGen.cb);
-              PUSH_UNWIND.block(codeGen.tstateRegister(), entryCv).addTo(codeGen.cb);
-              emitReturnBlock(-1);
-            }));
+    codeGen.setNewEscape(
+        () -> {
+          CodeValue entryCv = StackEntryBlock.create(tstate.compound(entryType, args), codeGen.cb);
+          PUSH_UNWIND.block(codeGen.tstateRegister(), entryCv).addTo(codeGen.cb);
+          emitReturnBlock(-1);
+        });
   }
 
   /**
@@ -159,7 +156,7 @@ public final class SimpleCodeGenTest {
           setEscapeToReturn(1);
           Destination addAndReturn = newDestination(NumVar.FLOAT64, NumVar.FLOAT64);
           // Save the current escape so that we can compare it later.
-          FutureBlock initEscape = codeGen.getEscape();
+          CodeGen.EscapeState initEscape = codeGen.escapeState();
           Value arg1 = args.get(0);
           Value arg2 = args.get(1);
           Condition.fromBoolean(arg1)
@@ -175,7 +172,7 @@ public final class SimpleCodeGenTest {
                   },
                   () -> {
                     // The ifTrue branch changed the escape, but that shouldn't affect us.
-                    assertThat(codeGen.getEscape()).isSameInstanceAs(initEscape);
+                    assertThat(codeGen.escapeState()).isEqualTo(initEscape);
                     Err.NOT_PAIR.unless(arg2.isa(Core.ARRAY).or(arg2.isa(Core.STRING)));
                     Value arg3 =
                         arg2.replaceElement(
@@ -184,7 +181,7 @@ public final class SimpleCodeGenTest {
                   });
           Value[] elements = addAndReturn.emit(codeGen);
           // If either of the branches changed the escape it should now be invalidated.
-          assertThat(codeGen.getEscape()).isNull();
+          assertThat(codeGen.needNewEscape()).isTrue();
           CodeValue element0 = codeGen.asCodeValue(elements[0]);
           CodeValue element1 = codeGen.asCodeValue(elements[1]);
           Register sum = codeGen.cb.newRegister(double.class);
