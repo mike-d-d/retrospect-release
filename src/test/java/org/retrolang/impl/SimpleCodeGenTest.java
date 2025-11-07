@@ -102,7 +102,7 @@ public final class SimpleCodeGenTest {
   }
 
   private static final Op PUSH_UNWIND =
-      Op.forMethod(lookup, TState.class, "pushUnwind", Value.class).build();
+      RcOp.forRcMethod(lookup, TState.class, "pushUnwind", Value.class).build();
 
   /** Sets codeGen's escape to start unwinding with the given stack entry. */
   private void setEscapeToUnwind(StackEntryType entryType, Value... args) {

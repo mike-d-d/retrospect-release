@@ -403,7 +403,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
   // "hasSideEffect" doesn't seem exactly right here, but we want to stop the optimizer from moving
   // operations that reference the pointer from before a call to after it
   private static final Op ENSURE_UNSHARED_OP =
-      Handle.opForMethod(FrameLayout.class, "ensureUnshared", TState.class, Frame.class)
+      RcOp.forRcMethod(FrameLayout.class, "ensureUnshared", TState.class, Frame.class)
           .hasSideEffect()
           .withOpSimplifier(
               ((args, registerInfo) -> {

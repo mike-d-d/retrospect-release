@@ -46,13 +46,22 @@ public final class TState extends MemoryHelper {
           .asType(MethodType.methodType(void.class, TState.class, Object[].class));
 
   static final Op DROP_VALUE_OP =
-      Handle.opForMethod(MemoryHelper.class, "dropValue", Value.class).build();
+      RcOp.forRcMethod(MemoryHelper.class, "dropValue", Value.class).build();
 
   static final Op DROP_REFERENCE_OP =
-      Handle.opForMethod(MemoryHelper.class, "dropReference", RefCounted.class).build();
+      RcOp.forRcMethod(MemoryHelper.class, "dropReference", RefCounted.class).build();
+
+  static final Op DROP_BYTE_ARRAY_OP =
+      RcOp.forRcMethod(MemoryHelper.class, "dropReference", byte[].class).build();
+
+  static final Op DROP_OBJ_ARRAY_OP =
+      RcOp.forRcMethod(MemoryHelper.class, "dropReference", Object[].class).build();
+
+  static final Op DROP_ANY_OP =
+      RcOp.forRcMethod(MemoryHelper.class, "dropAny", Object.class).build();
 
   static final Op CLEAR_ARRAY_ELEMENTS_OP =
-      Handle.opForMethod(MemoryHelper.class, "clearElements", Object[].class, int.class, int.class)
+      RcOp.forRcMethod(MemoryHelper.class, "clearElements", Object[].class, int.class, int.class)
           .build();
 
   private static final ThreadLocal<TState> savedTState = new ThreadLocal<>();
@@ -389,7 +398,7 @@ public final class TState extends MemoryHelper {
   }
 
   static final Op TAKE_STACK_REST_OP =
-      Handle.opForMethod(TState.class, "takeStackRest").hasSideEffect().build();
+      RcOp.forRcMethod(TState.class, "takeStackRest").hasSideEffect().build();
 
   /**
    * Returns and clears {@link #stackRest}; called from generated code after an exlined method call.
@@ -417,7 +426,7 @@ public final class TState extends MemoryHelper {
 
   // Since setStackRest(null) is a no-op we can sometimes simplify away these calls.
   static final Op SET_STACK_REST_OP =
-      Handle.opForMethod(TState.class, "setStackRest", TStack.class)
+      RcOp.forRcMethod(TState.class, "setStackRest", TStack.class)
           .withSimplifier((tstate, rest) -> CodeValue.NULL.equals(rest) ? CodeValue.NULL : null)
           .build();
 
@@ -538,7 +547,7 @@ public final class TState extends MemoryHelper {
   }
 
   static final Op FILL_STACK_ENTRY_OP =
-      Handle.opForMethod(
+      RcOp.forRcMethod(
               TState.class,
               "fillStackEntry",
               TStack.class,
@@ -580,7 +589,7 @@ public final class TState extends MemoryHelper {
   }
 
   static final Op TRACE_OP =
-      Handle.opForMethod(TState.class, "trace", Instruction.Trace.class, Value.class, TStack.class)
+      RcOp.forRcMethod(TState.class, "trace", Instruction.Trace.class, Value.class, TStack.class)
           .hasSideEffect()
           .build();
 
@@ -728,16 +737,16 @@ public final class TState extends MemoryHelper {
   }
 
   static final Op SET_RESULT_TEMPLATES_OP =
-      Handle.opForMethod(TState.class, "setResultTemplates", ImmutableList.class).build();
+      RcOp.forRcMethod(TState.class, "setResultTemplates", ImmutableList.class).build();
   static final Op CHECK_EXLINED_RESULT_OP =
-      Handle.opForMethod(TState.class, "checkExlinedResult", ImmutableList.class).build();
-  static final Op CLEAR_RESULTS_OP = Handle.opForMethod(TState.class, "clearResults").build();
+      RcOp.forRcMethod(TState.class, "checkExlinedResult", ImmutableList.class).build();
+  static final Op CLEAR_RESULTS_OP = RcOp.forRcMethod(TState.class, "clearResults").build();
   static final Op CLEAR_RESULT_TEMPLATES_OP =
-      Handle.opForMethod(TState.class, "clearResultTemplates").build();
-  static final Op FN_RESULTS_OP = Handle.opForMethod(TState.class, "fnResults", int.class).build();
+      RcOp.forRcMethod(TState.class, "clearResultTemplates").build();
+  static final Op FN_RESULTS_OP = RcOp.forRcMethod(TState.class, "fnResults", int.class).build();
   static final Op FN_RESULT_BYTES_OP =
-      Handle.opForMethod(TState.class, "fnResultBytes", int.class).build();
-  static final Op FN_RESULT_OP = Handle.opForMethod(TState.class, "fnResult", int.class).build();
+      RcOp.forRcMethod(TState.class, "fnResultBytes", int.class).build();
+  static final Op FN_RESULT_OP = RcOp.forRcMethod(TState.class, "fnResult", int.class).build();
 
   /**
    * Sets the templates for the results of the current function call. The values of the RefVars and

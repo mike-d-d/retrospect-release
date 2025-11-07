@@ -724,7 +724,7 @@ class VArrayLayout extends FrameLayout {
     if (t instanceof NumVar nv) {
       setNumericArrayElement(codeGen, elementArray, nv.encoding, pos, v);
     } else {
-      Op.SET_OBJ_ARRAY_ELEMENT.block(elementArray, pos, v).addTo(codeGen.cb);
+      RcOp.SET_OBJ_ARRAY_ELEMENT.block(elementArray, pos, v).addTo(codeGen.cb);
     }
   }
 

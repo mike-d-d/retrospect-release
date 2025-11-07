@@ -82,6 +82,9 @@ class StackEntryBlock extends Block.NonTerminal {
    */
   private ImmutableList<Register> registerList;
 
+  /** Registers that we should addRef before saving. */
+  private ImmutableList<Register> addRef;
+
   /**
    * Returns a CodeValue for the given stack entry. If {@code stackEntry} is not an RValue, just
    * returns a constant CodeValue; otherwise allocates a new register and emits a StackEntryBlock to
@@ -101,6 +104,12 @@ class StackEntryBlock extends Block.NonTerminal {
     this.lhs = lhs;
     this.rhs = rhs;
     findRegisters(rhs, cb);
+  }
+
+  /** Must be called exactly once before this StackEntryBlock is emitted. */
+  void setAddRef(ImmutableList<Register> addRef) {
+    assert this.addRef == null;
+    this.addRef = addRef;
   }
 
   /**
@@ -277,19 +286,23 @@ class StackEntryBlock extends Block.NonTerminal {
 
   @Override
   public Block emit(Emitter emitter) {
+    // RcCodeBuilder should have told us which registers need an addRef
+    addRef.forEach(r -> RefCounted.ADD_REF_OP.result(r).push(emitter, void.class));
     // We've waited as late as possible, now it's time to choose the RecordLayout
+    // vars maps register index to a NumVar or RefVar in the layout template
     SmallIntMap.Builder<Template> vars = new SmallIntMap.Builder<>();
     RecordLayout.VarAllocator alloc = RecordLayout.VarAllocator.newForRecordLayout();
     Template.Compound t = (Template.Compound) allocate(rhs, vars, alloc);
     RecordLayout layout = RecordLayout.newForStackEntry(t, alloc);
+    // Any registers that we addRef'd should be among those we are saving!
+    assert addRef.stream().allMatch(r -> vars.containsKey(r.index));
     // Emit instructions to allocate a frame with that layout and store it in lhs
     layout.emitAlloc(emitter.cb).push(emitter, lhs.type());
     emitter.store(lhs);
     // Emit instructions to set each field of the frame to the corresponding register
     vars.forEachEntry(
         (ri, field) -> {
-          Register r = cb().register(ri);
-          layout.setCodeValue(field, lhs, r).emit(emitter);
+          layout.setCodeValue(field, lhs, cb().register(ri)).emit(emitter);
         });
     return next.targetBlock();
   }
@@ -398,6 +411,15 @@ class StackEntryBlock extends Block.NonTerminal {
             return reg(rv.index);
           }
         };
-    return String.format("%s ← newStackEntry(%s)", lhs.toString(options), rhs.toString(printer));
+    String result =
+        String.format("%s ← newStackEntry(%s)", lhs.toString(options), rhs.toString(printer));
+    if (addRef == null || addRef.isEmpty()) {
+      return result;
+    }
+    StringBuilder sb = new StringBuilder();
+    for (Register r : addRef) {
+      sb.append("addRef(").append(r.toString(options)).append("); ");
+    }
+    return sb.append(result).toString();
   }
 }

@@ -19,6 +19,8 @@ package org.retrolang.impl;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.Op;
 import org.retrolang.util.SizeOf;
 
 /**
@@ -33,6 +35,17 @@ import org.retrolang.util.SizeOf;
  * to must also be uncounted.
  */
 public abstract class RefCounted {
+
+  static final Op ADD_REF_OP = RcOp.forRcMethod(RefCounted.class, "addRef", Object.class).build();
+
+  /**
+   * A magic CodeValue that when pushed on the top of the stack actually pops the top of the stack
+   * and calls {@link #addRef(Object)} on it.
+   */
+  static final CodeValue ADD_REF_TOP_OF_STACK =
+      // We use the ADD_REF_OP emitter, which assumes that its arg has been pushed on the stack,
+      // but tell Op.Simple that we have no arguments.  Yes, it's a hack.
+      Op.simple("addRefTOS", RefCounted.ADD_REF_OP.opEmit, void.class).build().result();
 
   /**
    * The number of live references to this object; must include all links from other RefCounted

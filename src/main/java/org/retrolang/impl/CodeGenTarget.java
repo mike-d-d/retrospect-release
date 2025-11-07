@@ -29,6 +29,7 @@ import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
 import org.retrolang.impl.Template.VarSink;
 import org.retrolang.impl.TemplateBuilder.VarAllocator;
+import org.retrolang.util.Bits;
 
 /**
  * A CodeGenTarget is used to configure a CodeGen. Once code generation is complete it will become
@@ -159,7 +160,10 @@ class CodeGenTarget {
     this.resultObjSize = resultsAlloc.ptrSize();
     this.resultByteSize = resultsAlloc.byteSize();
     mhCaller = new MutableCallSite(codeGen.cb.methodType(void.class));
-    op = Op.forMethodHandle(name, mhCaller.dynamicInvoker()).build();
+    // All pointer args except the TState are passed RC.In
+    Bits rcInArgs =
+        Bits.fromPredicate(numJavaArgs - 1, i -> i != 0 && codeGen.cb.register(i).isPtr());
+    op = RcOp.forMethodHandle(name, mhCaller.dynamicInvoker()).argIsRcIn(rcInArgs).build();
   }
 
   /** Build a Template for each of the ValueMemo's elements. */

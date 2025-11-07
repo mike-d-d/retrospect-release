@@ -16,6 +16,8 @@
 
 package org.retrolang.code;
 
+import com.google.common.base.Preconditions;
+
 /**
  * Blocks are grouped in Zones to simplify the process of assigning an ordering to them. An outlink
  * from any Block {@code b1} (other than a BackRef) can only go to a Block {@code b2} if {@code b1}
@@ -140,6 +142,21 @@ public final class Zone {
 
     final int order() {
       return order;
+    }
+
+    /**
+     * Multiplies this block's order by 2, ensuring that we can insert additional blocks between any
+     * two linked blocks.
+     */
+    public final void expandOrder() {
+      int newOrder = order << 1;
+      // Make sure that didn't overflow (i.e. that we started with fewer than 2^30 blocks, which
+      // seems like a safe bet; I'm pretty sure that lots of other things would break long before
+      // this became the limiting factor).
+      Preconditions.checkState((order ^ newOrder) >= 0);
+      // That check is equivalent to this one, but maybe infinitesimally faster:
+      assert (order < 0) == (newOrder < 0);
+      order = newOrder;
     }
 
     void setZone(Zone zone) {

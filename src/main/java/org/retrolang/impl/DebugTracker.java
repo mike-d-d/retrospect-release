@@ -90,7 +90,7 @@ class DebugTracker {
     errored = true;
   }
 
-  /** Returns the allocation of a new object with the given size. */
+  /** Records the allocation of a new object with the given size. */
   synchronized void recordAlloc(Object obj, long size) {
     assert obj != null && SizeOf.isValidSize(size);
     AllocationInfo prev = live.putIfAbsent(obj, new AllocationInfo(counter, size));
@@ -101,7 +101,7 @@ class DebugTracker {
     }
   }
 
-  /** Returns the release of a previously-allocated object with the given size. */
+  /** Records the release of a previously-allocated object with the given size. */
   synchronized void recordRelease(Object obj, long size) {
     assert obj != null && SizeOf.isValidSize(size);
     AllocationInfo cs = live.remove(obj);
@@ -113,7 +113,7 @@ class DebugTracker {
     }
   }
 
-  /** Returns a change in the size of a previously-allocated object with the given size. */
+  /** Records a change in the size of a previously-allocated object with the given size. */
   synchronized void adjustAlloc(Object obj, long sizeDelta) {
     AllocationInfo entry = live.get(obj);
     if (entry == null) {

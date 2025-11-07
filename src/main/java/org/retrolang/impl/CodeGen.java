@@ -71,7 +71,7 @@ public class CodeGen {
   final CodeGenGroup group;
   final CodeGenTarget target;
 
-  public final CodeBuilder cb;
+  public final RcCodeBuilder cb;
 
   /**
    * For the duration of the {@link #emit} call the CodeGen is bound to the thread's TState, so that
@@ -100,7 +100,7 @@ public class CodeGen {
   CodeGen(CodeGenGroup group, CodeGenTarget target) {
     this.group = group;
     this.target = target;
-    this.cb = new CodeBuilder(BINARY_OPS);
+    this.cb = new RcCodeBuilder(BINARY_OPS);
     // We can add the first arg here, since it's always the TState; the rest of the args will be
     // added by our caller.
     Register tstateRegister = cb.newArg(TState.class);
@@ -171,8 +171,8 @@ public class CodeGen {
   }
 
   /**
-   * Returns a CodeValue representing the given Value. {@code v} must be representable by a simple
-   * CodeValue, i.e. it may not be a compound or union RValue.
+   * Returns a CodeValue representing the given Value. After simplification {@code v} must be
+   * representable by a simple CodeValue, i.e. it may not be a compound or union RValue.
    */
   public CodeValue asCodeValue(Value v) {
     v = simplify(v);
@@ -298,7 +298,7 @@ public class CodeGen {
               resultsArray = fnResultBytes;
               position = nv.index;
             } else {
-              setter = Op.SET_OBJ_ARRAY_ELEMENT;
+              setter = RcOp.SET_OBJ_ARRAY_ELEMENT;
               resultsArray = fnResults;
               position = ((RefVar) t).index;
             }

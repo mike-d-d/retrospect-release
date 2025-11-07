@@ -176,8 +176,7 @@ public interface Value {
     return (v instanceof Frame f) ? Frame.latest(f) : v;
   }
 
-  Op FROM_ARRAY_OP =
-      Handle.opForMethod(Value.class, "fromArray", Object[].class, int.class).build();
+  Op FROM_ARRAY_OP = RcOp.forRcMethod(Value.class, "fromArray", Object[].class, int.class).build();
 
   /** Returns the specified array element as a Value. */
   static Value fromArray(Object[] array, int index) {

@@ -108,7 +108,7 @@ In order to reason about refCount correctness within a sequence of instructions,
 we need to know which locals are roots (and when — as the example above shows,
 `x` may be a root at some points during execution and not others) and which
 operations change rootness (e.g. we need to know that after storing `x` into
-`array[0]` `x` was no longer a root).
+`array[0]`, `x` was no longer a root).
 
 The `addRef` and `dropRef` operations, which just increment and decrement an
 object's refCount, can also be understood as
@@ -175,6 +175,9 @@ instruction `aastore`, which sets one element of an `Object[]`) records that
 *   its third argument (the object to be stored) is `@RC.In`, since storing a
     pointer in another object decrements that pointer's root count.
 
+(Its second argument, the index into the array, is not an object and so not
+relevant to reference counting.)
+
 This means that if the caller to `SET_OBJ_ARRAY_ELEMENT` intends to maintain its
 reference to the third argument after calling SET_OBJ_ARRAY_ELEMENT it is
 responsible for incrementing that object's reference count before the call.
@@ -197,7 +200,7 @@ argument to SET_OBJ_ARRAY_ELEMENT.)
 ## Step 2: Representing register status
 
 The first step in RcCodeBuilder's analysis is to enumerate the registers that
-have been constructed and identify those that must be *tracked*, i.e. those that
+are used by the generated code and identify those that must be *tracked*, i.e. those that
 can hold a pointer to a reference-counted object. Registers of type RefCounted
 or one of its subtypes (e.g. Frame) must be tracked, as well as registers of
 type Object or Value. Registers holding a `byte[]` or `Object[]` are also

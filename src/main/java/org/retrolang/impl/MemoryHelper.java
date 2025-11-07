@@ -211,6 +211,12 @@ public class MemoryHelper implements Allocator {
     }
   }
 
+  /** Releases the given object if it is reference counted. */
+  void dropAny(Object obj) {
+    mustBeBound();
+    releaseVisitor.visit(obj);
+  }
+
   /**
    * Sets the specified element of the given Object[] to null, calling {@link #dropReference} if it
    * is a RefCounted, byte[], or Object[].

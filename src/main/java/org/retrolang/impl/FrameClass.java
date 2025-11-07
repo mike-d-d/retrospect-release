@@ -33,6 +33,7 @@ import org.retrolang.code.Op;
 import org.retrolang.code.Op.OpEmit;
 import org.retrolang.code.Register;
 import org.retrolang.impl.Frame.Replacement;
+import org.retrolang.impl.RcOp.RcOpBuilder;
 import org.retrolang.util.SizeOf;
 
 /**
@@ -268,9 +269,9 @@ class FrameClass {
       Field f = ptrFields.get(i);
       Op get = Op.getField(javaClass, f.getName(), Object.class);
       getPtrField.add(get);
-      Op set = get.setter().build();
+      Op set = new RcOpBuilder(get.setter().build()).argIsRcIn(1).build();
       setPtrField.add(set);
-      Op take = get.taker().build();
+      Op take = new RcOpBuilder(get.taker().build()).resultIsRcOut().build();
       takePtrField.add(take);
 
       // A MethodHandle Object <- (Object, Frame) that checks whether its first arg is a
@@ -402,7 +403,7 @@ class FrameClass {
   }
 
   private static final Op ALLOC_OP =
-      Handle.opForMethod(FrameClass.class, "alloc", Allocator.class).build();
+      RcOp.forRcMethod(FrameClass.class, "alloc", Allocator.class).build();
 
   /** Returns a new instance of this subclass, updating memory counters accordingly. */
   Frame alloc(Allocator allocator) {
