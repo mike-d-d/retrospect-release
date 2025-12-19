@@ -20,7 +20,6 @@ import java.util.function.Predicate;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
-import org.retrolang.code.Register;
 import org.retrolang.code.TestBlock;
 import org.retrolang.code.TestBlock.IsUint8;
 import org.retrolang.impl.CopyPlan.StepType;
@@ -83,15 +82,11 @@ class CopyEmitter {
                 NumEncoding dstEncoding = ((NumVar) basic.dst).encoding;
                 if (srcEncoding.nBytes > dstEncoding.nBytes) {
                   // This is a narrowing, so we need to check that the source value is appropriate.
-                  // If srcValue isn't a Register (i.e. it's an Op.Result), compute it and store it
+                  // If srcValue is an Op.Result, compute it and store it
                   // in a register so that we can refer to it more than once.
-                  if (!(srcValue instanceof Register)) {
-                    Register temp =
-                        codeGen.cb.newRegister(
-                            srcEncoding == NumEncoding.FLOAT64 ? double.class : int.class);
-                    codeGen.emitSet(temp, srcValue);
-                    srcValue = temp;
-                  }
+                  srcValue =
+                      codeGen.materialize(
+                          srcValue, srcEncoding == NumEncoding.FLOAT64 ? double.class : int.class);
                   if (srcEncoding == NumEncoding.FLOAT64) {
                     // TODO: check that double is an int
                     throw new UnsupportedOperationException();

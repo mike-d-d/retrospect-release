@@ -36,6 +36,7 @@ import org.retrolang.code.SetBlock;
 import org.retrolang.code.TestBlock;
 import org.retrolang.code.ValueInfo;
 import org.retrolang.code.ValueInfo.BinaryOps;
+import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.util.ArrayUtil;
@@ -701,9 +702,8 @@ public class CodeGen {
       // This assumes that the register has previously been checked for NaN.
       v = toValue(r);
     } else {
-      Register result = cb.newRegister(rhs.type());
-      emitSet(result, rhs);
-      if (rhs.isDouble()) {
+      CodeValue result = materialize(rhs, rhs.type());
+      if (result.isDouble()) {
         FutureBlock isNotNaN = new FutureBlock();
         testIsNaN(result, true, isNotNaN);
         setResults(Core.NONE);
@@ -783,6 +783,22 @@ public class CodeGen {
   }
 
   /**
+   * Returns an int CodeValue equal to {@code v}, or escapes if {@code v} is not an int. Throws a
+   * BuiltInException if {@code v} could never be an int.
+   */
+  public CodeValue verifyInt(Value v) throws BuiltinException {
+    Err.ESCAPE.unless(v.isa(Core.NUMBER));
+    v = simplify(v);
+    if (!(v instanceof RValue rv)) {
+      Err.ESCAPE.unless(NumValue.isInt(v));
+      return CodeValue.of(NumValue.asInt(v));
+    }
+    NumVar nv = (NumVar) rv.template;
+    assert nv.encoding != NumEncoding.FLOAT64;
+    return register(nv);
+  }
+
+  /**
    * Given a register containing a pointer to a Frame and the layout of the frame, returns a Value.
    */
   public static Value asValue(Register register, FrameLayout layout) {
@@ -848,6 +864,24 @@ public class CodeGen {
       emitSet(register, v);
       return register;
     } else {
+      return v;
+    }
+  }
+
+  /**
+   * If {@code v} is an Op.Result, allocates a new int register and stores {@code v} there, escaping
+   * if an ArithmeticException is thrown. If {@code v} is a register or constant just returns it.
+   */
+  public CodeValue materializeCatchingArithmeticException(CodeValue v) throws BuiltinException {
+    if (v instanceof Op.Result) {
+      Register register = cb.newRegister(int.class);
+      emitSetCatchingArithmeticException(register, v);
+      return register;
+    } else if (CodeValue.isThrown(v, ArithmeticException.class)) {
+      // An ArithmeticException was thrown trying to simplify the Op.Result
+      throw Err.ESCAPE.asException();
+    } else {
+      assert v.type() == int.class;
       return v;
     }
   }

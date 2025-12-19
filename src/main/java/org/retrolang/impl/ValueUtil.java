@@ -39,9 +39,9 @@ public class ValueUtil {
         if (baseType.isCompositional()) {
           return NumValue.of(baseType.size(), Allocator.UNCOUNTED);
         }
-        Register register = codeGen.cb.newRegister(int.class);
-        codeGen.emitSet(register, codeGen.vArrayLength((Template.RefVar) t));
-        return RValue.fromTemplate(Template.NumVar.INT32.withIndex(register.index));
+        CodeValue result = codeGen.vArrayLength((Template.RefVar) t);
+        result = codeGen.materialize(result, int.class);
+        return codeGen.toValue(result);
       }
     }
     return NumValue.of(v.numElements(), Allocator.TRANSIENT);
@@ -341,11 +341,11 @@ public class ValueUtil {
         v1 = codeGen.simplify(v1);
         v2 = codeGen.simplify(v2);
         if (v1 instanceof RValue || v2 instanceof RValue) {
-          Register register = codeGen.cb.newRegister(int.class);
           CodeValue cv1 = codeGen.asCodeValue(v1);
           CodeValue cv2 = codeGen.asCodeValue(v2);
-          codeGen.emitSet(register, applyToCodeValues(cv1, cv2));
-          return codeGen.toValue(register);
+          CodeValue result = applyToCodeValues(cv1, cv2);
+          result = codeGen.materialize(result, int.class);
+          return codeGen.toValue(result);
         }
       }
       int i1 = NumValue.asInt(v1);

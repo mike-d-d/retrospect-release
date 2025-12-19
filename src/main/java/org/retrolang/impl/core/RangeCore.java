@@ -19,7 +19,6 @@ package org.retrolang.impl.core;
 import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
-import org.retrolang.code.Register;
 import org.retrolang.code.TestBlock;
 import org.retrolang.impl.BaseType;
 import org.retrolang.impl.CodeGen;
@@ -30,6 +29,8 @@ import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.NumValue;
 import org.retrolang.impl.RC;
 import org.retrolang.impl.RValue;
+import org.retrolang.impl.ResultsInfo;
+import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
 import org.retrolang.impl.ValueUtil;
@@ -104,24 +105,51 @@ public class RangeCore {
       // A slightly less readable version of the non-RValue logic below.
       return min.is(Core.NONE)
           .or(max.is(Core.NONE))
-          .or(
-              Condition.fromTest(
-                      () -> {
-                        CodeGen codeGen = tstate.codeGen();
-                        // Our test is < than rather than <=, so swap the args and then negate the
-                        // test
-                        CodeValue lhs =
-                            Op.ADD_LONGS.result(codeGen.asCodeValue(max), CodeValue.ONE);
-                        CodeValue rhs = codeGen.asCodeValue(min);
-                        return new TestBlock.IsLessThan(CodeBuilder.OpCodeType.LONG, lhs, rhs);
-                      })
-                  .not());
+          .or(() -> intBoundsInvalid(tstate, min, max).not());
     } else if (min == Core.NONE || max == Core.NONE) {
       return Condition.TRUE;
     } else {
       // Use long arithmetic to correctly handle the case where max == Integer.MAX_VALUE
       return Condition.of(NumValue.asInt(min) <= 1L + NumValue.asInt(max));
     }
+  }
+
+  /**
+   * {@code min} and {@code max} are ints. Returns true if {@code max < min - 1}, but has to be
+   * careful to avoid integer overflow.
+   */
+  private static Condition intBoundsInvalid(TState tstate, Value min, Value max) {
+    CodeGen codeGen = tstate.codeGen();
+    CodeValue cvMin = codeGen.asCodeValue(min);
+    CodeValue cvMax = codeGen.asCodeValue(max);
+    // If either one is constant this can be simpler
+    if (cvMin instanceof CodeValue.Const) {
+      int iMin = cvMin.iValue();
+      if (iMin <= Integer.MIN_VALUE + 1) {
+        // Any value of max is valid.
+        return Condition.FALSE;
+      } else {
+        return Condition.fromTest(
+            () ->
+                new TestBlock.IsLessThan(
+                    CodeBuilder.OpCodeType.INT, cvMax, CodeValue.of(iMin - 1)));
+      }
+    } else if (cvMax instanceof CodeValue.Const) {
+      int iMax = cvMax.iValue();
+      if (iMax >= Integer.MAX_VALUE - 1) {
+        // Any value of min is valid.
+        return Condition.FALSE;
+      } else {
+        return Condition.fromTest(
+            () ->
+                new TestBlock.IsLessThan(
+                    CodeBuilder.OpCodeType.INT, CodeValue.of(iMax + 1), cvMin));
+      }
+    }
+    // Neither is constant, so we need to do the more careful test
+    CodeValue maxPlusOne = Op.ADD_LONGS.result(cvMax, CodeValue.ONE);
+    return Condition.fromTest(
+        () -> new TestBlock.IsLessThan(CodeBuilder.OpCodeType.LONG, maxPlusOne, cvMin));
   }
 
   /**
@@ -147,15 +175,7 @@ public class RangeCore {
   @RC.Out
   private static Value computeMax(TState tstate, Value min, @RC.In Value size)
       throws BuiltinException {
-    if (min instanceof RValue || size instanceof RValue) {
-      Value max = ValueUtil.oneBasedOffset(tstate, min, size);
-      Err.INVALID_ARGUMENT.unless(
-          Condition.numericLessThan(max, min)
-              .ternary(
-                  Condition.numericEq(size, NumValue.ZERO),
-                  Condition.numericLessThan(NumValue.ZERO, size)));
-      return max;
-    } else {
+    if (!(min instanceof RValue || size instanceof RValue)) {
       int iMin = NumValue.asInt(min);
       int iSize = NumValue.asInt(size);
       int iMax = iMin + iSize - 1;
@@ -163,6 +183,13 @@ public class RangeCore {
       tstate.dropValue(size);
       return NumValue.of(iMax, tstate);
     }
+    Value max = ValueUtil.oneBasedOffset(tstate, min, size);
+    Err.INVALID_ARGUMENT.unless(
+        Condition.numericLessThan(max, min)
+            .ternary(
+                Condition.numericEq(size, NumValue.ZERO),
+                Condition.numericLessThan(NumValue.ZERO, size)));
+    return max;
   }
 
   /**
@@ -214,19 +241,8 @@ public class RangeCore {
    * </pre>
    */
   @Core.Method("size(Range|ReversedRange)")
-  static Value sizeRange(TState tstate, Value range) throws BuiltinException {
-    Value min = range.peekElement(0);
-    Value max = range.peekElement(1);
-    Err.RANGE_IS_UNBOUNDED.when(min.is(Core.NONE).or(max.is(Core.NONE)));
-    int intMin = NumValue.asInt(min);
-    int intMax = NumValue.asInt(max);
-    try {
-      int size = Math.addExact(Math.subtractExact(intMax, intMin), 1);
-      return NumValue.of(size, tstate);
-    } catch (ArithmeticException e) {
-      // fall through
-    }
-    return NumValue.of((intMax - (double) intMin) + 1, tstate);
+  static Value sizeRange(TState tstate, ResultsInfo results, Value range) throws BuiltinException {
+    return size(tstate, results, range);
   }
 
   /**
@@ -236,14 +252,53 @@ public class RangeCore {
    * </pre>
    */
   @Core.Method("sizes(Range|ReversedRange)")
-  static Value sizesRange(TState tstate, Value range) throws BuiltinException {
-    Value size = sizeRange(tstate, range);
-    if (size instanceof NumValue.I) {
-      return tstate.arrayValue(size);
+  static Value sizesRange(TState tstate, ResultsInfo results, Value range) throws BuiltinException {
+    Value size = size(tstate, null, range);
+    return tstate.arrayValue(size);
+  }
+
+  /**
+   * Returns the size of the given Range or ReversedRange. If {@code results} is non-null, may
+   * return a double; if {@code results} is null will throw INVALID_ARGUMENT if the result does not
+   * fit in an int.
+   */
+  @RC.Out
+  private static Value size(TState tstate, ResultsInfo results, Value range)
+      throws BuiltinException {
+    Value min = range.peekElement(0);
+    Value max = range.peekElement(1);
+    Err.RANGE_IS_UNBOUNDED.when(min.is(Core.NONE).or(max.is(Core.NONE)));
+    if (NumValue.equals(min, 1)) {
+      return max.makeStorable(tstate);
     }
-    // Matrix sizes can't be bigger than an int
-    tstate.dropValue(size);
-    throw Err.INVALID_ARGUMENT.asException();
+    if (!(min instanceof RValue || max instanceof RValue)) {
+      int intMin = NumValue.asInt(min);
+      int intMax = NumValue.asInt(max);
+      int size;
+      try {
+        size = Math.addExact(Math.subtractExact(intMax, intMin), 1);
+      } catch (ArithmeticException e) {
+        Err.INVALID_ARGUMENT.when(results == null);
+        return NumValue.of((intMax - (double) intMin) + 1, tstate);
+      }
+      return NumValue.of(size, tstate);
+    }
+    CodeGen codeGen = tstate.codeGen();
+    CodeValue cvMin = codeGen.asCodeValue(min);
+    CodeValue cvMax = codeGen.asCodeValue(max);
+    CodeValue size;
+    if (results != null && results.result(TProperty.COERCES_TO_FLOAT)) {
+      size = Op.SUBTRACT_DOUBLES.result(cvMax, Op.SUBTRACT_DOUBLES.result(cvMin, CodeValue.ONE));
+      size = codeGen.materialize(size, double.class);
+    } else if (cvMin instanceof CodeValue.Const && cvMin.iValue() >= 1) {
+      // Can't overflow
+      size = Op.SUBTRACT_INTS.result(cvMax, CodeValue.of(cvMin.iValue() - 1));
+      size = codeGen.materialize(size, int.class);
+    } else {
+      size = Op.ADD_INTS_EXACT.result(Op.SUBTRACT_INTS_EXACT.result(cvMax, cvMin), CodeValue.ONE);
+      size = codeGen.materializeCatchingArithmeticException(size);
+    }
+    return codeGen.toValue(size);
   }
 
   /**
@@ -252,8 +307,9 @@ public class RangeCore {
    * </pre>
    */
   @Core.Method("element(Range, Array)")
-  static Value elementRange(TState tstate, Value range, Value key) throws BuiltinException {
-    return getHelper(tstate, range.peekElement(0), range.peekElement(1), key, true);
+  static Value elementRange(TState tstate, ResultsInfo results, Value range, Value key)
+      throws BuiltinException {
+    return elementHelper(tstate, results, range.peekElement(0), range.peekElement(1), key, true);
   }
 
   /**
@@ -262,30 +318,51 @@ public class RangeCore {
    * </pre>
    */
   @Core.Method("element(ReversedRange, Array)")
-  static Value elementReversedRange(TState tstate, Value range, Value key) throws BuiltinException {
-    return getHelper(tstate, range.peekElement(1), range.peekElement(0), key, false);
+  static Value elementReversedRange(TState tstate, ResultsInfo results, Value range, Value key)
+      throws BuiltinException {
+    return elementHelper(tstate, results, range.peekElement(1), range.peekElement(0), key, false);
   }
 
-  private static Value getHelper(TState tstate, Value first, Value last, Value key, boolean forward)
+  private static Value elementHelper(
+      TState tstate, ResultsInfo results, Value first, Value last, Value key, boolean forward)
       throws BuiltinException {
     Err.INVALID_ARGUMENT.when(first.is(Core.NONE));
     Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(1));
-    int index = NumValue.asIntOrMinusOne(key.peekElement(0));
-    Err.INVALID_ARGUMENT.unless(index > 0);
-    int iFirst = NumValue.asInt(first);
-    int i = index - 1;
-    try {
-      i = forward ? Math.addExact(iFirst, i) : Math.subtractExact(iFirst, i);
-    } catch (ArithmeticException e) {
-      Err.INVALID_ARGUMENT.unless(last.is(Core.NONE));
-      double d = forward ? iFirst + (long) i : iFirst - (long) i;
-      return NumValue.of(d, tstate);
+    if (!(first instanceof RValue || key instanceof RValue || last instanceof RValue)) {
+      int index = NumValue.asIntOrMinusOne(key.peekElement(0));
+      Err.INVALID_ARGUMENT.unless(index > 0);
+      int iFirst = NumValue.asInt(first);
+      int i = index - 1;
+      try {
+        i = forward ? Math.addExact(iFirst, i) : Math.subtractExact(iFirst, i);
+      } catch (ArithmeticException e) {
+        Err.INVALID_ARGUMENT.unless(last.is(Core.NONE));
+        double d = forward ? iFirst + (long) i : iFirst - (long) i;
+        return NumValue.of(d, tstate);
+      }
+      if (last != Core.NONE) {
+        int iLast = NumValue.asInt(last);
+        Err.INVALID_ARGUMENT.unless(forward ? i <= iLast : i >= iLast);
+      }
+      return NumValue.of(i, tstate);
     }
-    if (last != Core.NONE) {
-      int iLast = NumValue.asInt(last);
-      Err.INVALID_ARGUMENT.unless(forward ? i <= iLast : i >= iLast);
+    CodeGen codeGen = tstate.codeGen();
+    CodeValue cvIndex = codeGen.verifyInt(key.peekElement(0));
+    CodeValue cvFirst = codeGen.asCodeValue(first);
+    // TODO: check in range!
+    CodeValue result;
+    if (results.result(TProperty.COERCES_TO_FLOAT)) {
+      result =
+          (forward ? Op.ADD_LONGS : Op.SUBTRACT_LONGS)
+              .result(cvFirst, Op.SUBTRACT_LONGS.result(cvIndex, CodeValue.ONE));
+      result = codeGen.materialize(result, double.class);
+    } else {
+      result =
+          (forward ? Op.ADD_INTS_EXACT : Op.SUBTRACT_INTS_EXACT)
+              .result(cvFirst, Op.SUBTRACT_INTS_EXACT.result(cvIndex, CodeValue.ONE));
+      result = codeGen.materializeCatchingArithmeticException(result);
     }
-    return NumValue.of(i, tstate);
+    return codeGen.toValue(result);
   }
 
   /**
@@ -304,7 +381,7 @@ public class RangeCore {
     Value min = range.element(0);
     Err.RANGE_HAS_NO_LOWER_BOUND.when(min.is(Core.NONE));
     Value max = range.element(1);
-    return makeIterator(tstate, min, max, eKind, false);
+    return iteratorHelper(tstate, min, max, eKind, false);
   }
 
   /**
@@ -323,10 +400,10 @@ public class RangeCore {
     Value max = range.element(1);
     Err.RANGE_HAS_NO_UPPER_BOUND.when(max.is(Core.NONE));
     Value min = range.element(0);
-    return makeIterator(tstate, max, min, eKind, true);
+    return iteratorHelper(tstate, max, min, eKind, true);
   }
 
-  private static Value makeIterator(
+  private static Value iteratorHelper(
       TState tstate, Value first, Value last, Value eKind, boolean reversed) {
     BaseType baseType = reversed ? REVERSED_RANGE_ITERATOR : RANGE_ITERATOR;
     return eKind
@@ -334,10 +411,18 @@ public class RangeCore {
         .choose(
             () -> tstate.compound(baseType, first, last, Core.NONE),
             () -> {
-              int i = NumValue.asInt(first);
-              // The next step could overflow but we'll still get the right answer if it does
-              i = reversed ? 1 + i : 1 - i;
-              return tstate.compound(baseType, first, last, NumValue.of(i, tstate));
+              if (!(first instanceof RValue)) {
+                int i = NumValue.asInt(first);
+                // The next step could overflow but we will still get the right answer if it does
+                i = reversed ? 1 + i : 1 - i;
+                return tstate.compound(baseType, first, last, NumValue.of(i, tstate));
+              }
+              CodeGen codeGen = tstate.codeGen();
+              CodeValue keyOffset =
+                  (reversed ? Op.ADD_INTS : Op.SUBTRACT_INTS)
+                      .result(CodeValue.ONE, codeGen.asCodeValue(first));
+              keyOffset = codeGen.materialize(keyOffset, int.class);
+              return tstate.compound(baseType, first, last, codeGen.toValue(keyOffset));
             });
   }
 
@@ -355,8 +440,9 @@ public class RangeCore {
    * </pre>
    */
   @Core.Method("next(RangeIterator)")
-  static void nextRangeIterator(TState tstate, @RC.In Value it) throws BuiltinException {
-    nextIterator(tstate, it, false);
+  static void nextRangeIterator(TState tstate, ResultsInfo results, @RC.In Value it)
+      throws BuiltinException {
+    nextIterator(tstate, results, it, false);
   }
 
   /**
@@ -373,50 +459,16 @@ public class RangeCore {
    * </pre>
    */
   @Core.Method("next(ReversedRangeIterator)")
-  static void nextReversedRangeIterator(TState tstate, @RC.In Value it) throws BuiltinException {
-    nextIterator(tstate, it, true);
+  static void nextReversedRangeIterator(TState tstate, ResultsInfo results, @RC.In Value it)
+      throws BuiltinException {
+    nextIterator(tstate, results, it, true);
   }
 
-  private static void nextIterator(TState tstate, @RC.In Value it, boolean reversed)
+  private static void nextIterator(
+      TState tstate, ResultsInfo results, @RC.In Value it, boolean reversed)
       throws BuiltinException {
     Value last = it.peekElement(1);
-    if (it instanceof RValue) {
-      Value next = it.peekElement(0);
-      last.is(Core.NONE)
-          .not()
-          .and(
-              () ->
-                  reversed
-                      ? Condition.numericLessThan(next, last)
-                      : Condition.numericLessThan(last, next))
-          .test(
-              () -> tstate.setResults(Core.ABSENT, it),
-              () -> {
-                CodeGen codeGen = tstate.codeGen();
-                CodeValue cvNext = codeGen.asCodeValue(next);
-                Register nextNext = codeGen.cb.newRegister(int.class);
-                codeGen.emitSetCatchingArithmeticException(
-                    nextNext,
-                    (reversed ? Op.SUBTRACT_INTS_EXACT : Op.ADD_INTS_EXACT)
-                        .result(cvNext, CodeValue.ONE));
-                Value keyOffset = it.peekElement(2);
-                Value updatedIt = it.replaceElement(tstate, 0, codeGen.toValue(nextNext));
-                keyOffset
-                    .is(Core.NONE)
-                    .test(
-                        () -> tstate.setResults(next, updatedIt),
-                        () -> {
-                          Register key = codeGen.cb.newRegister(int.class);
-                          codeGen.emitSetCatchingArithmeticException(
-                              key,
-                              (reversed ? Op.SUBTRACT_INTS_EXACT : Op.ADD_INTS_EXACT)
-                                  .result(codeGen.asCodeValue(keyOffset), cvNext));
-                          Value result =
-                              tstate.arrayValue(tstate.arrayValue(codeGen.toValue(key)), next);
-                          tstate.setResults(result, updatedIt);
-                        });
-              });
-    } else {
+    if (!(it instanceof RValue)) {
       int iNext = it.elementAsInt(0);
       if (last != Core.NONE) {
         int iLast = NumValue.asInt(last);
@@ -443,7 +495,41 @@ public class RangeCore {
       }
       Value updatedIt = it.replaceElement(tstate, 0, NumValue.of(nextNext, tstate));
       tstate.setResults(result, updatedIt);
+      return;
     }
+    Value next = it.peekElement(0);
+    last.is(Core.NONE)
+        .not()
+        .and(
+            () ->
+                reversed
+                    ? Condition.numericLessThan(next, last)
+                    : Condition.numericLessThan(last, next))
+        .testExcept(
+            () -> tstate.setResults(Core.ABSENT, it),
+            () -> {
+              CodeGen codeGen = tstate.codeGen();
+              CodeValue cvNext = codeGen.asCodeValue(next);
+              CodeValue nextNext =
+                  (reversed ? Op.SUBTRACT_INTS_EXACT : Op.ADD_INTS_EXACT)
+                      .result(cvNext, CodeValue.ONE);
+              nextNext = codeGen.materializeCatchingArithmeticException(nextNext);
+              Value keyOffset = it.peekElement(2);
+              Value updatedIt = it.replaceElement(tstate, 0, codeGen.toValue(nextNext));
+              keyOffset
+                  .is(Core.NONE)
+                  .testExcept(
+                      () -> tstate.setResults(next, updatedIt),
+                      () -> {
+                        CodeValue key =
+                            (reversed ? Op.SUBTRACT_INTS_EXACT : Op.ADD_INTS_EXACT)
+                                .result(codeGen.asCodeValue(keyOffset), cvNext);
+                        key = codeGen.materializeCatchingArithmeticException(key);
+                        Value result =
+                            tstate.arrayValue(tstate.arrayValue(codeGen.toValue(key)), next);
+                        tstate.setResults(result, updatedIt);
+                      });
+            });
   }
 
   private RangeCore() {}

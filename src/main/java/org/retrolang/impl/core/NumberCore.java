@@ -23,7 +23,6 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntBinaryOperator;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
-import org.retrolang.code.Register;
 import org.retrolang.impl.Allocator;
 import org.retrolang.impl.CodeGen;
 import org.retrolang.impl.Condition;
@@ -182,7 +181,8 @@ public final class NumberCore {
   }
 
   @Core.Method("add(Number, Number)")
-  static Value addNumbers(TState tstate, ResultsInfo results, Value x, Value y) {
+  static Value addNumbers(TState tstate, ResultsInfo results, Value x, Value y)
+      throws BuiltinException {
     if (x instanceof RValue || y instanceof RValue) {
       return doMath(tstate.codeGen(), x, y, results, Op.ADD_INTS_EXACT, Op.ADD_DOUBLES);
     }
@@ -190,7 +190,8 @@ public final class NumberCore {
   }
 
   @Core.Method("subtract(Number, Number)")
-  static Value subtractNumbers(TState tstate, ResultsInfo results, Value x, Value y) {
+  static Value subtractNumbers(TState tstate, ResultsInfo results, Value x, Value y)
+      throws BuiltinException {
     if (x instanceof RValue || y instanceof RValue) {
       return doMath(tstate.codeGen(), x, y, results, Op.SUBTRACT_INTS_EXACT, Op.SUBTRACT_DOUBLES);
     }
@@ -198,7 +199,8 @@ public final class NumberCore {
   }
 
   @Core.Method("multiply(Number, Number)")
-  static Value multiplyNumbers(TState tstate, ResultsInfo results, Value x, Value y) {
+  static Value multiplyNumbers(TState tstate, ResultsInfo results, Value x, Value y)
+      throws BuiltinException {
     if (x instanceof RValue || y instanceof RValue) {
       return doMath(tstate.codeGen(), x, y, results, Op.MULTIPLY_INTS_EXACT, Op.MULTIPLY_DOUBLES);
     }
@@ -218,7 +220,7 @@ public final class NumberCore {
   }
 
   @Core.Method("negative(Number)")
-  static Value negative(TState tstate, ResultsInfo results, Value x) {
+  static Value negative(TState tstate, ResultsInfo results, Value x) throws BuiltinException {
     if (x instanceof RValue) {
       return doMath(tstate.codeGen(), x, results, Op.NEGATE_INT_EXACT, Op.NEGATE_DOUBLE);
     } else if (x instanceof NumValue.I ni) {
@@ -295,7 +297,8 @@ public final class NumberCore {
   }
 
   @Core.Method("exponent(Number, Number)")
-  static Value exponentNumbers(TState tstate, ResultsInfo results, Value x, Value y) {
+  static Value exponentNumbers(TState tstate, ResultsInfo results, Value x, Value y)
+      throws BuiltinException {
     if (NumValue.equals(y, 0)) {
       return NumValue.ONE;
     } else if (NumValue.equals(y, 1)) {
@@ -341,20 +344,19 @@ public final class NumberCore {
    * code that applies {@code doubleOp}.
    */
   private static Value doMath(
-      CodeGen codeGen, Value x, Value y, ResultsInfo results, Op exactIntOp, Op doubleOp) {
+      CodeGen codeGen, Value x, Value y, ResultsInfo results, Op exactIntOp, Op doubleOp)
+      throws BuiltinException {
     CodeValue cx = codeGen.asCodeValue(x);
     CodeValue cy = codeGen.asCodeValue(y);
-    Register resultRegister;
+    CodeValue result;
     if (cx.type() == double.class
         || cy.type() == double.class
         || results.result(TProperty.COERCES_TO_FLOAT)) {
-      resultRegister = codeGen.cb.newRegister(double.class);
-      codeGen.emitSet(resultRegister, doubleOp.result(cx, cy));
+      result = codeGen.materialize(doubleOp.result(cx, cy), double.class);
     } else {
-      resultRegister = codeGen.cb.newRegister(int.class);
-      codeGen.emitSetCatchingArithmeticException(resultRegister, exactIntOp.result(cx, cy));
+      result = codeGen.materializeCatchingArithmeticException(exactIntOp.result(cx, cy));
     }
-    return codeGen.toValue(resultRegister);
+    return codeGen.toValue(result);
   }
 
   /**
@@ -363,17 +365,16 @@ public final class NumberCore {
    * {@code doubleOp}.
    */
   private static Value doMath(
-      CodeGen codeGen, Value x, ResultsInfo results, Op exactIntOp, Op doubleOp) {
+      CodeGen codeGen, Value x, ResultsInfo results, Op exactIntOp, Op doubleOp)
+      throws BuiltinException {
     CodeValue cx = codeGen.asCodeValue(x);
-    Register resultRegister;
+    CodeValue result;
     if (cx.type() == double.class || results.result(TProperty.COERCES_TO_FLOAT)) {
-      resultRegister = codeGen.cb.newRegister(double.class);
-      codeGen.emitSet(resultRegister, doubleOp.result(cx));
+      result = codeGen.materialize(doubleOp.result(cx), double.class);
     } else {
-      resultRegister = codeGen.cb.newRegister(int.class);
-      codeGen.emitSetCatchingArithmeticException(resultRegister, exactIntOp.result(cx));
+      result = codeGen.materializeCatchingArithmeticException(exactIntOp.result(cx));
     }
-    return codeGen.toValue(resultRegister);
+    return codeGen.toValue(result);
   }
 
   @Core.Method("lessThan(Number, Number)")
@@ -402,7 +403,7 @@ public final class NumberCore {
   }
 
   @Core.Method("abs(Number)")
-  static Value abs(TState tstate, ResultsInfo results, Value x) {
+  static Value abs(TState tstate, ResultsInfo results, Value x) throws BuiltinException {
     if (x instanceof RValue) {
       return doMath(tstate.codeGen(), x, results, Op.ABS_INT_EXACT, Op.ABS_DOUBLE);
     } else if (x instanceof NumValue.I ni) {

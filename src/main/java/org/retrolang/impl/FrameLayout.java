@@ -459,15 +459,14 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
     if (f instanceof Register r && PtrInfo.isUnshared(codeGen.cb.nextInfoResolved(r.index))) {
       return r;
     }
-    Register result = codeGen.cb.newRegister(Frame.class);
-    CodeValue rhs =
+    CodeValue result =
         ENSURE_UNSHARED_OP.resultWithInfo(
             notSharedInfo, CodeValue.of(this), codeGen.tstateRegister(), f);
-    codeGen.emitSet(result, rhs);
+    result = codeGen.materialize(result, Frame.class);
     // Reusing an escape from before the call to ensureUnshared will require keeping a reference
     // to f, which we'd like to avoid.
     codeGen.setPreferNewEscape();
-    return result;
+    return (Register) result;
   }
 
   /**
