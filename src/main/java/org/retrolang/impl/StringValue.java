@@ -17,6 +17,8 @@
 package org.retrolang.impl;
 
 import com.google.common.base.Preconditions;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.Op;
 import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.core.CollectionCore;
 import org.retrolang.util.SizeOf;
@@ -92,32 +94,94 @@ public class StringValue extends RefCounted implements Value {
   /** {@code method codePoints(String s) = 1..size(s) | ToCodePoint_(s)} */
   @Core.Method("codePoints(String)")
   static Value codePoints(TState tstate, @RC.In Value s) {
-    int n = ((StringValue) s).value.length();
-    if (n == 0) {
-      tstate.dropValue(s);
-      return Core.EMPTY_ARRAY;
+    Value length;
+    if (s instanceof StringValue sv) {
+      int len = sv.length();
+      length = NumValue.of(len, tstate);
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      length = codeGen.intToValue(LENGTH_OP.result(codeGen.asCodeValue(s)));
     }
-    Value range = tstate.compound(Core.RANGE, NumValue.ONE, NumValue.of(n, tstate));
-    Value lambda = tstate.compound(TO_CODE_POINT, s);
-    return tstate.compound(CollectionCore.TRANSFORMED_MATRIX, range, lambda);
+    return Condition.numericEq(length, NumValue.ZERO)
+        .choose(
+            () -> {
+              tstate.dropValue(s);
+              return Core.EMPTY_ARRAY;
+            },
+            () -> {
+              Value range = tstate.compound(Core.RANGE, NumValue.ONE, length);
+              Value lambda = tstate.compound(TO_CODE_POINT, s);
+              return tstate.compound(CollectionCore.TRANSFORMED_MATRIX, range, lambda);
+            });
   }
 
   /** {@code method at(ToCodePoint cp, Number index) = ...} */
   @Core.Method("at(ToCodePoint, Number)")
   static Value atToCodePoint(TState tstate, Value cp, Value index) throws BuiltinException {
-    StringValue s = (StringValue) cp.peekElement(0);
-    int i = NumValue.asIntOrMinusOne(index);
-    Err.INVALID_ARGUMENT.unless(i > 0 && i <= s.value.length());
-    return NumValue.of(s.value.charAt(i - 1), tstate);
+    Value s = cp.peekElement(0);
+    if (!(cp instanceof RValue || index instanceof RValue)) {
+      int result = ((StringValue) s).codePoint(NumValue.asIntOrMinusOne(index));
+      Err.INVALID_ARGUMENT.unless(result >= 0);
+      return NumValue.of(result, tstate);
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      Value result =
+          codeGen.intToValue(
+              CODE_POINT_OP.result(codeGen.asCodeValue(s), codeGen.verifyInt(index)));
+      codeGen.escapeWhen(Condition.numericLessThan(result, NumValue.ZERO));
+      return result;
+    }
   }
 
   @Core.Method("equal(String, String)")
   static Value equalStrings(Value x, Value y) {
-    return Core.bool(((StringValue) x).value.equals(((StringValue) y).value));
+    return Condition.equal(x, y).asValue();
   }
 
   @Core.Method("concat(String, String)")
   static Value concatStrings(TState tstate, Value x, Value y) {
-    return new StringValue(tstate, ((StringValue) x).value.concat(((StringValue) y).value));
+    if (!(x instanceof RValue || y instanceof RValue)) {
+      return concat(tstate, (StringValue) x, (StringValue) y);
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      CodeValue result =
+          CONCAT_OP.result(
+              codeGen.tstateRegister(), codeGen.asCodeValue(x), codeGen.asCodeValue(y));
+      return codeGen.toValue(codeGen.materialize(result, StringValue.class), Core.STRING);
+    }
+  }
+
+  static final Op LENGTH_OP = RcOp.forRcMethod(StringValue.class, "length").build();
+
+  public int length() {
+    return value.length();
+  }
+
+  static final Op CODE_POINT_OP =
+      RcOp.forRcMethod(StringValue.class, "codePoint", int.class).build();
+
+  public int codePoint(int index) {
+    if (index > 0 && index <= value.length()) {
+      return value.charAt(index - 1);
+    } else {
+      return -1;
+    }
+  }
+
+  static final Op CONCAT_OP =
+      RcOp.forRcMethod(
+              StringValue.class, "concat", TState.class, StringValue.class, StringValue.class)
+          .build();
+
+  @RC.Out
+  public static StringValue concat(TState tstate, StringValue x, StringValue y) {
+    if (x.length() == 0) {
+      y.addRef();
+      return y;
+    } else if (y.value.length() == 0) {
+      x.addRef();
+      return x;
+    }
+    return new StringValue(tstate, x.value.concat(y.value));
   }
 }
