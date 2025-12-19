@@ -12,10 +12,10 @@ function fn(i) {
 /* RUN () RETURNS
 [1, 4, 9, 16, 25]
 ---
-      StackBase
-      FutureValue.FutureMethod.begin
-      future.r8t+2:1_1 _t0 = fn(i)
-0.0s) future.r8t+2:6_2 trace {i=2}
+            ⟦StackBase⟧
+            ⟦FutureValue.FutureMethod.begin⟧
+            ⟦future.r8t+2:1_1 _t0 = fn(i)⟧
+0.0s) ⟦future.r8t+2:6_2 trace ∥ i=2⟧
 ---
 allocated=9480‥11800/355‥436, peak=264‥1584
 */
@@ -27,15 +27,15 @@ x = 1..4 | i -> future(-> i * (i != 2 ? i : None)) | save
 return waitFor(^x) | save
 
 /* RUN () ERRORS
-Error while computing future() value {futureStack=[No matching method {function="multiply:2", args=[2, None]}, future.r8t+25:1_8 _t0 = multiply(i, _t0), FutureValue.FutureMethod.begin]}
-WaitFor {fv=⊠xxxx}
-`waitFor:1`
-CollectionCore.NextTransformedIterator.at {key=[2], innerIt=ArrayIterator([⊡xxxx:1, ⊠xxxx, ⊡xxxx:9, ⊡xxxx:16], EnumerateAllKeys, 2), it=TransformedIterator(ToBeSet, EnumerateAllKeys, `waitFor:1`)}
-LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=[1, ToBeSet, ToBeSet, ToBeSet]}
-LoopCore.enumerateDefault
-LoopCore.PipeCollectionCollector.enumerate {loop=SaverLoop(SaveElements)}
-future.r8t+25:2_6 _t0 = pipe(_t0, _t1)
-StackBase
+⟦Error while computing future() value ∥ futureStack=[⟦No matching method ∥ function="multiply:2", args=[2, None]⟧, ⟦future.r8t+25:1_8 _t0 = multiply(i, _t0)⟧, ⟦FutureValue.FutureMethod.begin⟧]⟧
+⟦WaitFor ∥ fv=⊠xxxx⟧
+⟦`waitFor:1`⟧
+⟦CollectionCore.NextTransformedIterator.at ∥ key=[2], innerIt=ArrayIterator([⊡xxxx:1, ⊠xxxx, ⊡xxxx:9, ⊡xxxx:16], EnumerateAllKeys, 2), it=TransformedIterator(ToBeSet, EnumerateAllKeys, ⟦`waitFor:1`⟧)⟧
+⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state=[1, ToBeSet, ToBeSet, ToBeSet]⟧
+⟦LoopCore.enumerateDefault⟧
+⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaverLoop(SaveElements)⟧
+⟦future.r8t+25:2_6 _t0 = pipe(_t0, _t1)⟧
+⟦StackBase⟧
 ---
 allocated=6960‥7560/261‥280, peak=1168‥1432
 */

@@ -353,11 +353,8 @@ class BuiltinSupport {
 
     @Override
     public void emit(CodeGen codeGen, ResultsInfo results, MethodMemo mMemo, Object[] args) {
+      createStackEntry(codeGen, builtinEntry, args, false);
       int n = cMethodsInOrder.size();
-      codeGen.setNextSrc(where);
-      if (codeGen.needNewEscape()) {
-        setNewEscape(codeGen, builtinEntry, args);
-      }
       if (n == 0) {
         builtinEntry.execute(codeGen.tstate(), results, mMemo, args);
         return;
@@ -408,10 +405,7 @@ class BuiltinSupport {
                 }
               };
         }
-        if (cMethod.isLoop || codeGen.needNewEscape()) {
-          setNewEscape(codeGen, cMethod.builtinEntry, destinationArgs);
-        }
-        codeGen.setNextSrc(cMethod.builtinEntry);
+        createStackEntry(codeGen, cMethod.builtinEntry, destinationArgs, cMethod.isLoop);
         cMethod.builtinEntry.execute(codeGen.tstate(), results, mMemo, destinationArgs);
       }
       if (emitLoopBack != null) {
@@ -419,8 +413,13 @@ class BuiltinSupport {
       }
     }
 
-    /** Set codeGen's escape to push a call to the given BuiltinEntry with the given args. */
-    private static void setNewEscape(CodeGen codeGen, BuiltinEntry builtinEntry, Object[] args) {
+    /**
+     * Creates a stack entry describing our state at the start of the current step. This will be
+     * used to annotate any blocks we emit. If we need a new escape handler the stack entry can also
+     * be used as an unwind point.
+     */
+    private static void createStackEntry(
+        CodeGen codeGen, BuiltinEntry builtinEntry, Object[] args, boolean forceEscape) {
       BaseType.StackEntryType entryType = builtinEntry.stackEntryType;
       Value stackEntry;
       if (entryType.isSingleton()) {
@@ -428,7 +427,10 @@ class BuiltinSupport {
       } else {
         stackEntry = codeGen.tstate().asCompoundValue(entryType, args);
       }
-      codeGen.setNewEscape(stackEntry);
+      codeGen.setCurrentBuiltinStep(stackEntry);
+      if (codeGen.needNewEscape() || forceEscape) {
+        codeGen.setNewEscape(stackEntry);
+      }
     }
 
     @Override

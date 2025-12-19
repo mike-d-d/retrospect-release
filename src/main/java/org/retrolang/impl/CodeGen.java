@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import org.retrolang.code.CodeBuilder;
@@ -368,28 +369,85 @@ public class CodeGen {
   }
 
   /**
-   * The instruction currently being emitted; attached to blocks (via {@link
+   * A description of the instruction currently being emitted; attached to blocks (via {@link
    * CodeBuilder#setNextSrc}) as an aid to debugging code generation.
    */
-  private Instruction currentInstruction;
+  private CodeBuilder.Printable currentInstruction;
 
   /** Called each time we start emitting an instruction. */
-  void setCurrentInstruction(Instruction inst) {
-    this.currentInstruction = inst;
-    cb.setNextSrc(inst.describe());
+  void setCurrentInstruction(Value stackEntry) {
+    currentInstruction = printStackEntry(stackEntry);
+    cb.setNextSrc(currentInstruction);
   }
 
   /**
    * Called each time we start emitting the next step of a builtin method, to add clues for
    * debugging code generation.
    */
-  void setNextSrc(Object info) {
-    assert !(info instanceof Instruction);
+  void setCurrentBuiltinStep(Value stackEntry) {
+    CodeBuilder.Printable src = printStackEntry(stackEntry);
     // Both the builtin step and the instruction that invoked it are useful to know.
     if (currentInstruction != null) {
-      info = info + " // " + currentInstruction; // TODO: .describe() ?
+      CodeBuilder.Printable fromBuiltin = src;
+      CodeBuilder.Printable fromInstruction = currentInstruction;
+      src = options -> fromBuiltin.toString(options) + " // " + fromInstruction.toString(options);
     }
-    cb.setNextSrc(info);
+    cb.setNextSrc(src);
+  }
+
+  /**
+   * Convert a StackEntry value to something that can be included as an annotation to our generated
+   * code for debugging purposes.
+   */
+  private CodeBuilder.Printable printStackEntry(Value stackEntry) {
+    return options -> {
+      BaseType type = stackEntry.baseType();
+      assert type instanceof BaseType.StackEntryType;
+      if (type.isSingleton()) {
+        return stackEntry.toString();
+      }
+      // Each element of stackEntry is the value of a local; we'll render them all with a
+      // register-aware Template.Printer.  The catch is that if this is late in code generation
+      // (after register assignment) a register reference may no longer be valid (if it has been
+      // optimized away completely, or aliases another register but is no longer in use).  To
+      // avoid showing something misleading in this case we check that registers are still live,
+      // and if not replace the whole result with "_".
+
+      // We don't need this to be atomic, just a mutable Boolean.
+      AtomicBoolean allLive = new AtomicBoolean();
+
+      Template.Printer printer =
+          new Template.Printer() {
+            private String reg(int i) {
+              if (options.useJvmLocals() && !options.isLive(i)) {
+                // If we're rendering after register assignment and this register is no longer
+                // live, don't print a local that might actually be holding a different value.
+                allLive.setPlain(false);
+                return "";
+              }
+              return cb.register(i).toString(options);
+            }
+
+            @Override
+            public String toString(NumVar nv) {
+              return reg(nv.index);
+            }
+
+            @Override
+            public String toString(RefVar rv) {
+              return reg(rv.index);
+            }
+          };
+
+      Template t = RValue.toTemplate(stackEntry);
+      return type.toString(
+          i -> {
+            // This will be run once for each local.
+            allLive.setPlain(true);
+            String s = t.element(i).toBuilder().toString(printer);
+            return allLive.getPlain() ? s : "_";
+          });
+    };
   }
 
   /**
@@ -553,6 +611,11 @@ public class CodeGen {
               cb.branchTo(parent.continueUnwinding);
             });
     currentCall = nested;
+    if (caller == null) {
+      // Once we've started executing methods only a subset of the caller's locals are still live.
+      assert stackEntry.baseType() instanceof Instruction.DuringCallStackEntryType;
+      currentInstruction = printStackEntry(stackEntry);
+    }
     // VmFunction.emitCall() determines the appropriate method(s) and emits them.
     fn.emitCall(this, parent.methodMemo, callSite, args);
     // Now emit the post-call instructions.
@@ -591,7 +654,8 @@ public class CodeGen {
       ExlinedCall.emitCall(this, link.next(group, args), args);
     } else {
       currentCall.methodMemo = mMemo;
-      Instruction currentInst = currentInstruction;
+      // Save and restore the currentInstruction, since emitting a method may overwrite it.
+      CodeBuilder.Printable currentInst = currentInstruction;
       impl.emit(this, currentCall.done, mMemo, args);
       currentCall.methodMemo = null;
       currentCall.builtinEmitState = null;

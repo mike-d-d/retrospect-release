@@ -377,26 +377,26 @@ public final class SimpleCodeGenTest {
               6: setInt[](x3, 0, i1);
               7: setInt[](x3, 4, i1);
               8: return 0
-            - 9: TState.pushUnwind(x0, entry3 {arg1=0, arg2=0});
+            - 9: TState.pushUnwind(x0, ⟦entry3 ∥ arg1=0, arg2=0⟧);
              10: return -1
-            -11: x5 ← newStackEntry(entry2 {arg1=i1, arg2=i1});
+            -11: x5 ← newStackEntry(⟦entry2 ∥ arg1=i1, arg2=i1⟧);
              12: TState.pushUnwind(x0, x5);
              13: return -1
-            -14: x6 ← newStackEntry(entry1 {arg1=i1, arg2=i2});
+            -14: x6 ← newStackEntry(⟦entry1 ∥ arg1=i1, arg2=i2⟧);
              15: TState.pushUnwind(x0, x6);
              16: return -1
             """);
     Value unwind1 = getUnwind(mh, tstate, 1, -1);
-    assertThat(unwind1.layout().template().toString()).isEqualTo("entry1 {arg1=i0, arg2=i4}");
-    assertThat(unwind1.toString()).isEqualTo("entry1 {arg1=1, arg2=-1}");
+    assertThat(unwind1.layout().template().toString()).isEqualTo("⟦entry1 ∥ arg1=i0, arg2=i4⟧");
+    assertThat(unwind1.toString()).isEqualTo("⟦entry1 ∥ arg1=1, arg2=-1⟧");
     tstate.dropValue(unwind1);
     Value unwind2 = getUnwind(mh, tstate, -1, 1);
-    assertThat(unwind2.layout().template().toString()).isEqualTo("entry2 {arg1=i0, arg2=i0}");
-    assertThat(unwind2.toString()).isEqualTo("entry2 {arg1=-1, arg2=-1}");
+    assertThat(unwind2.layout().template().toString()).isEqualTo("⟦entry2 ∥ arg1=i0, arg2=i0⟧");
+    assertThat(unwind2.toString()).isEqualTo("⟦entry2 ∥ arg1=-1, arg2=-1⟧");
     tstate.dropValue(unwind2);
     Value unwind3 = getUnwind(mh, tstate, 0, 0);
     assertThat(unwind3.layout()).isNull();
-    assertThat(unwind3.toString()).isEqualTo("entry3 {arg1=0, arg2=0}");
+    assertThat(unwind3.toString()).isEqualTo("⟦entry3 ∥ arg1=0, arg2=0⟧");
     tstate.dropValue(unwind3);
     assertThat((int) mh.invokeWithArguments(tstate, 4, 5)).isEqualTo(0);
     assertThat(NumValue.equals(tstate.takeResult(0), 4)).isTrue();

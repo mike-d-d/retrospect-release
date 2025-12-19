@@ -69,16 +69,16 @@ test_0({x: i1, y: i2}, {x: i3, y: i4⸨0:i5; 1:x6:String⸩, z: i7⸨0:i8; 1:x9:
  53: I19 ← I13;
  54: I18 ← I17;
  55: I16 ← I15; → 28
--56: X14 ← newStackEntry(StructCore.NextStructIterator.startLoop {index=I10, it=StructIterator({x: I1, y: I2}, EnumerateAllKeys, I10)});
- 57: X1 ← TState.fillStackEntry(X0, null, X14, [⸨[x0:String, b0]; Absent⸩, StructIterator({x: b0, y: b0}, EnumerateAllKeys, b0)], mMemo_1@xxxx, null);
- 58: X1 ← TState.fillStackEntry(X0, X1, CollectionCore.NextWithKeysIterator.next, [⸨[x0:String, [x0:String, b0]]; Absent⸩, WithKeysIterator(StructIterator({x: b0, y: b0}, EnumerateAllKeys, b0)), TransformedIterator((empty), EnumerateAllKeys, lambda@8:46⸨s2={x: b0, y: ⸨b0; x0:String⸩, z: ⸨b0; x0:String⸩}⸩)], mMemo_2@xxxx, null);
- 59: X2 ← newStackEntry(CollectionCore.NextTransformedIterator.next {it=TransformedIterator((empty), EnumerateAllKeys, lambda@8:46⸨s2={x: I3, y: I4⸨0:I5; 1:X6⸩, z: I7⸨0:I8; 1:X9⸩}⸩)});
- 60: X1 ← TState.fillStackEntry(X0, X1, X2, [⸨[x0:String, ⸨b0; Absent; "wat"⸩]; Absent⸩, TransformedIterator(WithKeysIterator(StructIterator({x: b0, y: b0}, EnumerateAllKeys, b0)), EnumerateAllKeys, lambda@8:46⸨s2={x: b0, y: ⸨b0; x0:String⸩, z: ⸨b0; x0:String⸩}⸩), SaverLoop(SaveElements), {x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}], mMemo_8@xxxx, null);
- 61: X2 ← newStackEntry(LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state={x: I11⸨0:I12; 1:Absent⸩, y: I13⸨0:1; 1:Absent; 2:"wat"⸩}});
- 62: X1 ← TState.fillStackEntry(X0, X1, X2, [{x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}, SaverLoop(SaveElements)], mMemo_15@xxxx, null);
- 63: X1 ← TState.fillStackEntry(X0, X1, LoopCore.enumerateDefault, [{x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}, SaverLoop(SaveElements)], mMemo_16@xxxx, null);
- 64: X1 ← TState.fillStackEntry(X0, X1, LoopCore.PipeCollectionCollector.enumerate {loop=SaverLoop(SaveElements)}, {x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}, mMemo_23@xxxx, null);
- 65: X1 ← TState.fillStackEntry(X0, X1, structs.r8t+2:8_3 _t0 = pipe(_t0, _t1), {x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}, mMemo_x@xxxx, null);
+-56: X14 ← newStackEntry(⟦StructCore.NextStructIterator.startLoop ∥ index=I10, it=StructIterator({x: I1, y: I2}, EnumerateAllKeys, I10)⟧);
+ 57: X1 ← TState.fillStackEntry(X0, null, X14, ⟨⸨[x0:String, b0]; Absent⸩, StructIterator({x: b0, y: b0}, EnumerateAllKeys, b0)⟩, mMemo_1@xxxx, null);
+ 58: X1 ← TState.fillStackEntry(X0, X1, ⟦CollectionCore.NextWithKeysIterator.next⟧, ⟨⸨[x0:String, [x0:String, b0]]; Absent⸩, WithKeysIterator(StructIterator({x: b0, y: b0}, EnumerateAllKeys, b0)), TransformedIterator((empty), EnumerateAllKeys, lambda@8:46⸨s2={x: b0, y: ⸨b0; x0:String⸩, z: ⸨b0; x0:String⸩}⸩)⟩, mMemo_2@xxxx, null);
+ 59: X2 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.next ∥ it=TransformedIterator((empty), EnumerateAllKeys, lambda@8:46⸨s2={x: I3, y: I4⸨0:I5; 1:X6⸩, z: I7⸨0:I8; 1:X9⸩}⸩)⟧);
+ 60: X1 ← TState.fillStackEntry(X0, X1, X2, ⟨⸨[x0:String, ⸨b0; Absent; "wat"⸩]; Absent⸩, TransformedIterator(WithKeysIterator(StructIterator({x: b0, y: b0}, EnumerateAllKeys, b0)), EnumerateAllKeys, lambda@8:46⸨s2={x: b0, y: ⸨b0; x0:String⸩, z: ⸨b0; x0:String⸩}⸩), SaverLoop(SaveElements), {x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}⟩, mMemo_8@xxxx, null);
+ 61: X2 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state={x: I11⸨0:I12; 1:Absent⸩, y: I13⸨0:1; 1:Absent; 2:"wat"⸩}⟧);
+ 62: X1 ← TState.fillStackEntry(X0, X1, X2, ⟨{x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}, SaverLoop(SaveElements)⟩, mMemo_15@xxxx, null);
+ 63: X1 ← TState.fillStackEntry(X0, X1, ⟦LoopCore.enumerateDefault⟧, ⟨{x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}, SaverLoop(SaveElements)⟩, mMemo_16@xxxx, null);
+ 64: X1 ← TState.fillStackEntry(X0, X1, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaverLoop(SaveElements)⟧, ⟨{x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}⟩, mMemo_23@xxxx, null);
+ 65: X1 ← TState.fillStackEntry(X0, X1, ⟦structs.r8t+2:8_3 _t0 = pipe(_t0, _t1)⟧, ⟨{x: ⸨b0; Absent⸩, y: ⸨1; Absent; "wat"⸩}⟩, mMemo_x@xxxx, null);
  66: TState.setStackRest(X0, X1);
  67: return
 ---

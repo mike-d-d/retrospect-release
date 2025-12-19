@@ -141,29 +141,29 @@ function find(x, array) {
 /* RUN () RETURNS
   [1, 2, 3, 1]
 ---
-            StackBase
-            distribute.r8t+126:2_3 _t0 = pipe(_t0, _t1)
-            LoopCore.PipeCollectionCollector.enumerate {loop=SaverLoop(SaveElements)}
-        (1) LoopCore.enumerateDefault
-            LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=[ToBeSet, ToBeSet, ToBeSet, ToBeSet]}
-            CollectionCore.NextTransformedIterator.at {key=[1], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 1), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)}
-            distribute.r8t+126:2_1 _a0 = find(_a1, a)
-0.0s) distribute.r8t+126:6_0 trace {x=4, array=[4, 6, 5, 4]}
+            ⟦StackBase⟧
+            ⟦distribute.r8t+126:2_3 _t0 = pipe(_t0, _t1)⟧
+            ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaverLoop(SaveElements)⟧
+        (1) ⟦LoopCore.enumerateDefault⟧
+            ⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state=[ToBeSet, ToBeSet, ToBeSet, ToBeSet]⟧
+            ⟦CollectionCore.NextTransformedIterator.at ∥ key=[1], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 1), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)⟧
+            ⟦distribute.r8t+126:2_1 _a0 = find(_a1, a)⟧
+0.0s) ⟦distribute.r8t+126:6_0 trace ∥ x=4, array=[4, 6, 5, 4]⟧
             ... (1) ...
-            LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=[1, ToBeSet, ToBeSet, ToBeSet]}
-            CollectionCore.NextTransformedIterator.at {key=[2], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 2), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)}
-            distribute.r8t+126:2_1 _a0 = find(_a1, a)
-0.0s) distribute.r8t+126:6_0 trace {x=6, array=[4, 6, 5, 4]}
+            ⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state=[1, ToBeSet, ToBeSet, ToBeSet]⟧
+            ⟦CollectionCore.NextTransformedIterator.at ∥ key=[2], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 2), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)⟧
+            ⟦distribute.r8t+126:2_1 _a0 = find(_a1, a)⟧
+0.0s) ⟦distribute.r8t+126:6_0 trace ∥ x=6, array=[4, 6, 5, 4]⟧
             ... (1) ...
-            LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=[1, 2, ToBeSet, ToBeSet]}
-            CollectionCore.NextTransformedIterator.at {key=[3], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 3), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)}
-            distribute.r8t+126:2_1 _a0 = find(_a1, a)
-0.0s) distribute.r8t+126:6_0 trace {x=5, array=[4, 6, 5, 4]}
+            ⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state=[1, 2, ToBeSet, ToBeSet]⟧
+            ⟦CollectionCore.NextTransformedIterator.at ∥ key=[3], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 3), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)⟧
+            ⟦distribute.r8t+126:2_1 _a0 = find(_a1, a)⟧
+0.0s) ⟦distribute.r8t+126:6_0 trace ∥ x=5, array=[4, 6, 5, 4]⟧
             ... (1) ...
-            LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=[1, 2, 3, ToBeSet]}
-            CollectionCore.NextTransformedIterator.at {key=[4], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 4), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)}
-            distribute.r8t+126:2_1 _a0 = find(_a1, a)
-0.0s) distribute.r8t+126:6_0 trace {x=4, array=[4, 6, 5, 4]}
+            ⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state=[1, 2, 3, ToBeSet]⟧
+            ⟦CollectionCore.NextTransformedIterator.at ∥ key=[4], innerIt=ArrayIterator([4, 6, 5, 4], EnumerateAllKeys, 4), it=TransformedIterator(ToBeSet, EnumerateAllKeys, iLambda@2:7⸨a=[4, 6, 5, 4]⸩)⟧
+            ⟦distribute.r8t+126:2_1 _a0 = find(_a1, a)⟧
+0.0s) ⟦distribute.r8t+126:6_0 trace ∥ x=4, array=[4, 6, 5, 4]⟧
 ---
 allocated=10264/377, peak=2384
 */

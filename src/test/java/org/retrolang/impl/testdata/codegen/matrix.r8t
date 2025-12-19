@@ -142,35 +142,35 @@ test_0(i1, i2):
  123: return
 -124: I3 ← I2;
  125: I4 ← 1; → 116
--126: X5 ← newStackEntry(LoopCore.Iterate.afterIterator {it=RangeIterator(I4, I3, None), loop=loop@9, state=loop@9_state⸨x=ReshapedArray([I2, I1], X11)⸩});
- 127: X3 ← TState.fillStackEntry(X0, null, X5, loop@9_state⸨x=ReshapedArray([b0, b0], x0:*[]@xxxx)⸩, mMemo_8@xxxx, null);
- 128: X1 ← TState.fillStackEntry(X0, X3, matrix.r8t+0:9_9 _t0 = iterate(_t0, EnumerateValues, loop@9, loop@9_state⸨x=x⸩), ReshapedArray([b0, b0], x0:*[]@xxxx), mMemo_x@xxxx, null);
+-126: X5 ← newStackEntry(⟦LoopCore.Iterate.afterIterator ∥ it=RangeIterator(I4, I3, None), loop=loop@9, state=loop@9_state⸨x=ReshapedArray([I2, I1], X11)⸩⟧);
+ 127: X3 ← TState.fillStackEntry(X0, null, X5, ⟨loop@9_state⸨x=ReshapedArray([b0, b0], x0:*[]@xxxx)⸩⟩, mMemo_8@xxxx, null);
+ 128: X1 ← TState.fillStackEntry(X0, X3, ⟦matrix.r8t+0:9_9 _t0 = iterate(_t0, EnumerateValues, loop@9, loop@9_state⸨x=x⸩)⟧, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_x@xxxx, null);
 =129: TState.setStackRest(X0, X1);
  130: return
--131: X7 ← newStackEntry(LoopCore.Iterate.afterNext {element=[[I4, I9], [I12, I14]], it=TransformedIterator(ReshapedIterator(ReshapedIterator(ArrayIterator(X3, EnumerateAllKeys, I6), [I5], [I1, I2]), [I1, I2], [I2, I1]), EnumerateAllKeys, lambda@8:26), loop=SaverLoop(SaveElements), state=ReshapedArray([I2, I1], X11)});
- 132: X3 ← TState.fillStackEntry(X0, null, X7, [ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)], mMemo_29@xxxx, null);
-=133: X3 ← TState.fillStackEntry(X0, X3, LoopCore.enumerateDefault, [ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)], mMemo_30@xxxx, null);
- 134: X3 ← TState.fillStackEntry(X0, X3, LoopCore.PipeCollectionCollector.enumerate {loop=SaverLoop(SaveElements)}, ReshapedArray([b0, b0], x0:*[]@xxxx), mMemo_h38@xxxx, null);
- 135: X4 ← newStackEntry(matrix.r8t+0:8_6 x = pipe(_t0, _t1) {n=I1, m=I2});
- 136: X1 ← TState.fillStackEntry(X0, X3, X4, ReshapedArray([b0, b0], x0:*[]@xxxx), mMemo_x@xxxx, null); → 129
--137: X6 ← newStackEntry(ArrayCore.NextArrayIterator.startLoop {index=I4, it=ArrayIterator(X3, EnumerateAllKeys, I4)});
- 138: X3 ← TState.fillStackEntry(X0, null, X6, [⸨[[b0], [b0, b0]]; Absent⸩, ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), ReshapedIterator((empty), [b0], [b0, b0])], mMemo_1@xxxx, null);
- 139: X4 ← newStackEntry(MatrixCore.NextReshapedIterator.next {it=ReshapedIterator((empty), [I5], [I1, I2])});
- 140: X3 ← TState.fillStackEntry(X0, X3, X4, [⸨[[b0, b0], [b0, b0]]; Absent⸩, ReshapedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), [b0], [b0, b0]), ReshapedIterator((empty), [b0, b0], [b0, b0])], mMemo_2@xxxx, null);
- 141: X4 ← newStackEntry(MatrixCore.NextReshapedIterator.next {it=ReshapedIterator((empty), [I1, I2], [I2, I1])});
- 142: X3 ← TState.fillStackEntry(X0, X3, X4, [⸨[[b0, b0], [b0, b0]]; Absent⸩, ReshapedIterator(ReshapedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), [b0], [b0, b0]), [b0, b0], [b0, b0]), TransformedIterator((empty), EnumerateAllKeys, lambda@8:26)], mMemo_3@xxxx, null);
- 143: X3 ← TState.fillStackEntry(X0, X3, CollectionCore.NextTransformedIterator.next {it=TransformedIterator(ToBeSet, EnumerateAllKeys, lambda@8:26)}, [⸨[[b0, b0], [b0, b0]]; Absent⸩, TransformedIterator(ReshapedIterator(ReshapedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), [b0], [b0, b0]), [b0, b0], [b0, b0]), EnumerateAllKeys, lambda@8:26), SaverLoop(SaveElements), ReshapedArray([b0, b0], x0:*[]@xxxx)], mMemo_19@xxxx, null);
- 144: X4 ← newStackEntry(LoopCore.Iterate.next {loop=SaverLoop(SaveElements), state=ReshapedArray([I2, I1], X11)});
- 145: X3 ← TState.fillStackEntry(X0, X3, X4, [ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)], mMemo_29@xxxx, null); → 133
+-131: X7 ← newStackEntry(⟦LoopCore.Iterate.afterNext ∥ element=[[I4, I9], [I12, I14]], it=TransformedIterator(ReshapedIterator(ReshapedIterator(ArrayIterator(X3, EnumerateAllKeys, I6), [I5], [I1, I2]), [I1, I2], [I2, I1]), EnumerateAllKeys, lambda@8:26), loop=SaverLoop(SaveElements), state=ReshapedArray([I2, I1], X11)⟧);
+ 132: X3 ← TState.fillStackEntry(X0, null, X7, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)⟩, mMemo_29@xxxx, null);
+=133: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.enumerateDefault⟧, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)⟩, mMemo_30@xxxx, null);
+ 134: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaverLoop(SaveElements)⟧, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_h38@xxxx, null);
+ 135: X4 ← newStackEntry(⟦matrix.r8t+0:8_6 x = pipe(_t0, _t1) ∥ n=I1, m=I2⟧);
+ 136: X1 ← TState.fillStackEntry(X0, X3, X4, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_x@xxxx, null); → 129
+-137: X6 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I4, it=ArrayIterator(X3, EnumerateAllKeys, I4)⟧);
+ 138: X3 ← TState.fillStackEntry(X0, null, X6, ⟨⸨[[b0], [b0, b0]]; Absent⸩, ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), ReshapedIterator((empty), [b0], [b0, b0])⟩, mMemo_1@xxxx, null);
+ 139: X4 ← newStackEntry(⟦MatrixCore.NextReshapedIterator.next ∥ it=ReshapedIterator((empty), [I5], [I1, I2])⟧);
+ 140: X3 ← TState.fillStackEntry(X0, X3, X4, ⟨⸨[[b0, b0], [b0, b0]]; Absent⸩, ReshapedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), [b0], [b0, b0]), ReshapedIterator((empty), [b0, b0], [b0, b0])⟩, mMemo_2@xxxx, null);
+ 141: X4 ← newStackEntry(⟦MatrixCore.NextReshapedIterator.next ∥ it=ReshapedIterator((empty), [I1, I2], [I2, I1])⟧);
+ 142: X3 ← TState.fillStackEntry(X0, X3, X4, ⟨⸨[[b0, b0], [b0, b0]]; Absent⸩, ReshapedIterator(ReshapedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), [b0], [b0, b0]), [b0, b0], [b0, b0]), TransformedIterator((empty), EnumerateAllKeys, lambda@8:26)⟩, mMemo_3@xxxx, null);
+ 143: X3 ← TState.fillStackEntry(X0, X3, ⟦CollectionCore.NextTransformedIterator.next ∥ it=TransformedIterator(ToBeSet, EnumerateAllKeys, lambda@8:26)⟧, ⟨⸨[[b0, b0], [b0, b0]]; Absent⸩, TransformedIterator(ReshapedIterator(ReshapedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), [b0], [b0, b0]), [b0, b0], [b0, b0]), EnumerateAllKeys, lambda@8:26), SaverLoop(SaveElements), ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_19@xxxx, null);
+ 144: X4 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaverLoop(SaveElements), state=ReshapedArray([I2, I1], X11)⟧);
+ 145: X3 ← TState.fillStackEntry(X0, X3, X4, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)⟩, mMemo_29@xxxx, null); → 133
 -146: dropRef{X11};
--147: X11 ← newStackEntry(LoopCore.Iterate.afterNext {element=I8⸨0:[[I9, I10], [I9, I10]]; 1:Absent⸩, it=I4⸨0:BaseIterator(EnumerateAllKeys, [I5, I6], [I7, I2]); 1:ReshapedIterator(ArrayIterator([], EnumerateAllKeys, 0), [0], [2, 0])⸩, loop=SaverLoop(SaveElements), state=ReshapedArray([I1, I2], X3)});
- 148: X3 ← TState.fillStackEntry(X0, null, X11, [ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)], mMemo_11@xxxx, null);
- 149: X3 ← TState.fillStackEntry(X0, X3, LoopCore.enumerateDefault, [ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)], mMemo_12@xxxx, null);
- 150: X3 ← TState.fillStackEntry(X0, X3, LoopCore.PipeCollectionCollector.enumerate {loop=SaverLoop(SaveElements)}, ReshapedArray([b0, b0], x0:*[]@xxxx), mMemo_20@xxxx, null);
- 151: X4 ← newStackEntry(matrix.r8t+0:7_2 x = pipe(_t0, _t1) {n=I1, m=I2});
- 152: X1 ← TState.fillStackEntry(X0, X3, X4, ReshapedArray([b0, b0], x0:*[]@xxxx), mMemo_x@xxxx, null); → 129
--153: X3 ← newStackEntry(matrix.r8t+0:7_0 _t0 = matrix([n, m]) {n=I1, m=I2});
- 154: X1 ← TState.fillStackEntry(X0, null, X3, ReshapedArray([b0, b0], x0:*[]@xxxx), mMemo_x@xxxx, null); → 129
+-147: X11 ← newStackEntry(⟦LoopCore.Iterate.afterNext ∥ element=I8⸨0:[[I9, I10], [I9, I10]]; 1:Absent⸩, it=I4⸨0:BaseIterator(EnumerateAllKeys, [I5, I6], [I7, I2]); 1:ReshapedIterator(ArrayIterator([], EnumerateAllKeys, 0), [0], [2, 0])⸩, loop=SaverLoop(SaveElements), state=ReshapedArray([I1, I2], X3)⟧);
+ 148: X3 ← TState.fillStackEntry(X0, null, X11, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)⟩, mMemo_11@xxxx, null);
+ 149: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.enumerateDefault⟧, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx), SaverLoop(SaveElements)⟩, mMemo_12@xxxx, null);
+ 150: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaverLoop(SaveElements)⟧, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_20@xxxx, null);
+ 151: X4 ← newStackEntry(⟦matrix.r8t+0:7_2 x = pipe(_t0, _t1) ∥ n=I1, m=I2⟧);
+ 152: X1 ← TState.fillStackEntry(X0, X3, X4, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_x@xxxx, null); → 129
+-153: X3 ← newStackEntry(⟦matrix.r8t+0:7_0 _t0 = matrix([n, m]) ∥ n=I1, m=I2⟧);
+ 154: X1 ← TState.fillStackEntry(X0, null, X3, ⟨ReshapedArray([b0, b0], x0:*[]@xxxx)⟩, mMemo_x@xxxx, null); → 129
 ---
 allocated=568/20, peak=368
 */

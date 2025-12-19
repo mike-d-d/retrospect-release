@@ -343,8 +343,11 @@ public abstract class BaseType implements PtrInfo {
 
     @Override
     String toString(IntFunction<Object> elements) {
+      if (isSingleton()) {
+        return "⟦" + this + "⟧";
+      }
       return StringUtil.joinElements(
-          this + " {", "}", size(), i -> localName(i) + "=" + elements.apply(i));
+          "⟦" + this + " ∥ ", "⟧", size(), i -> localName(i) + "=" + elements.apply(i));
     }
   }
 

@@ -303,6 +303,11 @@ class Destination implements ResultsInfo {
      */
     Value[] savedValues;
 
+    /**
+     * If {@link #savedValues} is non-null, this is the corresponding value of {@code cb.nextSrc()}.
+     */
+    Object savedSrc;
+
     @Override
     final void saveValues(Destination dest, CodeGen codeGen, Value[] values) {
       assert dest.state == this;
@@ -312,6 +317,7 @@ class Destination implements ResultsInfo {
       // be returned unmodified by values().
       if (!dest.links.hasInLink() && !saveNeedsCheck(values)) {
         this.savedValues = values;
+        this.savedSrc = codeGen.cb.nextSrc();
         return;
       }
       // Otherwise we need to ensure that registers have been allocated, and then copy the passed
@@ -343,13 +349,19 @@ class Destination implements ResultsInfo {
     private void copyFromSavedValues(Destination dest, CodeGen codeGen, Full full) {
       if (savedValues != null) {
         // These blocks will be executed by the first inlink, but not by any that are added later.
-        // Save the CodeBuilder's current next block so that we can restore it when we're done.
+        // Save the CodeBuilder's current next block and next src so that we can restore it when
+        // we're done, the set them to the values they had when the values were saved (as if we
+        // had emitted these blocks then).
         FutureBlock prev = codeGen.cb.swapNext(dest.links);
         dest.links = new FutureBlock();
+        Object prevSrc = codeGen.cb.nextSrc();
+        codeGen.cb.setNextSrc(savedSrc);
         full.setValues(codeGen, 0, savedValues);
         codeGen.cb.branchTo(dest.links);
         codeGen.cb.setNext(prev);
+        codeGen.cb.setNextSrc(prevSrc);
         savedValues = null;
+        savedSrc = null;
       }
     }
 
@@ -499,8 +511,12 @@ class Destination implements ResultsInfo {
         assert extras == null;
       }
       if (savedValues != null) {
+        Object prevSrc = codeGen.cb.nextSrc();
+        codeGen.cb.setNextSrc(savedSrc);
         parent.addBranch(codeGen, savedValues);
+        codeGen.cb.setNextSrc(prevSrc);
         savedValues = null;
+        savedSrc = null;
       } else {
         // Either prefixSize == 0 or we've already stored the values in the appropriate registers
         if (parent.state instanceof Simple simpleParent) {

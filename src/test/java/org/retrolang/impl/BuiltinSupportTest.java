@@ -219,7 +219,8 @@ public class BuiltinSupportTest {
     TStack tstack = tstate.takeUnwind();
     assertThat(tstack.stringStream().toArray())
         .asList()
-        .containsExactly("Not true", "Module1.method3 {x=\"foo\", y=Enum2, z=Enum2}", "StackBase");
+        .containsExactly(
+            "⟦Not true⟧", "⟦Module1.method3 ∥ x=\"foo\", y=Enum2, z=Enum2⟧", "⟦StackBase⟧");
     tstate.dropReference(tstack);
   }
 
@@ -403,11 +404,11 @@ public class BuiltinSupportTest {
     assertThat(tstack.stringStream().toArray())
         .asList()
         .containsExactly(
-            "Invalid argument",
-            "CallerTest.bar {x=1}",
-            "CallerTest.foo",
-            "CallerTest.foo",
-            "StackBase");
+            "⟦Invalid argument⟧",
+            "⟦CallerTest.bar ∥ x=1⟧",
+            "⟦CallerTest.foo⟧",
+            "⟦CallerTest.foo⟧",
+            "⟦StackBase⟧");
     tstate.dropReference(tstack);
   }
 }

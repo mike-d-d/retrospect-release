@@ -37,8 +37,8 @@ filtered_0([d1, d2, d3]):
  26: I12 ← 1; → 10
 -27: D13 ← 0;
  28: I1 ← 1; → 14
--29: X7 ← newStackEntry(filter.r8t+0:4_0 _t0 = pipe(nums, `sqrt:1`) {nums=[D1, D3, D5]});
- 30: X1 ← TState.fillStackEntry(X0, null, X7, [⸨d0; Absent⸩, ⸨d0; Absent⸩, ⸨d0; Absent⸩], mMemo_x@xxxx, null);
+-29: X7 ← newStackEntry(⟦filter.r8t+0:4_0 _t0 = pipe(nums, ⟦`sqrt:1`⟧) ∥ nums=[D1, D3, D5]⟧);
+ 30: X1 ← TState.fillStackEntry(X0, null, X7, ⟨[⸨d0; Absent⸩, ⸨d0; Absent⸩, ⸨d0; Absent⸩]⟩, mMemo_x@xxxx, null);
  31: TState.setStackRest(X0, X1);
  32: return
 ---

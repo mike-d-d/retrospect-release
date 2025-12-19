@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.objectweb.asm.Opcodes;
@@ -633,6 +634,11 @@ public class CodeBuilder {
     nextSrc = src;
   }
 
+  /** The value passed in the most recent call to {@link #setNextSrc}. */
+  public Object nextSrc() {
+    return nextSrc;
+  }
+
   /** Creates a new Register with the given type. */
   public Register newRegister(Class<?> type) {
     Register result = new Register(registers.size(), type);
@@ -685,6 +691,39 @@ public class CodeBuilder {
     /** Returns the identifier to be used when printing a link to the given block. */
     String blockId(Block block);
 
+    /** Returns true if the specified register is live at the start of the current block. */
+    default boolean isLive(int index) {
+      return true;
+    }
+
+    /**
+     * Returns a PrintOptions that delegates {@link #isLive} to {@code liveRegisters}, and all other
+     * methods to {@code parent}.
+     */
+    static PrintOptions withLive(PrintOptions parent, IntPredicate liveRegisters) {
+      return new PrintOptions() {
+        @Override
+        public boolean useJvmLocals() {
+          return parent.useJvmLocals();
+        }
+
+        @Override
+        public boolean isLinkToNextBlock(Link link) {
+          return parent.isLinkToNextBlock(link);
+        }
+
+        @Override
+        public String blockId(Block block) {
+          return parent.blockId(block);
+        }
+
+        @Override
+        public boolean isLive(int index) {
+          return liveRegisters.test(index);
+        }
+      };
+    }
+
     PrintOptions DEFAULT =
         new PrintOptions() {
           @Override
@@ -704,6 +743,14 @@ public class CodeBuilder {
             return "#" + block.index();
           }
         };
+  }
+
+  /**
+   * If the object passed to {@link #setNextSrc} implements {@code Printable}, its rendering by
+   * {@link #printBlocks} can depend on the PrintOptions.
+   */
+  public interface Printable {
+    String toString(PrintOptions options);
   }
 
   private static final String SRC_PAD = " ".repeat(55);
@@ -743,7 +790,16 @@ public class CodeBuilder {
         if (s.length() < CodeBuilder.SRC_PAD.length()) {
           sb.append(CodeBuilder.SRC_PAD, s.length(), CodeBuilder.SRC_PAD.length());
         }
-        sb.append(" // ").append(b.src);
+        sb.append(" // ");
+        if (b.src instanceof Printable pSrc) {
+          PrintOptions options = sequencer;
+          if (b.live != null) {
+            options = PrintOptions.withLive(options, ri -> b.isLive(ri, null));
+          }
+          sb.append(pSrc.toString(options));
+        } else {
+          sb.append(b.src);
+        }
       }
       prevSrc = b.src;
       sb.append("\n");

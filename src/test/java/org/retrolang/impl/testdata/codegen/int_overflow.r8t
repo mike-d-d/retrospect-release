@@ -26,8 +26,8 @@ tenthPower_0(i1):
   6: TState.setResultTemplates(X0, [i0]);
   7: setInt[](TState.fnResultBytes(X0, 4), 0, I2);
   8: return
-- 9: X2 ← newStackEntry(int_overflow.r8t+2:7_0 _t0 = fifthPower(x) {x=I1});
- 10: X1 ← TState.fillStackEntry(X0, null, X2, i0, mMemo_x@xxxx, null);
+- 9: X2 ← newStackEntry(⟦int_overflow.r8t+2:7_0 _t0 = fifthPower(x) ∥ x=I1⟧);
+ 10: X1 ← TState.fillStackEntry(X0, null, X2, ⟨i0⟩, mMemo_x@xxxx, null);
  11: TState.setStackRest(X0, X1);
  12: return
 ---

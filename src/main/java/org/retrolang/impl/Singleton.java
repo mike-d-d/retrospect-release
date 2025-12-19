@@ -63,6 +63,9 @@ public final class Singleton extends VmExpr.Constant implements Value, Vm.Single
 
   @Override
   public String toString() {
-    return baseType.toString();
+    // StackEntry values get extra delimiters.
+    return (baseType instanceof BaseType.StackEntryType)
+        ? baseType.toString(null)
+        : baseType.toString();
   }
 }

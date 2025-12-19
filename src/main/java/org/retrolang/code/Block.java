@@ -50,6 +50,9 @@ public abstract class Block extends Zone.Ordered {
   /**
    * Optional information about the source code that produced this block; does not affect code
    * generation, but is included when printing to assist with debugging.
+   *
+   * <p>If this object implements {@link CodeBuilder.Printable} its rendering as a string may depend
+   * on the state of the CodeBuilder.
    */
   Object src;
 
