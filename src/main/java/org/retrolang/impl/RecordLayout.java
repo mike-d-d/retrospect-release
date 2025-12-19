@@ -258,6 +258,11 @@ public class RecordLayout extends FrameLayout {
   }
 
   /** Returns a CodeValue that calls {@link #alloc} on this RecordLayout. */
+  CodeValue emitAlloc(CodeGen codeGen) {
+    return emitAlloc(codeGen.cb);
+  }
+
+  /** Returns a CodeValue that calls {@link #alloc} on this RecordLayout. */
   CodeValue emitAlloc(CodeBuilder cb) {
     // The size argument is ignored, so we just pass zero.
     return ALLOC_OP.result(CodeValue.of(this), CodeGen.tstateRegister(cb), CodeValue.ZERO);

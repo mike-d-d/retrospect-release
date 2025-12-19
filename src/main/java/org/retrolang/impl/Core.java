@@ -205,11 +205,11 @@ public class Core {
 
   @Public
   public static final BaseType.NonCompositional STRING =
-      new BaseType.NonCompositional(CORE, "String");
+      new BaseType.NonCompositional(CORE, "String", StringValue.class);
 
   @Public
   public static final BaseType.NonCompositional NUMBER =
-      new BaseType.NonCompositional(CORE, "Number", BaseType.SORT_ORDER_NUM);
+      new BaseType.NonCompositional(CORE, "Number", NumValue.class, BaseType.SORT_ORDER_NUM);
 
   @Public
   public static final VmType INTEGER =

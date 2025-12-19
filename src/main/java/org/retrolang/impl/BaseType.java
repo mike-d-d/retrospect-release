@@ -292,13 +292,21 @@ public abstract class BaseType implements PtrInfo {
      */
     final Template.RefVar asRefVar;
 
-    NonCompositional(VmModule module, String name, long sortOrder, Vm.Type... superTypes) {
+    final Class<?> javaType;
+
+    NonCompositional(
+        VmModule module, String name, Class<?> javaType, long sortOrder, Vm.Type... superTypes) {
       super(module, name, -1, sortOrder, superTypes);
+      assert (sortOrder == SORT_ORDER_ARRAY)
+          ? javaType == null
+          : Value.class.isAssignableFrom(javaType);
+      this.javaType = javaType;
       asRefVar = (sortOrder == SORT_ORDER_ARRAY) ? null : new Template.RefVar(0, this, null, false);
     }
 
-    public NonCompositional(VmModule module, String name, Vm.Type... superTypes) {
-      this(module, name, ALLOC_NEW_SORT_ORDER, superTypes);
+    public NonCompositional(
+        VmModule module, String name, Class<?> javaType, Vm.Type... superTypes) {
+      this(module, name, javaType, ALLOC_NEW_SORT_ORDER, superTypes);
     }
   }
 

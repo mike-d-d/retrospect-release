@@ -16,10 +16,13 @@
 
 package org.retrolang.impl;
 
+import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
+import org.retrolang.code.Op;
+import org.retrolang.code.Register;
 import org.retrolang.code.TestBlock;
 import org.retrolang.code.TestBlock.IsUint8;
 import org.retrolang.impl.CopyPlan.StepType;
@@ -88,8 +91,13 @@ class CopyEmitter {
                       codeGen.materialize(
                           srcValue, srcEncoding == NumEncoding.FLOAT64 ? double.class : int.class);
                   if (srcEncoding == NumEncoding.FLOAT64) {
-                    // TODO: check that double is an int
-                    throw new UnsupportedOperationException();
+                    Register srcReg = (Register) srcValue;
+                    CodeValue asInt =
+                        codeGen.materialize(Op.DOUBLE_TO_INT.result(srcReg), int.class);
+                    new TestBlock.IsEq(OpCodeType.DOUBLE, srcReg, asInt)
+                        .setBranch(false, onFail)
+                        .addTo(codeGen.cb);
+                    srcValue = asInt;
                   }
                   if (dstEncoding == NumEncoding.UINT8) {
                     new IsUint8(srcValue).setBranch(false, onFail).addTo(codeGen.cb);
@@ -137,20 +145,65 @@ class CopyEmitter {
                 codeGen.testEqualsObj(src, CodeValue.of(v), true, onFail);
               }
             }
-            // TODO: handle VERIFY_REF_TYPE, FRAME_TO_COMPOUND & COMPOUND_TO_FRAME
+            case VERIFY_REF_TYPE -> {
+              RefVar srcVar = (RefVar) basic.src;
+              CodeValue src = getSrcVar(codeGen, srcVar);
+              BaseType baseType = (BaseType) basic.dst;
+              if (baseType.isSingleton() && !baseType.isArray()) {
+                new TestBlock.IsEq(OpCodeType.OBJ, src, CodeValue.of(baseType.asValue()))
+                    .setBranch(false, onFail)
+                    .addTo(codeGen.cb);
+              } else if (baseType instanceof BaseType.NonCompositional) {
+                new PtrInfo.TestClass(src, (BaseType.NonCompositional) baseType)
+                    .setBranch(false, onFail)
+                    .addTo(codeGen.cb);
+              } else {
+                new PtrInfo.TestClass(src, null).setBranch(false, onFail).addTo(codeGen.cb);
+                CodeGen.checkLayout(src, srcVar.frameLayout())
+                    .setBranch(false, onFail)
+                    .addTo(codeGen.cb);
+              }
+            }
+            case COMPOUND_TO_FRAME -> {
+              Template src = (Template) basic.src;
+              BaseType srcBaseType = src.baseType();
+              RefVar dstVar = (RefVar) basic.dst;
+              Register tmpRegister = codeGen.cb.newRegister(Frame.class);
+              FrameLayout frameLayout = dstVar.frameLayout();
+              ObjIntConsumer<Template> setElement;
+              if (frameLayout instanceof RecordLayout layout) {
+                assert layout.template.baseType == srcBaseType;
+                codeGen.emitSet(tmpRegister, layout.emitAlloc(codeGen));
+                setElement = layout.emitSetElement(codeGen, tmpRegister, onFail);
+              } else {
+                assert srcBaseType.isArray();
+                VArrayLayout layout = (VArrayLayout) frameLayout;
+                codeGen.emitSet(
+                    tmpRegister, layout.emitAlloc(codeGen, CodeValue.of(srcBaseType.size())));
+                setElement =
+                    (template, i) ->
+                        layout.emitSetElement(
+                            codeGen, tmpRegister, CodeValue.of(i), template, onFail);
+              }
+              for (int i = 0; i < srcBaseType.size(); i++) {
+                setElement.accept(src.element(i), i);
+              }
+              setDstVar(codeGen, dstVar, tmpRegister);
+            }
+            // TODO: FRAME_TO_COMPOUND
             default -> throw new UnsupportedOperationException();
           }
         } else {
           CopyPlan.Switch sw = (CopyPlan.Switch) step;
+          int n = sw.union.numChoices();
           boolean hasTag = sw.union.tag != null;
           CodeValue switchVal;
           if (hasTag) {
             switchVal = getSrcVar(codeGen, sw.union.tag);
           } else {
-            // TODO: implement untagged switches
-            throw new UnsupportedOperationException();
+            switchVal = getSrcVar(codeGen, sw.union.untagged);
           }
-          int n = sw.union.numChoices();
+          switchVal = codeGen.materialize(switchVal, switchVal.type());
           // Emit something like "if <this is choice i> then <do choice i>" for each i, except that
           // we'll skip empty and fail choices on this pass, and handle them as a group when we're
           // done.
@@ -169,10 +222,15 @@ class CopyEmitter {
                 // If this is the last choice, and we haven't skipped any empty or fail choices,
                 // we can skip the test.
               } else {
-                // TODO: implement untagged switches
-                new TestBlock.IsEq(OpCodeType.INT, switchVal, CodeValue.of(i))
-                    .setBranch(false, tryNext)
-                    .addTo(codeGen.cb);
+                if (hasTag) {
+                  new TestBlock.IsEq(OpCodeType.INT, switchVal, CodeValue.of(i))
+                      .setBranch(false, tryNext)
+                      .addTo(codeGen.cb);
+                } else {
+                  // TODO take another look at this!
+                  new PtrInfo.TypeTest(sw.union, Bits.of(i), (Register) switchVal)
+                      .addTest(codeGen, tryNext);
+                }
               }
               if (codeGen.cb.nextIsReachable()) {
                 emit(codeGen, choice, onFail);
@@ -187,19 +245,26 @@ class CopyEmitter {
           if (numEmpty == 0) {
             // Any remaining cases are fail
             codeGen.cb.branchTo(onFail);
-          } else if (codeGen.cb.nextIsReachable() && numFail != 0) {
+          } else if (codeGen.cb.nextIsReachable() && numFail != 0 || !hasTag) {
             // Some but not all of the remaining cases are fail.  We'll test for either the empty
             // choices or the fails, whichever is a smaller set.
-            boolean testForFail = (numFail <= numEmpty);
+            boolean testForFail = (hasTag && numFail <= numEmpty);
             Predicate<CopyPlan> includeChoice =
                 testForFail
                     ? CopyPlan::isFail
                     : choice -> !choice.isFail() && choice.steps.isEmpty();
             Bits choices = Bits.fromPredicate(n - 1, i -> includeChoice.test(sw.choice(i)));
-            // TODO: implement untagged switches
-            new TestBlock.TagCheck(switchVal, n, choices)
-                .setBranch(testForFail, onFail)
-                .addTo(codeGen.cb);
+            if (hasTag) {
+              new TestBlock.TagCheck(switchVal, n, choices)
+                  .setBranch(testForFail, onFail)
+                  .addTo(codeGen.cb);
+            } else {
+              new PtrInfo.TypeTest(sw.union, choices, (Register) switchVal)
+                  .addTest(codeGen, testForFail ? onFail : done);
+              if (!testForFail) {
+                codeGen.cb.branchTo(onFail);
+              }
+            }
           }
           codeGen.cb.mergeNext(done);
         }

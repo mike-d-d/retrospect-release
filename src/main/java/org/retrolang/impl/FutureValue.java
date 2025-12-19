@@ -47,7 +47,7 @@ public class FutureValue extends RefCounted implements Value, RThread.Waiter {
 
   @Core.Public
   static final BaseType.NonCompositional FUTURE_TYPE =
-      new BaseType.NonCompositional(Core.CORE, "Future");
+      new BaseType.NonCompositional(Core.CORE, "Future", FutureValue.class);
 
   /** The BlockingEntryType for threads that have called waitFor(). */
   static final BaseType.BlockingEntryType WAITFOR_ENTRY =
@@ -69,6 +69,8 @@ public class FutureValue extends RefCounted implements Value, RThread.Waiter {
 
     @Core.Method("future(Lambda)")
     static Value begin(TState tstate, MethodMemo mm, @RC.In Value lambda, @Fn("at:2") Caller at) {
+      // This isn't ready for code generation!
+      assert !tstate.hasCodeGen();
       // Note that we don't do the usual thing of starting a call with our Caller in this thread;
       // we instead pass the Caller to another thread and just return the newly-created FutureValue
       // from this method.
@@ -267,6 +269,7 @@ public class FutureValue extends RefCounted implements Value, RThread.Waiter {
       if (MemoryHelper.isReleaser(visitor)) {
         // Don't let async threads read or write this after we've released it
         this.result = null;
+        this.pending = null;
       }
     }
     if (result instanceof RefCounted rc) {

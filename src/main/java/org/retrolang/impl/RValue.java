@@ -210,8 +210,7 @@ public class RValue implements Value {
       return Condition.fromTest(
           () -> new TestBlock.TagCheck(codeGen.register(union.tag), numChoices, bits));
     } else {
-      // TODO: handle untagged unions
-      throw new UnsupportedOperationException();
+      return new PtrInfo.TypeTest(union, bits, codeGen.register(union.untagged));
     }
   }
 
