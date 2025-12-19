@@ -53,7 +53,8 @@ public class ValueUtil {
    */
   @RC.Out
   public static Value element(TState tstate, Value array, Value index, int firstIndex) {
-    assert array.baseType().isArray() && (firstIndex == 0 || firstIndex == 1);
+    assert array.baseType().isArray() || array.baseType().isCompositional();
+    assert firstIndex == 0 || (array.baseType().isArray() && firstIndex == 1);
     if (!(index instanceof RValue)) {
       return array.element(NumValue.asInt(index) - firstIndex);
     }
@@ -122,7 +123,8 @@ public class ValueUtil {
   @RC.Out
   public static Value replaceElement(
       TState tstate, @RC.In Value array, Value index, int firstIndex, @RC.In Value newElement) {
-    assert array.baseType().isArray() && (firstIndex == 0 || firstIndex == 1);
+    assert array.baseType().isArray() || array.baseType().isCompositional();
+    assert firstIndex == 0 || (array.baseType().isArray() && firstIndex == 1);
     if (!(index instanceof RValue)) {
       return array.replaceElement(tstate, NumValue.asInt(index) - firstIndex, newElement);
     }

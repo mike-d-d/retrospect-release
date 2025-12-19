@@ -648,7 +648,7 @@ class VArrayLayout extends FrameLayout {
 
           @Override
           public void setI(int index, int value) {
-            // TODO(mdixon): maybe optimize this?
+            // TODO: maybe optimize this?
             byte[] bytes = (byte[]) getElementArray(f, index);
             for (int i = start; i < end; i++) {
               ArrayUtil.bytesSetI(bytes, i, value);
@@ -657,7 +657,7 @@ class VArrayLayout extends FrameLayout {
 
           @Override
           public void setD(int index, double value) {
-            // TODO(mdixon): maybe optimize this?
+            // TODO: maybe optimize this?
             byte[] bytes = (byte[]) getElementArray(f, index);
             for (int i = start; i < end; i++) {
               ArrayUtil.bytesSetD(bytes, i, value);

@@ -18,6 +18,7 @@ package org.retrolang.impl;
 
 import static org.retrolang.impl.Value.addRef;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -91,7 +92,7 @@ public class Core {
     // We don't use the usual ModuleBuilder methods to set up Core, but we still need an associated
     // ModuleBuilder when adding methods to functions.
     //
-    // TODO(mdixon): Once everything settles down, re-evaluate whether it would be feasible to use
+    // TODO: Once everything settles down, re-evaluate whether it would be feasible to use
     // ModuleBuilder to assemble Core.
     CORE = new ModuleBuilder().module;
   }
@@ -100,8 +101,13 @@ public class Core {
    * The Vm.Module known as "Core", fully initialized. Calling this from a static initializer is
    * likely to result in NullPointerExceptions.
    */
-  public static VmModule core() {
+  static VmModule core() {
     return Initializer.INITIALIZED_CORE;
+  }
+
+  /** If the Core created a StructType with the given keys, returns it; otherwise returns null. */
+  static StructType structType(ImmutableList<String> keys) {
+    return keys.isEmpty() ? StructType.EMPTY : Initializer.ALL_STRUCTS.get(keys);
   }
 
   // statics only
@@ -166,16 +172,12 @@ public class Core {
   @Public // min, max (each Integer or None)
   public static final BaseType.Named RANGE = newBaseType("Range", 2, MATRIX);
 
-  /**
-   * Retrospect structs are implemented as a pair of two arrays, the first containing keys in sorted
-   * order, the second containing the corresponding values.
-   */
-  @Public // keys, values
-  public static final BaseType.Named STRUCT =
-      new BaseType.Named(CORE, "Struct", 2, COLLECTION) {
+  @Public
+  public static final VmType STRUCT =
+      new VmType(CORE, "Struct", COLLECTION) {
         @Override
-        String compositionalToString(Value v) {
-          return StructCompound.toString(v);
+        boolean contains(BaseType type) {
+          return type instanceof StructType;
         }
       };
 
@@ -309,14 +311,6 @@ public class Core {
           return "VArray";
         }
       };
-
-  /**
-   * {@code private compound StructLambda is Lambda}
-   *
-   * <p>Element is an array of keys suitable as the first element of a STRUCT.
-   */
-  @Private
-  static final BaseType.Named STRUCT_LAMBDA = Core.newBaseType("StructLambda", 1, Core.LAMBDA);
 
   /**
    * A private union that contains baseTypes created by the core for e.g. {@link VmType#testLambda}
@@ -461,23 +455,6 @@ public class Core {
   }
 
   /**
-   * If {@code structLambda} has a single key, returns a struct with the given arg as its value.
-   * Otherwise {@code arg} must be an array with length matching the number of keys.
-   */
-  @Core.Method("at(StructLambda, _)")
-  static Value atStruct(TState tstate, Value structLambda, @RC.In Value arg)
-      throws BuiltinException {
-    Value keys = structLambda.element(0);
-    int nKeys = keys.numElements();
-    if (nKeys == 1) {
-      return tstate.compound(STRUCT, keys, tstate.arrayValue(arg));
-    }
-    tstate.dropOnThrow(keys);
-    Err.INVALID_ARGUMENT.unless(arg.isArrayOfLength(nKeys));
-    return tstate.compound(STRUCT, keys, arg);
-  }
-
-  /**
    * <pre>
    * method min(x, y) default = y &lt; x ? y : x
    * </pre>
@@ -552,14 +529,18 @@ public class Core {
      */
     static final ImmutableMap<String, VmFunction> ALL_FUNCTIONS;
 
+    /** All StructTypes created by the core. */
+    static final ImmutableMap<ImmutableList<String>, StructType> ALL_STRUCTS;
+
     static {
       // Initialize the type and function maps by scanning these classes for static fields of type
       // VmType, Singleton, or VmFunction.
       Class<?>[] classes =
           new Class<?>[] {
             Core.class,
-            StringValue.class,
             FutureValue.class,
+            StringValue.class,
+            StructType.class,
             NumberCore.class,
             ArrayCore.class,
             LoopCore.class,
@@ -570,9 +551,10 @@ public class Core {
             RangeCore.class,
             StructCore.class
           };
-      Builder<VmType> typesBuilder = new Builder<>(t -> t.name);
-      Builder<VmFunction> functionsBuilder =
-          new Builder<>(fn -> VmFunction.key(fn.name, fn.numArgs));
+      Builder<String, VmType> typesBuilder = new Builder<>(true, t -> t.name);
+      Builder<String, VmFunction> functionsBuilder =
+          new Builder<>(true, fn -> VmFunction.key(fn.name, fn.numArgs));
+      Builder<ImmutableList<String>, StructType> structsBuilder = new Builder<>(false, t -> t.keys);
       synchronized (CORE.builder()) {
         for (Class<?> klass : classes) {
           // VmTypes are just thrown in the map.
@@ -583,9 +565,11 @@ public class Core {
           typesBuilder.addAllFrom(klass, BaseType.Named.class, bt -> bt.asType);
           functionsBuilder.addAllFrom(
               klass, VmFunctionBuilder.class, builder -> builder.build(CORE));
+          structsBuilder.addAllFrom(klass, StructType.class, t -> t);
         }
         ALL_TYPES = typesBuilder.allItems.buildOrThrow();
         ALL_FUNCTIONS = functionsBuilder.allItems.buildOrThrow();
+        ALL_STRUCTS = structsBuilder.allItems.buildOrThrow();
         for (Class<?> klass : classes) {
           BuiltinSupport.addMethodsFrom(klass, ALL_TYPES, ALL_FUNCTIONS);
         }
@@ -608,15 +592,20 @@ public class Core {
    * Used during initialization to build two maps (allItems and publicItems) with values of the
    * given type.
    */
-  private static class Builder<T> {
+  private static class Builder<Keys, T> {
+    final boolean needPublicOrPrivate;
+
     /** Returns the key that should be used for storing the given value. */
-    final Function<T, String> nameFn;
+    final Function<T, Keys> keyFn;
 
-    final ImmutableMap.Builder<String, T> allItems = ImmutableMap.builder();
-    final ImmutableMap.Builder<String, T> publicItems = ImmutableMap.builder();
+    final ImmutableMap.Builder<Keys, T> allItems;
+    final ImmutableMap.Builder<Keys, T> publicItems;
 
-    Builder(Function<T, String> nameFn) {
-      this.nameFn = nameFn;
+    Builder(boolean needPublicOrPrivate, Function<T, Keys> keyFn) {
+      this.needPublicOrPrivate = needPublicOrPrivate;
+      this.keyFn = keyFn;
+      this.allItems = ImmutableMap.builder();
+      this.publicItems = needPublicOrPrivate ? ImmutableMap.builder() : null;
     }
 
     /**
@@ -629,8 +618,11 @@ public class Core {
         if (Modifier.isStatic(f.getModifiers()) && ofClass.isAssignableFrom(f.getType())) {
           boolean isPublic = f.isAnnotationPresent(Public.class);
           boolean isPrivate = f.isAnnotationPresent(Private.class);
-          if (isPublic || isPrivate) {
-            assert !(isPublic && isPrivate);
+          int take = (isPublic ? 1 : 0) + (isPrivate ? 1 : 0) + (needPublicOrPrivate ? 0 : 1);
+          if (take != 0) {
+            // We shouldn't have both Public and Private, and if needPublicOrPrivate is false we
+            // shouldn't have either.
+            assert take == 1;
             f.setAccessible(true);
             T2 fValue;
             try {
@@ -639,10 +631,10 @@ public class Core {
               throw new AssertionError(e);
             }
             T extracted = extract.apply(fValue);
-            String name = nameFn.apply(extracted);
-            allItems.put(name, extracted);
+            Keys key = keyFn.apply(extracted);
+            allItems.put(key, extracted);
             if (isPublic) {
-              publicItems.put(name, extracted);
+              publicItems.put(key, extracted);
             }
           }
         }

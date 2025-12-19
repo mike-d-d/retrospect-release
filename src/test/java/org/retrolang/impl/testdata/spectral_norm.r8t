@@ -33,7 +33,7 @@ function multiply_A_At(v) = multiply_At(multiply_A(v))
 /* RUN (n=100) RETURNS
   1.2742199912349306
 ---
-allocated=536475112/20717467, peak=24
+allocated=536281096/20709383, peak=24
 $0 = *[]d0
 $1 = *[]d0
 */

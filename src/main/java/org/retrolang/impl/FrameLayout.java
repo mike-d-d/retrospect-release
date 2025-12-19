@@ -240,7 +240,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
       FrameLayout fLayout = f.layout();
       if (fLayout.latest() != this) {
         scope.evolver.merge(this, fLayout);
-        // TODO(mdixon): update f to this new layout
+        // TODO: update f to this new layout
       }
       f.addRef();
       return f;
@@ -548,7 +548,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
   /** Implements RefCounted.visitRefs() for a Frame that uses this FrameLayout. */
   @Override
   final long visitRefs(Frame f, RefVisitor visitor) {
-    // TODO(mdixon): if visitor is a releaser, add f to a freeList on TState *unless* we've been
+    // TODO: if visitor is a releaser, add f to a freeList on TState *unless* we've been
     // called from Frame.Replacement.clearOriginal()
     return frameClass.visitRefs(f, visitor, nPtrs);
   }

@@ -840,7 +840,7 @@ public class Op {
     } else if (CodeValue.ZERO.equals(y)) {
       return CodeValue.Thrown.ARITHMETIC_EXCEPTION;
     }
-    // TODO(mdixon): If x is zero and we have info that y is non-zero we could return zero here.
+    // TODO: If x is zero and we have info that y is non-zero we could return zero here.
     // Also if x is equal to y and we have info that they're non-zero we could return one.
     // Would either of those be useful?
     return null;
@@ -856,7 +856,7 @@ public class Op {
     } else if (CodeValue.ZERO.equals(y)) {
       return CodeValue.Thrown.ARITHMETIC_EXCEPTION;
     }
-    // TODO(mdixon): If x is zero and we have info that y is non-zero we could return zero here.
+    // TODO: If x is zero and we have info that y is non-zero we could return zero here.
     // Also if x is equal to y and we have info that they're non-zero we could return zero.
     // Would either of those be useful?
     return null;

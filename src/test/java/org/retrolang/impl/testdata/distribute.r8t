@@ -12,7 +12,7 @@ return { both, left, right }
    left: [0.25, 0.5, 0.75],
    right: [5, 6, 7]}
 ---
-allocated=8472/318, peak=344
+allocated=8280/310, peak=296
 */
 
 a = 0..2
@@ -29,7 +29,7 @@ return [lt, le, le2, ne]
    [False, False, True],
    [False, True, True]]
 ---
-allocated=13160/496, peak=280
+allocated=12968/488, peak=280
 */
 
 a = 1..3
@@ -45,7 +45,7 @@ return { array1, array2, array3, array4 }
    array3: [[1, 1], [2, 2], [3, 3]],
    array4: [[6, 1, 1], [6, 2, 2], [6, 3, 3]]}
 ---
-allocated=11368/426, peak=928
+allocated=11128/416, peak=880
 */
 
 a = 1..3
@@ -59,7 +59,7 @@ return { struct1, struct2, struct3 }
    struct2: [{a: 7, b: 1}, {a: 7, b: 2}, {a: 7, b: 3}],
    struct3: [{a: 1, b: 1}, {a: 2, b: 2}, {a: 3, b: 3}]}
 ---
-allocated=8976/339, peak=1136
+allocated=8352/313, peak=656
 */
 
 a = [1, 2, 3]
@@ -78,7 +78,7 @@ return { fn1, fn2, fn3, fn4, fn5 }
    fn4: [1, 1, 1],
    fn5: [[2, 2, 3], [1, 4, 3], [1, 2, 8]]}
 ---
-allocated=17880/676, peak=560
+allocated=17592/664, peak=512
 */
 
 a = [[0, 1], [2, 3], [4, 5, 6]]
@@ -93,7 +93,7 @@ return { pipe, test1, test2 }
    test1: False,
    test2: True}
 ---
-allocated=11072/413, peak=160
+allocated=10736/399, peak=112
 $0 = *[]b0
 */
 
@@ -109,7 +109,7 @@ return { r1, r2, r3 }
    r2: [Range(1, 2), Range(2, 3), Range(3, 4)],
    r3: [Range(1, 2), Range(2, 3), Range(3, 4)]}
 ---
-allocated=10504/398, peak=704
+allocated=10312/390, peak=656
 */
 
 a = matrix([2, 3], 4..9)
@@ -121,7 +121,7 @@ return [b, c]
 /* RUN () RETURNS
   [[7, 8], [5, 9]]
 ---
-allocated=7464/287, peak=144
+allocated=7368/283, peak=144
 */
 
 a = [4, 6, 5, 4]
@@ -165,5 +165,5 @@ function find(x, array) {
             distribute.r8t+126:2_1 _a0 = find(_a1, a)
 0.0s) distribute.r8t+126:6_0 trace {x=4, array=[4, 6, 5, 4]}
 ---
-allocated=10312/379, peak=2384
+allocated=10264/377, peak=2384
 */

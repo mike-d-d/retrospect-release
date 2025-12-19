@@ -16,6 +16,8 @@
 
 package org.retrolang.impl;
 
+import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
 import java.util.function.Predicate;
 
 /**
@@ -35,7 +37,26 @@ class Scope {
 
   final MemoMerger memoMerger = new MemoMerger();
 
+  /**
+   * StructTypes that aren't shared with the Core are saved per-Scope.
+   *
+   * <p>A ConcurrentHashMap would have worked, but since I expect it to be rare for there to be
+   * multiple threads (this is only accessed when during compilation, not during execution) I just
+   * went with locking the whole HashMap.
+   */
+  private final HashMap<ImmutableList<String>, StructType> structs = new HashMap<>();
+
   private int nextCodeGenIndex;
+
+  StructType compoundWithKeys(ImmutableList<String> keys) {
+    StructType result = Core.structType(keys);
+    if (result != null) {
+      return result;
+    }
+    synchronized (structs) {
+      return structs.computeIfAbsent(keys, StructType::new);
+    }
+  }
 
   /**
    * Any method created after this call for which the given predicate returns true will use a single

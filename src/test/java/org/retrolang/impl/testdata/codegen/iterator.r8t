@@ -13,11 +13,11 @@ function firstTwo(array) {
 ---
 firstTwo_0(WithKeysMatrix([d1, d2, d3])):
  1: AtomicInteger.incrementAndGet(0);
- 2: TState.setResultTemplates(X0, [Struct(["first", "second"], [[[1], d0], [[2], d8]])]);
+ 2: TState.setResultTemplates(X0, [{first: [[1], d0], second: [[2], d8]}]);
  3: X5 ← TState.fnResultBytes(X0, 16);
  4: setDouble[](X5, 0, D1);
  5: setDouble[](X5, 8, D3);
  6: return
 ---
-allocated=776/32, peak=528
+allocated=680/28, peak=432
 */

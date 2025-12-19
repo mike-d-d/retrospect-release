@@ -172,6 +172,33 @@ public class CodeGen {
   }
 
   /**
+   * Given a register containing a value of the given (non-compositional) baseType, returns the
+   * corresponding RValue.
+   */
+  public Value toValue(Register r, BaseType.NonCompositional baseType) {
+    return RValue.fromTemplate(baseType.asRefVar.withIndex(r.index));
+  }
+
+  /**
+   * Given a register or constant containing a value of the given (non-compositional) baseType,
+   * returns the corresponding RValue.
+   */
+  public Value toValue(CodeValue cv, BaseType.NonCompositional baseType) {
+    assert cv.isPtr();
+    if (cv instanceof Register r) {
+      return toValue(r, baseType);
+    }
+    Value result = (Value) cv.constValue();
+    assert result == null || result.baseType() == baseType;
+    return result;
+  }
+
+  /** Given an int-valued CodeValue, returns the corresponding Value. */
+  public Value intToValue(CodeValue cv) {
+    return toValue(materialize(cv, int.class));
+  }
+
+  /**
    * Returns a CodeValue representing the given Value. After simplification {@code v} must be
    * representable by a simple CodeValue, i.e. it may not be a compound or union RValue.
    */

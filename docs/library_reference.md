@@ -147,10 +147,10 @@ in the range 0 to 255, corresponding to the UTF-8 encoding of the String.
 
 ### Struct
 
-Structs are a type of Collection with String keys. The order of iteration is not
-defined.
+Structs are a type of Collection with String keys.
 
-Structs can be updated by replacing individual elements.
+Structs can be updated by replacing individual elements, but elements may not be
+added or removed.
 
 ### Reducer and Saver
 

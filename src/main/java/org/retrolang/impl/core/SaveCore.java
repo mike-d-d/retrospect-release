@@ -159,9 +159,7 @@ public final class SaveCore {
       throws BuiltinException {
     Err.INVALID_ARGUMENT.when(initialState.isa(SAVER_UPDATES));
     return tstate.compound(
-        Core.STRUCT,
-        LoopCore.SETUP_KEYS,
-        tstate.arrayValue(Core.TRUE, eKind, initialState, tstate.compound(SAVER_LOOP, loop)));
+        LoopCore.SETUP_KEYS, Core.TRUE, eKind, initialState, tstate.compound(SAVER_LOOP, loop));
   }
 
   /**

@@ -448,16 +448,12 @@ static class PipeCollectionCollector extends BuiltinMethod {
   @Continuation
   static void afterCollectorSetup(TState tstate, Value csResult, @Saved Value collection)
       throws BuiltinException {
-    if (!(csResult.isa(Core.STRUCT) && SETUP_KEYS.equals(csResult.peekElement(0)))) {
-      // "collectorSetup() should return a {canParallel, eKind, initialState, loop} struct"
-      throw new BuiltinException(Err.COLLECTOR_SETUP_RESULT);
-    }
-    csResult = csResult.peekElement(1);
+    // "collectorSetup() should return a {canParallel, eKind, initialState, loop} struct"
+    Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.matches(csResult));
     Value canParallel = csResult.peekElement(0);
     Value eKind = csResult.peekElement(1);
-    if (!(canParallel.isa(Core.BOOLEAN) && eKind.isa(ENUMERATION_KIND))) {
-      throw Err.COLLECTOR_SETUP_RESULT.asException();
-    }
+    Err.COLLECTOR_SETUP_RESULT.unless(
+          canParallel.isa(Core.BOOLEAN) && eKind.isa(ENUMERATION_KIND));
     Value initialState = csResult.element(2);
     Value loop = csResult.element(3);
     if (initialState.isa(Core.LOOP_EXIT)) {

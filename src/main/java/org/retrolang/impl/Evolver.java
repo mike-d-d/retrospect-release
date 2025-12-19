@@ -84,7 +84,7 @@ class Evolver {
      */
     @RC.Out
     Frame replace(TState tstate, Frame src) {
-      // TODO(mdixon): think about where in here there might be big allocations and add reservations
+      // TODO: think about where in here there might be big allocations and add reservations
       // and a clean exit if we run out of memory
       return replacer.copy(tstate, src);
     }

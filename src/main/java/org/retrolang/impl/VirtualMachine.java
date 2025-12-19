@@ -16,6 +16,7 @@
 
 package org.retrolang.impl;
 
+import com.google.common.collect.ImmutableList;
 import org.retrolang.Vm;
 
 /** Implementation of Vm.VirtualMachine. Each instance will have a separate Scope. */
@@ -69,7 +70,7 @@ public class VirtualMachine implements Vm.VirtualMachine {
 
   @Override
   public Vm.Compound structWithKeys(String... keys) {
-    return (keys.length == 0) ? StructCompound.EMPTY : new StructCompound(keys);
+    return scope.compoundWithKeys(ImmutableList.copyOf(keys)).vmCompound;
   }
 
   @Override

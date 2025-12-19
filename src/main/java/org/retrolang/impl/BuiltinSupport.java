@@ -430,6 +430,11 @@ class BuiltinSupport {
       }
       codeGen.setNewEscape(stackEntry);
     }
+
+    @Override
+    public String toString() {
+      return where;
+    }
   }
 
   /** An EmitState holds the state involved in a single call to {@link BuiltinImpl#emit}. */

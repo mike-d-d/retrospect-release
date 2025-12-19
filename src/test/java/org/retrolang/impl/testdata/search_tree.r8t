@@ -47,6 +47,6 @@ method replaceElement(BST bst, [key], value) {
 /* RUN () RETURNS
   [24, 12, 1, Absent]
 ---
-allocated=223840/8497, peak=56
-$0 = *[d4, b0⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x0:$0)); 1:Empty⸩, b1⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x1:$0)); 1:Empty⸩, b2]
+allocated=205760/7831, peak=56
+$0 = *{key: d4, left: b0⸨0:NonEmpty(x0:$0); 1:Empty⸩, right: b1⸨0:NonEmpty(x1:$0); 1:Empty⸩, value: b2}
 */

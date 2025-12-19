@@ -83,5 +83,5 @@ method combineStates(Histogram, state1, state2) = state1 + state2
 /* RUN (size=200) RETURNS
 [10838, 7456, 7456, 8110, 6140]
 ---
-allocated=1604452120/61238830, peak=184
+allocated=1585251976/60438824, peak=184
 */

@@ -34,7 +34,7 @@ import org.retrolang.impl.RC;
 import org.retrolang.impl.RValue;
 import org.retrolang.impl.RefCounted;
 import org.retrolang.impl.ResultsInfo;
-import org.retrolang.impl.StringValue;
+import org.retrolang.impl.StructType;
 import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
@@ -144,21 +144,14 @@ public final class NumberCore {
    *
    * <p>Must be in alphabetical order.
    */
-  static final Value HIGH_LOW_KEYS =
-      Core.FixedArrayType.withSize(2)
-          .uncountedOf(
-              new StringValue(Allocator.UNCOUNTED, "high"),
-              new StringValue(Allocator.UNCOUNTED, "low"));
+  static final StructType HIGH_LOW_KEYS = new StructType("high", "low");
 
   /**
    * uDivWithRemainder returns a struct with these keys.
    *
    * <p>Must be in alphabetical order.
    */
-  static final Value Q_R_KEYS =
-      Core.FixedArrayType.withSize(2)
-          .uncountedOf(
-              new StringValue(Allocator.UNCOUNTED, "q"), new StringValue(Allocator.UNCOUNTED, "r"));
+  static final StructType Q_R_KEYS = new StructType("q", "r");
 
   /** Create a new builtin with the given name that returns a constant value. */
   private static VmFunctionBuilder constant(String name, double d) {
@@ -524,9 +517,7 @@ public final class NumberCore {
   @RC.Out
   private static Value asHighLow(TState tstate, long value) {
     return tstate.compound(
-        Core.STRUCT,
-        HIGH_LOW_KEYS,
-        tstate.arrayValue(asU32(tstate, (int) (value >> 32)), asU32(tstate, (int) value)));
+        HIGH_LOW_KEYS, asU32(tstate, (int) (value >> 32)), asU32(tstate, (int) value));
   }
 
   @Core.Method("uAdd(U32, U32)")
@@ -545,9 +536,7 @@ public final class NumberCore {
   }
 
   static long highLowToLong(Value struct) throws BuiltinException {
-    assert struct.baseType() == Core.STRUCT;
-    Err.INVALID_ARGUMENT.unless(HIGH_LOW_KEYS.equals(struct.peekElement(0)));
-    struct = struct.peekElement(1);
+    Err.INVALID_ARGUMENT.unless(HIGH_LOW_KEYS.matches(struct));
     Value high = struct.peekElement(0);
     Value low = struct.peekElement(1);
     Err.INVALID_ARGUMENT.unless(high.isa(Core.U32).and(low.isa(Core.U32)));
@@ -561,8 +550,7 @@ public final class NumberCore {
     long q = Long.divideUnsigned(xl, yl);
     long r = Long.remainderUnsigned(xl, yl);
     assert (r & 0xffffffffL) == r;
-    return tstate.compound(
-        Core.STRUCT, Q_R_KEYS, tstate.arrayValue(asHighLow(tstate, q), asU32(tstate, (int) r)));
+    return tstate.compound(Q_R_KEYS, asHighLow(tstate, q), asU32(tstate, (int) r));
   }
 
   @Core.Method("bitAnd(U32, U32)")

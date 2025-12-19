@@ -47,11 +47,11 @@ method replaceElement(BST bst, [key], value) {
 /* CODEGEN at RETURNS
   [24, 12, 1, Absent]
 ---
-at_0(i1⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x2:*@xxxx)); 1:Empty⸩, [d3]):
+at_0(i1⸨0:NonEmpty(x2:*@xxxx); 1:Empty⸩, [d3]):
   1: AtomicInteger.incrementAndGet(0);
   2: X5 ← null;
   3: test I1 1 (< 2); T:→ 23
-  4: test X2 is *[d4, b0⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x0:*@xxxx)); 1:Empty⸩, b1⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x1:*@xxxx)); 1:Empty⸩, b2]@xxxx; F:→ 44
+  4: test X2 is *{key: d4, left: b0⸨0:NonEmpty(x0:*@xxxx); 1:Empty⸩, right: b1⸨0:NonEmpty(x1:*@xxxx); 1:Empty⸩, value: b2}@xxxx; F:→ 44
   5: D6 ← Frame3i2x.d0(X2);
   6: test D3 < D6; F:→ 26
   7: test Frame3i2x.b0(X2) == 0; F:→ 44
@@ -91,8 +91,8 @@ at_0(i1⸨0:NonEmpty(Struct(["key", "left", "right", "value"], x2:*@xxxx)); 1:Em
  41: return
 -42: dropRef{X2};
 -43: X5 ← TState.fillStackEntry(X0, X1, search_tree.r8t+0:24_10 _t0 = at(_t0, [key]), ⸨b0; Absent⸩, mMemo_x@xxxx, null); → 40
--44: X1 ← newStackEntry(search_tree.r8t+0:18_0 key = unarray1(_a0) {bst=NonEmpty(Struct(["key", "left", "right", "value"], X2)), _a0=[D3]});
+-44: X1 ← newStackEntry(search_tree.r8t+0:18_0 key = unarray1(_a0) {bst=NonEmpty(X2), _a0=[D3]});
  45: X5 ← TState.fillStackEntry(X0, null, X1, ⸨b0; Absent⸩, mMemo_x@xxxx, null); → 40
 ---
-allocated=215448/8197, peak=56
+allocated=197704/7545, peak=56
 */

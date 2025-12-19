@@ -407,7 +407,7 @@ class FrameClass {
 
   /** Returns a new instance of this subclass, updating memory counters accordingly. */
   Frame alloc(Allocator allocator) {
-    // TODO(mdixon): investigate adding a free list to MemoryHelper, as we currently do for arrays
+    // TODO: investigate adding a free list to MemoryHelper, as we currently do for arrays
     Frame result = (Frame) alloc.get();
     allocator.recordAlloc(result, byteSize);
     return result;

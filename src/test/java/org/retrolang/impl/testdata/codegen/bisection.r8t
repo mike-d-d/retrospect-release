@@ -92,5 +92,5 @@ findRoot_0(i1⸨0:lambda@1:9; 1:lambda@5:22⸩, d2, d3, 1.0E-6):
  42: X1 ← TState.fillStackEntry(X0, null, X4, LoopExit(⸨loop@25_break@28; loop@25_break@32⸨xm=d0⸩⸩), mMemo_20@xxxx, null);
  43: X1 ← TState.fillStackEntry(X0, X1, bisection.r8t+3:25_30 _t0 = iterateUnbounded(loop@25⸨f=f, eps=eps⸩, loop@25_state⸨x0=x0, x1=x1⸩), ⸨d0; None⸩, mMemo_x@xxxx, null); → 22
 ---
-allocated=352/12, peak=152
+allocated=304/10, peak=104
 */

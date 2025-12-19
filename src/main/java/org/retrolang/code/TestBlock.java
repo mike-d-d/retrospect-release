@@ -207,7 +207,7 @@ public abstract class TestBlock extends Block.Split {
         }
         setBlock.input(0).getLive(false, moveCandidates);
         setBlock = (SetBlock) setBlock.inLink.origin;
-        // TODO(mdixon): should we bound how far back we look?
+        // TODO: should we bound how far back we look?
         continue;
       }
       // This SetBlock can be moved.  Unlink it from its old position

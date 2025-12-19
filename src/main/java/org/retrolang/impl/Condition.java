@@ -266,6 +266,17 @@ public abstract class Condition {
     return intEq(v, CodeValue.ZERO).not();
   }
 
+  /**
+   * Returns a Condition that is true if {@code v1} is less than {@code v2}; both must be of type
+   * int.
+   */
+  public static Condition intLessThan(CodeValue v1, CodeValue v2) {
+    if ((v1 instanceof CodeValue.Const) && (v2 instanceof CodeValue.Const)) {
+      return Condition.of(v1.iValue() < v2.iValue());
+    }
+    return fromTest(() -> new IsLessThan(OpCodeType.INT, v1, v2));
+  }
+
   /** Returns a Condition that is true if {@code v} is null. */
   public static Condition isNull(CodeValue v) {
     if (v instanceof CodeValue.Const c) {

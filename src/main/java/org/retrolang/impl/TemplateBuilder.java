@@ -606,7 +606,6 @@ public abstract class TemplateBuilder {
 
     /** Merges each element's builder into the given TemplateBuilder. */
     TemplateBuilder mergeElementsInto(TemplateBuilder builder) {
-      assert baseType instanceof Core.FixedArrayType;
       int n = baseType.size();
       for (int i = 0; i < n; i++) {
         builder = builder.merge(elementBuilder(i));

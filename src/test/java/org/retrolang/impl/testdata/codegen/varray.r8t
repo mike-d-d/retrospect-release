@@ -43,5 +43,5 @@ sumSqDistance_0([d1, d2], x3:*[]@xxxx):
  27: TState.setStackRest(X0, X1);
  28: return
 ---
-allocated=20688/788, peak=96
+allocated=20592/784, peak=96
 */

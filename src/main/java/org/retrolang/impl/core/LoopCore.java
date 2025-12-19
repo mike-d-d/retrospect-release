@@ -18,7 +18,6 @@ package org.retrolang.impl.core;
 
 import static org.retrolang.impl.Value.addRef;
 
-import org.retrolang.impl.Allocator;
 import org.retrolang.impl.BaseType;
 import org.retrolang.impl.BuiltinMethod;
 import org.retrolang.impl.BuiltinMethod.Caller;
@@ -28,7 +27,7 @@ import org.retrolang.impl.Err;
 import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.RC;
 import org.retrolang.impl.Singleton;
-import org.retrolang.impl.StringValue;
+import org.retrolang.impl.StructType;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
 import org.retrolang.impl.VmFunctionBuilder;
@@ -197,13 +196,8 @@ public final class LoopCore {
    *
    * <p>Must be in alphabetical order.
    */
-  static final Value SETUP_KEYS =
-      Core.FixedArrayType.withSize(4)
-          .uncountedOf(
-              new StringValue(Allocator.UNCOUNTED, "canParallel"),
-              new StringValue(Allocator.UNCOUNTED, "eKind"),
-              new StringValue(Allocator.UNCOUNTED, "initialState"),
-              new StringValue(Allocator.UNCOUNTED, "loop"));
+  static final StructType SETUP_KEYS =
+      new StructType("canParallel", "eKind", "initialState", "loop");
 
   /**
    * Given the final state of a Collector's loop, returns the value of the pipeline. The default
@@ -449,10 +443,7 @@ public final class LoopCore {
     @Continuation
     static Value afterEmptyState(
         TState tstate, @RC.In Value emptyState, @Saved @RC.In Value reducer) {
-      return tstate.compound(
-          Core.STRUCT,
-          SETUP_KEYS,
-          tstate.arrayValue(Core.TRUE, ENUMERATE_VALUES, emptyState, reducer));
+      return tstate.compound(SETUP_KEYS, Core.TRUE, ENUMERATE_VALUES, emptyState, reducer);
     }
   }
 
@@ -607,10 +598,7 @@ public final class LoopCore {
     @Continuation
     static void afterCollectorSetup(TState tstate, Value csResult, @Saved Value collection)
         throws BuiltinException {
-      Err.COLLECTOR_SETUP_RESULT.unless(csResult.isa(Core.STRUCT));
-      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.equals(csResult.peekElement(0)));
-      csResult = csResult.peekElement(1);
-      assert csResult.numElements() == 4;
+      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.matches(csResult));
       Value canParallel = csResult.peekElement(0);
       Value eKind = csResult.peekElement(1);
       Err.COLLECTOR_SETUP_RESULT.unless(
@@ -688,10 +676,7 @@ public final class LoopCore {
         @Saved @RC.Singleton Value maxEKind,
         @RC.Singleton Value isParallel)
         throws BuiltinException {
-      Err.COLLECTOR_SETUP_RESULT.unless(csResult.isa(Core.STRUCT));
-      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.equals(csResult.peekElement(0)));
-      csResult = csResult.peekElement(1);
-      assert csResult.numElements() == 4;
+      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.matches(csResult));
       Value canParallel = csResult.peekElement(0);
       Value eKind = csResult.peekElement(1);
       Err.COLLECTOR_SETUP_RESULT.unless(
@@ -728,10 +713,7 @@ public final class LoopCore {
 
     @Continuation
     static void afterCollectorSetup(TState tstate, Value csResult) throws BuiltinException {
-      Err.COLLECTOR_SETUP_RESULT.unless(csResult.isa(Core.STRUCT));
-      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.equals(csResult.peekElement(0)));
-      csResult = csResult.peekElement(1);
-      assert csResult.numElements() == 4;
+      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.matches(csResult));
       Value canParallel = csResult.peekElement(0);
       Value eKind = csResult.peekElement(1);
       Err.COLLECTOR_SETUP_RESULT.unless(
@@ -1106,18 +1088,14 @@ public final class LoopCore {
 
     @Continuation
     static Value afterCollectorSetup(TState tstate, Value csResult) throws BuiltinException {
-      Err.COLLECTOR_SETUP_RESULT.unless(csResult.isa(Core.STRUCT));
-      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.equals(csResult.peekElement(0)));
-      csResult = csResult.peekElement(1);
-      assert csResult.numElements() == 4;
+      Err.COLLECTOR_SETUP_RESULT.unless(SETUP_KEYS.matches(csResult));
       Value canParallel = csResult.peekElement(0);
       Value eKind = csResult.peekElement(1);
       Err.COLLECTOR_SETUP_RESULT.unless(
           canParallel.isa(Core.BOOLEAN).and(eKind.isa(ENUMERATION_KIND)));
       Value initialState = csResult.element(2);
       Value loop = csResult.element(3);
-      return tstate.compound(
-          Core.STRUCT, SETUP_KEYS, tstate.arrayValue(Core.FALSE, eKind, initialState, loop));
+      return tstate.compound(SETUP_KEYS, Core.FALSE, eKind, initialState, loop);
     }
   }
 
