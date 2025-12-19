@@ -93,7 +93,10 @@ public class RangeCore {
   /** If {@code bound} is a valid bound, returns it; otherwise throws INVALID_ARGUMENT. */
   @RC.Out
   private static Value checkBound(TState tstate, Value bound) throws BuiltinException {
-    return bound.is(Core.NONE).chooseExcept(() -> Core.NONE, () -> bound.verifyInt(tstate));
+    return bound
+        .is(Core.NONE)
+        .chooseExcept(
+            () -> Core.NONE, () -> bound.verifyInt(Err.INVALID_ARGUMENT).makeStorable(tstate));
   }
 
   /**
@@ -164,23 +167,19 @@ public class RangeCore {
    */
   @Core.Method("rangeWithSize(_, _)")
   static Value rangeWithSize(TState tstate, Value min, Value size) throws BuiltinException {
-    Value checkedMin = min.verifyInt(tstate);
-    tstate.dropOnThrow(checkedMin);
-    Value checkedSize = size.verifyInt(tstate);
-    tstate.dropOnThrow(checkedSize);
+    Value checkedMin = min.verifyInt(Err.INVALID_ARGUMENT);
+    Value checkedSize = size.verifyInt(Err.INVALID_ARGUMENT);
     Value max = computeMax(tstate, checkedMin, checkedSize);
-    return tstate.compound(Core.RANGE, checkedMin, max);
+    return tstate.compound(Core.RANGE, checkedMin.makeStorable(tstate), max);
   }
 
   @RC.Out
-  private static Value computeMax(TState tstate, Value min, @RC.In Value size)
-      throws BuiltinException {
+  private static Value computeMax(TState tstate, Value min, Value size) throws BuiltinException {
     if (!(min instanceof RValue || size instanceof RValue)) {
       int iMin = NumValue.asInt(min);
       int iSize = NumValue.asInt(size);
       int iMax = iMin + iSize - 1;
       Err.INVALID_ARGUMENT.unless(iMin > iMax ? iSize == 0 : iSize > 0);
-      tstate.dropValue(size);
       return NumValue.of(iMax, tstate);
     }
     Value max = ValueUtil.oneBasedOffset(tstate, min, size);
@@ -421,8 +420,7 @@ public class RangeCore {
               CodeValue keyOffset =
                   (reversed ? Op.ADD_INTS : Op.SUBTRACT_INTS)
                       .result(CodeValue.ONE, codeGen.asCodeValue(first));
-              keyOffset = codeGen.materialize(keyOffset, int.class);
-              return tstate.compound(baseType, first, last, codeGen.toValue(keyOffset));
+              return tstate.compound(baseType, first, last, codeGen.intToValue(keyOffset));
             });
   }
 

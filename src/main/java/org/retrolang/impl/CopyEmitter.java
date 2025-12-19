@@ -209,4 +209,29 @@ class CopyEmitter {
 
   /** An instance of the base class, for copying registers to registers. */
   static final CopyEmitter REGISTER_TO_REGISTER = new CopyEmitter();
+
+  /**
+   * Emits blocks that interpret source and destination as Registers, but do not update the
+   * destination; instead they compare the source with the destination and branch to {@code ifFalse}
+   * if they do not match.
+   */
+  static void emitEqualRegisters(CodeGen codeGen, CopyPlan plan, FutureBlock ifFalse) {
+    new CopyEmitter() {
+      @Override
+      void setDstVar(CodeGen codeGen, Template t, CodeValue v) {
+        if (t instanceof NumVar) {
+          codeGen.testEqualsNum(codeGen.register(t), v, true, ifFalse);
+        } else {
+          codeGen.testEqualsObj(codeGen.register(t), v, true, ifFalse);
+        }
+      }
+
+      @Override
+      boolean checkNarrow() {
+        // If comparing a double with an int, we don't need an extra check that the double fits in
+        // an int -- the equality comparison is enough.
+        return false;
+      }
+    }.emit(codeGen, plan, ifFalse);
+  }
 }

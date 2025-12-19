@@ -55,6 +55,14 @@ public class RC {
   public @interface Out {}
 
   /**
+   * Indicates that the argument's root count will not be changed by the function, but memory it
+   * references may be modified. Should usually only be called with values that have root count 1.
+   */
+  @Target({ElementType.METHOD, ElementType.PARAMETER})
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface InOut {}
+
+  /**
    * Indicates that the value returned by this function has not had its root count incremented, and
    * may not be stored by the caller. Transient results are intended to be examined and then
    * promptly discarded by the caller. The caller must <i>not</i>

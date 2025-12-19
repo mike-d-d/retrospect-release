@@ -19,7 +19,6 @@ package org.retrolang.impl;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import org.retrolang.code.Op;
-import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.Evolver.Evolution;
 import org.retrolang.util.SizeOf;
 import org.retrolang.util.StringUtil;
@@ -69,6 +68,7 @@ public abstract class Frame extends RefCounted implements Value {
 
   static final Op GET_LAYOUT_OR_REPLACEMENT =
       Op.getField(Frame.class, "layoutOrReplacement", LayoutOrReplacement.class);
+  static final Op SET_LAYOUT_OR_REPLACEMENT = GET_LAYOUT_OR_REPLACEMENT.setter().build();
 
   /** Returns the index of this Frame's subclass. */
   abstract int frameClassIndex();
@@ -192,20 +192,6 @@ public abstract class Frame extends RefCounted implements Value {
   @RC.In
   public final Value replaceElement(TState tstate, int index, @RC.In Value newElement) {
     return layout().replaceElement(tstate, this, index, newElement);
-  }
-
-  @Override
-  @RC.Out
-  @RC.In
-  public final Value removeRange(
-      TState tstate, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    return layout().removeRange(tstate, this, keepPrefix, moveFrom, moveTo, moveLen);
-  }
-
-  @Override
-  public final void reserveForChangeOrThrow(TState tstate, int newSize, boolean isShared)
-      throws BuiltinException {
-    layout().reserveForChangeOrThrow(tstate, this, newSize, isShared);
   }
 
   // RefCounted methods

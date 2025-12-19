@@ -18,6 +18,7 @@ package org.retrolang.impl;
 
 import org.retrolang.code.CodeBuilder.PrintOptions;
 import org.retrolang.code.CodeValue;
+import org.retrolang.code.CodeValue.Const;
 import org.retrolang.code.ConditionalBranch;
 import org.retrolang.code.Emitter;
 import org.retrolang.code.Register;
@@ -32,6 +33,129 @@ import org.retrolang.code.ValueInfo;
 public interface PtrInfo extends ValueInfo {
 
   BaseType baseType();
+
+  static boolean isPtrInfo(ValueInfo info) {
+    if (info instanceof PtrInfo) {
+      return true;
+    } else if (info instanceof Const c) {
+      if (c.value instanceof Value v) {
+        assert v instanceof Frame || !v.baseType().usesFrames();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // isPtrInfo(info) must be true
+  static long sortOrder(ValueInfo info) {
+    return baseType(info).sortOrder;
+  }
+
+  static BaseType baseType(ValueInfo info) {
+    if (info instanceof PtrInfo pi) {
+      return pi.baseType();
+    } else {
+      return ((Value) ((Const) info).value).baseType();
+    }
+  }
+
+  // isPtrInfo() should be true of each argument
+  static ValueInfo union(ValueInfo info1, ValueInfo info2) {
+    if (info1 == CodeValue.NULL) {
+      return info2;
+    } else if (info2 == CodeValue.NULL) {
+      return info1;
+    }
+    long o1 = sortOrder(info1);
+    long o2 = sortOrder(info2);
+    if (o1 == o2) {
+      return unionSameOrder(info1, info2);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  // isPtrInfo() should be true of each argument
+  static ValueInfo intersection(ValueInfo info1, ValueInfo info2) {
+    assert sortOrder(info1) == sortOrder(info2);
+    // Prefer Const or IsNotShared over FrameLayout over CurrentFrame over BaseType, and prefer
+    // info1 over info2
+    if (info1 == info2 || info2 instanceof BaseType) {
+      return info1;
+    } else if (info1 instanceof BaseType) {
+      return info2;
+    } else if (info2 instanceof FrameLayout) {
+      // The only surprising case here is that we could end up with two distinct FrameLayouts; that
+      // should only be possible if we've raced against another thread that's evolving them as we
+      // generate code.
+      assert info1 instanceof Const
+          || info1 instanceof IsNotShared
+          || ((FrameLayout) info1).hasEvolved()
+          || ((FrameLayout) info2).hasEvolved();
+      return info1;
+    } else if (info1 instanceof FrameLayout) {
+      return info2;
+    } else {
+      assert info1.equals(info2);
+      return info1;
+    }
+  }
+
+  // isPtrInfo() should be true of each argument
+  static boolean intersects(ValueInfo info1, ValueInfo info2) {
+    if (info1 == info2) {
+      return true;
+    } else if (info1 instanceof Const && info2 instanceof Const) {
+      return info1.equals(info2);
+    } else {
+      return sortOrder(info1) == sortOrder(info2);
+    }
+  }
+
+  // isPtrInfo() should be true of each argument
+  static boolean containsAll(ValueInfo info1, ValueInfo info2) {
+    return intersection(info2, info1) == info2;
+  }
+
+  /** Converts an IsNotShared or Const to a FrameLayout or (for non-Frame constants) BaseType. */
+  private static ValueInfo widen(ValueInfo ptrInfo) {
+    if (ptrInfo instanceof IsNotShared) {
+      return ((IsNotShared) ptrInfo).layout;
+    } else if (ptrInfo instanceof Const) {
+      Value v = (Value) ((Const) ptrInfo).value;
+      if (v == Core.EMPTY_ARRAY) {
+        return ptrInfo;
+      }
+      if (v instanceof Frame) {
+        return v.layout();
+      }
+      assert !(v.baseType().isCompositional() || v.baseType().isArray());
+      return v.baseType();
+    } else {
+      assert ptrInfo instanceof FrameLayout;
+      return ptrInfo;
+    }
+  }
+
+  private static ValueInfo unionSameOrder(ValueInfo info1, ValueInfo info2) {
+    // Const and IsNotShared override equals(), for everything else this is an == check
+    if (info1.equals(info2) || info1 instanceof BaseType) {
+      return info1;
+    } else if (info2 instanceof BaseType) {
+      return info2;
+    }
+    info1 = widen(info1);
+    info2 = widen(info2);
+    if (info1 == info2 || info2 instanceof Const) {
+      return info1;
+    } else if (info1 instanceof Const) {
+      return info2;
+    } else {
+      // We can get here due to unions, or possibly because FrameLayouts are evolving while we
+      // generate code.
+      throw new UnsupportedOperationException();
+    }
+  }
 
   /** Returns true if the given ValueInfo implies that the value is unshared. */
   public static boolean isUnshared(ValueInfo info) {
@@ -62,7 +186,7 @@ public interface PtrInfo extends ValueInfo {
 
     @Override
     public ValueInfo unionConst(CodeValue.Const constInfo) {
-      throw new UnsupportedOperationException();
+      return ANY;
     }
 
     // We create a single canonical IsNotShared instance for each FrameLayout, so we don't need to

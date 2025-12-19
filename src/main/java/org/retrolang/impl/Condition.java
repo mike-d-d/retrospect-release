@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
+import org.retrolang.code.Register;
 import org.retrolang.code.TestBlock;
 import org.retrolang.code.TestBlock.IsEq;
 import org.retrolang.code.TestBlock.IsLessThan;
@@ -240,8 +241,12 @@ public abstract class Condition {
   /** Returns a Condition that is true if {@code v1} and {@code v2} are equal. */
   public static Condition equal(Value v1, Value v2) {
     if (v1 instanceof RValue || v2 instanceof RValue) {
-      // TODO
-      throw new UnsupportedOperationException();
+      return new Condition() {
+        @Override
+        public void addTest(CodeGen codeGen, FutureBlock elseBranch) {
+          emitEqual(codeGen, v1, v2, elseBranch);
+        }
+      };
     } else {
       return Condition.of(v1.equals(v2));
     }
@@ -275,6 +280,14 @@ public abstract class Condition {
       return Condition.of(v1.iValue() < v2.iValue());
     }
     return fromTest(() -> new IsLessThan(OpCodeType.INT, v1, v2));
+  }
+
+  /**
+   * Returns a Condition that is true if {@code v1} is less than or equal to {@code v2}; both must
+   * be of type int.
+   */
+  public static Condition intLessOrEq(CodeValue v1, CodeValue v2) {
+    return intLessThan(v2, v1).not();
   }
 
   /** Returns a Condition that is true if {@code v} is null. */
@@ -477,6 +490,17 @@ public abstract class Condition {
     }
   }
 
+  private static void emitEqual(CodeGen codeGen, Value v1, Value v2, FutureBlock elseBranch) {
+    Template t1 = RValue.toTemplate(v1);
+    Template t2 = RValue.toTemplate(v2);
+    CopyPlan plan = CopyPlan.create(t1, t2);
+    if (v2 instanceof RValue) {
+      Template.IndexBounds bounds = new Template.IndexBounds(t2);
+      plan = CopyOptimizer.equalsRegisters(plan, bounds.minIndex, bounds.maxIndex + 1);
+    }
+    CopyEmitter.emitEqualRegisters(codeGen, plan, elseBranch);
+  }
+
   private static class NumericComparison extends Condition {
     final Value v1;
     final Value v2;
@@ -503,5 +527,21 @@ public abstract class Condition {
       TestBlock test = testEq ? new IsEq(opType, cv1, cv2) : new IsLessThan(opType, cv1, cv2);
       test.setBranch(false, elseBranch).addTo(codeGen.cb);
     }
+  }
+
+  static TestBlock isSharedTest(CodeValue v) {
+    return new IsEq(OpCodeType.INT, RefCounted.IS_NOT_SHARED_OP.result(v), CodeValue.ZERO);
+  }
+
+  /**
+   * Returns a Condition that is true if {@link RefCounted#isNotShared(Object)} returns true for
+   * {@code v}.
+   */
+  public static Condition isNotShared(Value v) {
+    if (v instanceof RValue) {
+      Register r = TState.get().codeGen().register(v);
+      return fromTest(() -> isSharedTest(r)).not();
+    }
+    return Condition.of(RefCounted.isNotShared(v));
   }
 }

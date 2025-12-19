@@ -19,6 +19,8 @@ package org.retrolang.impl;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 import org.retrolang.Vm;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.ValueInfo;
 import org.retrolang.util.StringUtil;
 
 /**
@@ -27,8 +29,12 @@ import org.retrolang.util.StringUtil;
  *
  * <p>(The only exception is the Integer type, which includes some but not all Values with BaseType
  * Number. Integer is a special case in many ways, and probably shouldn't be a VmType at all.)
+ *
+ * <p>Non-singleton BaseTypes may also be used as the ValueInfo for a pointer-valued variable,
+ * indicating that it points to a Value with this BaseType (if {@link #usesFrames} is false), or
+ * that it points to a Frame whose BaseType has the same sortOrder (if {@link #usesFrames} is true).
  */
-public abstract class BaseType {
+public abstract class BaseType implements PtrInfo {
 
   /**
    * The size of a BaseType is
@@ -206,6 +212,30 @@ public abstract class BaseType {
   public Value uncountedOf(RC.RCIntFunction<Value> elements) {
     assert isCompositional();
     return CompoundValue.of(Allocator.UNCOUNTED, this, elements);
+  }
+
+  // PtrInfo methods
+  @Override
+  public BaseType baseType() {
+    return this;
+  }
+
+  @Override
+  public boolean containsValue(Object value) {
+    assert !isSingleton();
+    return value == null || ((Value) value).baseType().sortOrder == sortOrder;
+  }
+
+  @Override
+  public ValueInfo unionConst(CodeValue.Const constInfo) {
+    assert !isSingleton();
+    return PtrInfo.union(this, constInfo);
+  }
+
+  @Override
+  public ValueInfo removeConst(CodeValue.Const constInfo) {
+    assert !isSingleton();
+    return this;
   }
 
   /** A subclass for BaseTypes that correspond to Retrospect-language types. */

@@ -86,38 +86,6 @@ public interface Value {
     throw new AssertionError();
   }
 
-  /**
-   * Returns an array Value containing
-   *
-   * <ul>
-   *   <li>the first {@code keepPrefix} elements of this array, followed by
-   *   <li>{@code moveTo - keepPrefix} elements that are {@code TO_BE_SET}, followed by
-   *   <li>{@code moveLen} elements from this array beginning at {@code moveFrom}.
-   * </ul>
-   *
-   * <p>The new array has length {@code moveTo + moveLen}. With different combinations of args this
-   * method is used to remove a range of elements, extract a range of elements, and/or create space
-   * for subsequent replaceElement calls.
-   */
-  @RC.Out
-  @RC.In
-  default Value removeRange(TState tstate, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    throw new AssertionError();
-  }
-
-  /**
-   * Determines how much memory is required to replace elements in this array, resulting in an array
-   * of the specified size. If {@code isShared} is false and the reference count indicates that this
-   * value is unshared, assume that it may be modified in place; otherwise assume that it must be
-   * copied.
-   *
-   * <p>If the required memory can be reserved, do so; otherwise throw out of memory exception.
-   */
-  default void reserveForChangeOrThrow(TState tstate, int newSize, boolean isShared)
-      throws Err.BuiltinException {
-    throw new AssertionError();
-  }
-
   /** True if this Value is contained in the given type. */
   default Condition isa(VmType type) {
     return Condition.of(type.contains(baseType()));
@@ -130,6 +98,7 @@ public interface Value {
 
   /** True if this Value is the given singleton. */
   default Condition is(Singleton singleton) {
+    assert !(this instanceof RValue);
     return Condition.of(this == singleton);
   }
 
@@ -230,10 +199,10 @@ public interface Value {
     return true;
   }
 
-  /** Returns this Value as an Integer or throws an INVALID_ARGUMENT BuiltinException. */
+  /** Returns this Value as a transient Integer or throws the specified Err. */
   @RC.Out
-  default Value verifyInt(TState tstate) throws Err.BuiltinException {
-    return NumValue.verifyInt(this, tstate);
+  default Value verifyInt(Err err) throws Err.BuiltinException {
+    return NumValue.verifyInt(this, err);
   }
 
   /**

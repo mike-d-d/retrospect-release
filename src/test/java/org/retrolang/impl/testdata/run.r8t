@@ -233,7 +233,7 @@ return -4..10 | filter(-> # % 3 != 0) | saveSequential
 /* RUN () RETURNS
   [-4, -2, -1, 1, 2, 4, 5, 7, 8, 10]
 ---
-allocated=7568/280, peak=88
+allocated=7848/288, peak=88
 $0 = *[]i0
 */
 
@@ -302,7 +302,7 @@ return withKeys(a) | [k, v] -> (v >= 0 ? k : Absent) | saveSequential
 /* RUN () RETURNS
   ["x", "z"]
 ---
-allocated=2392/89, peak=56
+allocated=2440/90, peak=56
 $0 = *[]x0:String
 */
 

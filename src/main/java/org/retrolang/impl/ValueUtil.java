@@ -16,13 +16,20 @@
 
 package org.retrolang.impl;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
 import org.retrolang.code.CodeBuilder;
+import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
+import org.retrolang.code.CodeValue.Const;
 import org.retrolang.code.FutureBlock;
 import org.retrolang.code.Op;
 import org.retrolang.code.Register;
+import org.retrolang.code.TestBlock;
 import org.retrolang.code.ValueInfo;
+import org.retrolang.util.ArrayUtil;
 
 /** A static-only class with simple value operations that work equally well with RValues. */
 public class ValueUtil {
@@ -38,10 +45,9 @@ public class ValueUtil {
         BaseType baseType = t.baseType();
         if (baseType.isCompositional()) {
           return NumValue.of(baseType.size(), Allocator.UNCOUNTED);
+        } else {
+          return codeGen.intToValue(codeGen.vArrayLength((Template.RefVar) t));
         }
-        CodeValue result = codeGen.vArrayLength((Template.RefVar) t);
-        result = codeGen.materialize(result, int.class);
-        return codeGen.toValue(result);
       }
     }
     return NumValue.of(v.numElements(), Allocator.TRANSIENT);
@@ -144,11 +150,11 @@ public class ValueUtil {
             codeGen.materialize(
                 Op.SUBTRACT_INTS.result(indexCV, CodeValue.of(firstIndex)), int.class);
       }
-      CodeValue result = layout.emitReplaceElement(codeGen, frame, indexCV, newElement);
+      Register result = layout.emitReplaceElement(codeGen, frame, indexCV, newElement);
       if (result == frame) {
         return array;
       } else {
-        return CodeGen.asValue((Register) result, layout);
+        return CodeGen.asValue(result, layout);
       }
     }
     Template newElementT = RValue.toTemplate(newElement);
@@ -221,25 +227,51 @@ public class ValueUtil {
     Template.visitVars(t, refVar -> codeGen.emitSet(codeGen.register(refVar), CodeValue.NULL));
   }
 
-  /** Errors unless {@code v} is an array of non-negative integers. */
-  public static void checkSizes(TState tstate, Value v) throws Err.BuiltinException {
-    Err.INVALID_SIZES.unless(v.isa(Core.ARRAY));
-    if (v instanceof RValue) {
+  /** For use in place of {@link Value#numElements} when {@code array} might be an RValue. */
+  public static CodeValue numElementsAsCodeValue(CodeGen codeGen, Value array) {
+    array = codeGen.simplify(array);
+    BaseType baseType = array.baseType();
+    if (baseType.isCompositional()) {
+      return CodeValue.of(baseType.size());
+    } else if (array instanceof Frame) {
+      return CodeValue.of(array.numElements());
+    } else {
+      return codeGen.vArrayLength(array);
+    }
+  }
+
+  /** Errors unless {@code index} is an int in {@code 0..size(array)-1}. */
+  public static void checkIndex(TState tstate, Value array, Value index)
+      throws Err.BuiltinException {
+    if (!(array instanceof RValue || index instanceof RValue)) {
+      int i = NumValue.asIntOrMinusOne(index);
+      Err.INVALID_ARGUMENT.unless(i >= 0 && i < array.numElements());
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      CodeValue i = codeGen.verifyInt(index);
+      CodeValue size = numElementsAsCodeValue(codeGen, array);
+      codeGen.escapeUnless(
+          Condition.intLessOrEq(CodeValue.ZERO, i).and(Condition.intLessThan(i, size)));
+    }
+  }
+
+  /** Throws {@code err} unless {@code v} is an array of non-negative integers. */
+  public static void checkSizes(Value v, Err err) throws Err.BuiltinException {
+    err.unless(v.isa(Core.ARRAY));
+    if (!(v instanceof RValue)) {
+      int size = v.numElements();
+      for (int i = 0; i < size; i++) {
+        err.unless(v.elementAsIntOrMinusOne(i) >= 0);
+      }
+    } else {
       BaseType baseType = v.baseType();
       if (baseType == Core.VARRAY) {
         throw new UnsupportedOperationException();
       }
       int size = baseType.size();
       for (int i = 0; i < size; i++) {
-        // verifyInt() throws INVALID_ARGUMENT (rather than INVALID_SIZES), but when we're
-        // emitting code they all just escape anyway
-        Value e = v.peekElement(i).verifyInt(tstate);
-        Err.INVALID_SIZES.unless(Condition.numericLessOrEq(NumValue.ZERO, e));
-      }
-    } else {
-      int size = v.numElements();
-      for (int i = 0; i < size; i++) {
-        Err.INVALID_SIZES.unless(v.elementAsIntOrMinusOne(i) >= 0);
+        Value e = v.peekElement(i).verifyInt(err);
+        err.unless(Condition.numericLessOrEq(NumValue.ZERO, e));
       }
     }
   }
@@ -252,13 +284,14 @@ public class ValueUtil {
   public static Value verifyBoundedInt(TState tstate, Value v, Value min, Value max)
       throws Err.BuiltinException {
     if (v instanceof RValue || min instanceof RValue || max instanceof RValue) {
-      v = v.verifyInt(tstate);
+      v = v.verifyInt(Err.INVALID_ARGUMENT);
       CodeGen codeGen = tstate.codeGen();
       codeGen.escapeUnless(Condition.numericLessOrEq(min, v));
       codeGen.escapeUnless(Condition.numericLessOrEq(v, max));
       return v;
     }
-    return NumValue.verifyBoundedInt(v, tstate, NumValue.asInt(min), NumValue.asInt(max));
+    return NumValue.verifyBoundedInt(v, NumValue.asInt(min), NumValue.asInt(max))
+        .makeStorable(tstate);
   }
 
   /** Returns the sum of two integers; does not check for overflow. */
@@ -345,14 +378,369 @@ public class ValueUtil {
         if (v1 instanceof RValue || v2 instanceof RValue) {
           CodeValue cv1 = codeGen.asCodeValue(v1);
           CodeValue cv2 = codeGen.asCodeValue(v2);
-          CodeValue result = applyToCodeValues(cv1, cv2);
-          result = codeGen.materialize(result, int.class);
-          return codeGen.toValue(result);
+          return codeGen.intToValue(applyToCodeValues(cv1, cv2));
         }
       }
       int i1 = NumValue.asInt(v1);
       int i2 = NumValue.asInt(v2);
       return NumValue.of(applyToInts(i1, i2), tstate);
     }
+  }
+
+  /**
+   * If {@code sizes} is an Array of non-negative integers and their product is an int, returns it;
+   * otherwise throws the specified error.
+   */
+  @RC.Out
+  public static Value sizeFromSizes(TState tstate, Value sizes, Err err)
+      throws Err.BuiltinException {
+    err.unless(sizes.isa(Core.ARRAY));
+    BaseType baseType = sizes.baseType();
+    if (baseType == Core.VARRAY) {
+      throw new UnsupportedOperationException();
+    }
+    int nDims = baseType.size();
+    if (nDims == 0) {
+      return NumValue.ONE;
+    } else if (nDims == 1) {
+      Value result = sizes.peekElement(0).verifyInt(err);
+      err.when(Condition.numericLessThan(result, NumValue.ZERO));
+      return result.makeStorable(tstate);
+    }
+    if (!(sizes instanceof RValue)) {
+      int result = ArrayUtil.productAsInt(sizes::elementAsIntOrMinusOne, nDims);
+      err.unless(result >= 0);
+      return NumValue.of(result, tstate);
+    }
+    CodeGen codeGen = tstate.codeGen();
+    int constPart = 1;
+    List<CodeValue> elements = new ArrayList<>();
+    for (int i = 0; i < nDims; i++) {
+      Value element = codeGen.simplify(sizes.peekElement(i));
+      if (!(element instanceof RValue)) {
+        int asI = NumValue.asIntOrMinusOne(element);
+        err.unless(asI >= 0);
+        if (asI == 0 || constPart > 0) {
+          constPart = ArrayUtil.multiplyExactOrMinusOne(constPart, asI);
+        }
+      } else {
+        CodeValue cv = codeGen.verifyInt(element);
+        codeGen.escapeWhen(Condition.intLessThan(cv, CodeValue.ZERO));
+        elements.add(cv);
+      }
+    }
+    if (elements.isEmpty() || constPart == 0) {
+      err.unless(constPart >= 0);
+      return NumValue.of(constPart, tstate);
+    }
+    Register result = codeGen.cb.newRegister(int.class);
+    FutureBlock done = null;
+    if (elements.size() > 2) {
+      FutureBlock isZero = new FutureBlock();
+      for (int i = 2; i < elements.size(); i++) {
+        new TestBlock.IsEq(OpCodeType.INT, elements.get(i), CodeValue.ZERO)
+            .setBranch(true, isZero)
+            .addTo(codeGen.cb);
+      }
+      FutureBlock nonZero = codeGen.cb.swapNext(isZero);
+      codeGen.emitSet(result, CodeValue.ZERO);
+      done = codeGen.cb.swapNext(nonZero);
+    }
+    CodeValue product = elements.get(0);
+    for (int i = 1; i < elements.size(); i++) {
+      product = Op.MULTIPLY_INTS_EXACT.result(product, elements.get(i));
+    }
+    if (constPart != 1) {
+      assert constPart > 1;
+      product = Op.MULTIPLY_INTS_EXACT.result(product, CodeValue.of(constPart));
+    }
+    codeGen.emitSetCatchingArithmeticException(result, product);
+    if (done != null) {
+      codeGen.cb.mergeNext(done);
+    }
+    return codeGen.toValue(result);
+  }
+
+  /** All elements of {@code array} must be numbers; true if any of them is zero. */
+  public static Condition containsZero(Value array) {
+    assert array.baseType().isArray();
+    BaseType baseType = array.baseType();
+    if (baseType == Core.VARRAY) {
+      throw new UnsupportedOperationException();
+    }
+    int nDims = baseType.size();
+    Condition result = Condition.FALSE;
+    for (int i = 0; i < nDims; i++) {
+      Value s = array.peekElement(i);
+      if (s instanceof RValue) {
+        result = result.or(Condition.numericEq(s, NumValue.ZERO));
+      } else if (NumValue.equals(s, 0)) {
+        return Condition.TRUE;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Given an array of sizes and a key, errors unless the key is valid for a matrix with those
+   * sizes.
+   */
+  public static void checkKey(TState tstate, Value key, Value sizes) throws Err.BuiltinException {
+    if (!(key instanceof RValue || sizes instanceof RValue)) {
+      int nDims = sizes.numElements();
+      Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(nDims));
+      for (int i = 0; i < nDims; i++) {
+        int ki = key.elementAsIntOrMinusOne(i);
+        int si = sizes.elementAsInt(i);
+        Err.INVALID_ARGUMENT.unless(ki >= 1 && ki <= si);
+      }
+      return;
+    }
+    CodeGen codeGen = tstate.codeGen();
+    BaseType keyType = key.baseType();
+    BaseType sizesType = sizes.baseType();
+    if (keyType == Core.VARRAY && sizesType == Core.VARRAY) {
+      throw new UnsupportedOperationException();
+    }
+    int nDims;
+    if (keyType.isCompositional()) {
+      nDims = keyType.size();
+      Err.INVALID_ARGUMENT.unless(sizes.isArrayOfLength(nDims));
+    } else {
+      nDims = sizesType.size();
+      Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(nDims));
+    }
+    for (int i = 0; i < nDims; i++) {
+      CodeValue ki = codeGen.verifyInt(key.peekElement(i));
+      CodeValue si = codeGen.verifyInt(sizes.peekElement(i));
+      codeGen.escapeUnless(Condition.intLessThan(CodeValue.ZERO, ki));
+      codeGen.escapeUnless(Condition.intLessOrEq(ki, si));
+    }
+  }
+
+  /**
+   * Given an array of sizes and a key, returns the (zero-based) index of that key in a sequential
+   * enumeration of a matrix with those sizes (as transient non-negative int). Errors if {@link
+   * #checkKey} would error.
+   */
+  public static Value keyToIndex(TState tstate, Value key, Value sizes)
+      throws Err.BuiltinException {
+    if (!(key instanceof RValue || sizes instanceof RValue)) {
+      int nDims = sizes.numElements();
+      Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(nDims));
+      int sum = 0;
+      for (int i = 0; i < nDims; i++) {
+        int ki = key.elementAsIntOrMinusOne(i);
+        int si = sizes.elementAsInt(i);
+        Err.INVALID_ARGUMENT.unless(ki >= 1 && ki <= si);
+        try {
+          sum = Math.addExact(Math.multiplyExact(sum, si), ki - 1);
+        } catch (ArithmeticException e) {
+          throw Err.INVALID_ARGUMENT.asException();
+        }
+      }
+      return NumValue.of(sum, Allocator.TRANSIENT);
+    }
+    CodeGen codeGen = tstate.codeGen();
+    BaseType keyType = key.baseType();
+    BaseType sizesType = sizes.baseType();
+    if (keyType == Core.VARRAY && sizesType == Core.VARRAY) {
+      throw new UnsupportedOperationException();
+    }
+    int nDims;
+    if (keyType.isCompositional()) {
+      nDims = keyType.size();
+      Err.INVALID_ARGUMENT.unless(sizes.isArrayOfLength(nDims));
+    } else {
+      nDims = sizesType.size();
+      Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(nDims));
+    }
+    CodeValue sum = CodeValue.ZERO;
+    for (int i = 0; i < nDims; i++) {
+      CodeValue ki = codeGen.verifyInt(key.peekElement(i));
+      CodeValue si = codeGen.verifyInt(sizes.peekElement(i));
+      Err.INVALID_ARGUMENT.unless(Condition.intLessThan(CodeValue.ZERO, ki));
+      Err.INVALID_ARGUMENT.unless(Condition.intLessOrEq(ki, si));
+      ki = Op.SUBTRACT_INTS.result(ki, CodeValue.ONE);
+      if (sum == CodeValue.ZERO) {
+        sum = ki;
+      } else {
+        sum = Op.ADD_INTS_EXACT.result(Op.MULTIPLY_INTS_EXACT.result(sum, si), ki);
+      }
+    }
+    return codeGen.toValue(codeGen.materializeCatchingArithmeticException(sum));
+  }
+
+  /**
+   * Given an array of sizes and a (zero-based) index in the sequential enumeration of a matrix with
+   * those sizes, returns the corresponding key (an array of int).
+   */
+  @RC.Out
+  public static Value indexToKey(
+      TState tstate, Value index, Value sizes, Supplier<Object> resultLayoutOrBaseType) {
+    int nDims;
+    BaseType baseType = sizes.baseType();
+    if (baseType != Core.VARRAY) {
+      nDims = baseType.size();
+    } else if (!(sizes instanceof RValue)) {
+      nDims = sizes.numElements();
+    } else {
+      Object frameLayoutOrBaseType = resultLayoutOrBaseType.get();
+      if (frameLayoutOrBaseType instanceof BaseType) {
+        nDims = ((BaseType) frameLayoutOrBaseType).size();
+        tstate.codeGen().escapeUnless(sizes.isArrayOfLength(nDims));
+      } else {
+        throw new UnsupportedOperationException();
+      }
+    }
+    if (nDims == 0) {
+      return Core.EMPTY_ARRAY;
+    }
+    Object[] result = tstate.allocObjectArray(nDims);
+    if (!(index instanceof RValue || sizes instanceof RValue)) {
+      int t = NumValue.asInt(index);
+      for (int i = nDims - 1; i > 0; i--) {
+        int si = sizes.elementAsInt(i);
+        result[i] = NumValue.of((t % si) + 1, tstate);
+        t /= si;
+      }
+      result[0] = NumValue.of(t + 1, tstate);
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      CodeValue t = codeGen.asCodeValue(index);
+      for (int i = nDims - 1; i > 0; i--) {
+        t = codeGen.materialize(t, int.class);
+        CodeValue si = codeGen.asCodeValue(sizes.peekElement(i));
+        result[i] =
+            codeGen.intToValue(Op.ADD_INTS.result(Op.MOD_INTS.result(t, si), CodeValue.ONE));
+        t = Op.DIV_INTS.result(t, si);
+      }
+      result[0] = codeGen.intToValue(Op.ADD_INTS.result(t, CodeValue.ONE));
+    }
+    return tstate.asArrayValue(result, nDims);
+  }
+
+  /**
+   * Returns a varray containing
+   *
+   * <ul>
+   *   <li>the first {@code keepPrefix} elements of {@code array}, followed by
+   *   <li>{@code addSize} uninitialized elements, followed by
+   *   <li>the elements of {@code array} from {@code keepPrefix+removeSize} to its end.
+   * </ul>
+   *
+   * <p>This method is used to implement replaceElement (with a range index) and concatenation.
+   *
+   * <p>If {@code array} is not a Frame and {@code resultLayout} is non-null, it will be used for
+   * the result (evolving it if necessary).
+   *
+   * <p>Will only throw an exception during codeGen (if caller should just escape).
+   */
+  @RC.Out
+  public static Value removeRange(
+      TState tstate,
+      @RC.In Value array,
+      Value keepPrefix,
+      Value removeSize,
+      Value addSize,
+      FrameLayout resultLayout)
+      throws Err.BuiltinException {
+    if (!tstate.hasCodeGen()) {
+      return FrameLayout.removeRange(
+          tstate,
+          array,
+          NumValue.asInt(keepPrefix),
+          NumValue.asInt(removeSize),
+          NumValue.asInt(addSize),
+          resultLayout);
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      return removeRange(
+          codeGen,
+          array,
+          codeGen.asCodeValue(keepPrefix),
+          codeGen.asCodeValue(removeSize),
+          codeGen.asCodeValue(addSize),
+          resultLayout);
+    }
+  }
+
+  /**
+   * Generate code to implement {@link #removeRange(TState, Value, Value, Value, Value,
+   * FrameLayout)}.
+   */
+  @RC.Out
+  public static Value removeRange(
+      CodeGen codeGen,
+      @RC.In Value array,
+      CodeValue keepPrefix,
+      CodeValue removeSize,
+      CodeValue addSize,
+      FrameLayout resultLayout)
+      throws Err.BuiltinException {
+    if (!(resultLayout instanceof VArrayLayout layout)) {
+      throw Err.ESCAPE.asException();
+    }
+    FrameLayout srcLayout = array.layout();
+    if (srcLayout != null) {
+      if (srcLayout != layout) {
+        srcLayout = srcLayout.latest();
+        layout = (VArrayLayout) layout.latest();
+        Err.ESCAPE.unless(srcLayout == layout);
+      }
+      return CodeGen.asValue(
+          layout.emitRemoveRange(
+              codeGen, codeGen.asCodeValue(array), keepPrefix, removeSize, addSize),
+          layout);
+    }
+    // Fixed size array in, varray out
+    int inSize = array.baseType().size();
+    CodeValue sizeDelta = Op.SUBTRACT_INTS.result(addSize, removeSize);
+    CodeValue newSize = Op.ADD_INTS.result(Const.of(inSize), sizeDelta);
+    Register result = codeGen.cb.newRegister(resultLayout.frameClass.javaClass);
+    codeGen.emitSet(result, layout.emitAlloc(codeGen, newSize));
+    int stop = (keepPrefix instanceof Const) ? keepPrefix.iValue() : -1;
+    CodeValue cvResume = Op.ADD_INTS.result(keepPrefix, removeSize);
+    int resume = (cvResume instanceof Const) ? cvResume.iValue() : -1;
+    for (int i = 0; i < inSize; i++) {
+      CodeValue cv = CodeValue.of(i);
+      FutureBlock skipped = null;
+      CodeValue offset;
+      if (i < stop) {
+        offset = CodeValue.ZERO;
+      } else if (resume >= 0 && i >= resume) {
+        offset = sizeDelta;
+      } else if (stop >= 0 && resume >= 0) {
+        continue;
+      } else {
+        FutureBlock ready = null;
+        offset = null;
+        if (stop < 0) {
+          FutureBlock checkResume = new FutureBlock();
+          offset = codeGen.cb.newRegister(int.class);
+          new TestBlock.IsLessThan(OpCodeType.INT, cv, keepPrefix)
+              .setBranch(false, checkResume)
+              .addTo(codeGen.cb);
+          codeGen.emitSet((Register) offset, CodeValue.ZERO);
+          ready = codeGen.cb.swapNext(checkResume);
+        }
+        skipped = new FutureBlock();
+        new TestBlock.IsLessThan(OpCodeType.INT, cv, cvResume)
+            .setBranch(true, skipped)
+            .addTo(codeGen.cb);
+        if (offset == null) {
+          offset = sizeDelta;
+        } else {
+          codeGen.emitSet((Register) offset, sizeDelta);
+          codeGen.cb.mergeNext(ready);
+        }
+      }
+      layout.emitSetElement(
+          codeGen, result, Op.ADD_INTS.result(cv, offset), RValue.toTemplate(array.peekElement(i)));
+      if (skipped != null) {
+        codeGen.cb.mergeNext(skipped);
+      }
+    }
+    return codeGen.toValue(result);
   }
 }

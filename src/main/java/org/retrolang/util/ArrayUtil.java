@@ -19,7 +19,9 @@ package org.retrolang.util;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.IntUnaryOperator;
 
 /** A static-only class that provides some convenience methods for working with arrays. */
 public class ArrayUtil {
@@ -100,5 +102,53 @@ public class ArrayUtil {
   /** Stores a double beginning at the specified offset. */
   public static void bytesSetDAtOffset(byte[] array, int pos, double value) {
     BYTES_AS_DOUBLES.set(array, pos, value);
+  }
+
+  public static void bytesFillB(byte[] array, int start, int end, int value) {
+    assert value >= 0 && value < 256;
+    Arrays.fill(array, start, end, (byte) value);
+  }
+
+  public static void bytesFillI(byte[] array, int start, int end, int value) {
+    for (int i = start; i < end; i++) {
+      bytesSetI(array, i, value);
+    }
+  }
+
+  public static void bytesFillD(byte[] array, int start, int end, double value) {
+    for (int i = start; i < end; i++) {
+      bytesSetD(array, i, value);
+    }
+  }
+
+  /**
+   * Given the sequence of integers obtained by calling {@code elements} with 0 through length-1,
+   *
+   * <ul>
+   *   <li>If any of them are negative, returns -1.
+   *   <li>Otherwise, if any of them are zero returns zero.
+   *   <li>Otherwise computes and returns their product, or -1 if the product overflows an int.
+   * </ul>
+   */
+  public static int productAsInt(IntUnaryOperator elements, int length) {
+    int result = 1;
+    for (int i = 0; i < length; i++) {
+      int element = elements.applyAsInt(i);
+      if (element < 0) {
+        return -1;
+      } else if (element == 0 || result > 0) {
+        result = multiplyExactOrMinusOne(result, element);
+      }
+    }
+    return result;
+  }
+
+  /** Returns {@code x * y}, or -1 if the result overflows an int. */
+  public static int multiplyExactOrMinusOne(int x, int y) {
+    try {
+      return Math.multiplyExact(x, y);
+    } catch (ArithmeticException unused) {
+      return -1;
+    }
   }
 }

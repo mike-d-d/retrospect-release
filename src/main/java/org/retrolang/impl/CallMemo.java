@@ -159,6 +159,11 @@ class CallMemo {
     }
   }
 
+  /** Returns one of the MethodMemos. */
+  MethodMemo firstMethodMemo() {
+    return memo;
+  }
+
   /**
    * Calls {@code action} with each of this CallMemo's MethodMemos, along with their corresponding
    * counts. Should only be called while holding the MemoMerger lock; {@code action} should not

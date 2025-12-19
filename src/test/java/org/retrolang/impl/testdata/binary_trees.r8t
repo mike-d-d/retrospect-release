@@ -43,7 +43,7 @@ function check(TreeNode tree) {
    stretchCheck: 4095,
    stretchDepth: 11}
 ---
-allocated=76606376/3004379, peak=131120
+allocated=76606344/3004376, peak=131120
 $0 = *[b0⸨0:None; 1:TreeNode(x0:$0)⸩, b1⸨0:None; 1:TreeNode(x1:$0)⸩]
 $1 = *[]{check: i0, depth: b1, iterations: i2}
 */

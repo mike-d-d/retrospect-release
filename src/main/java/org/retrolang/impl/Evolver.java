@@ -80,13 +80,31 @@ class Evolver {
 
     /**
      * Given a Frame using {@link #oldLayout}, allocates and initializes a Frame using {@link
-     * #newLayout} that has the same contents as {@code src}.
+     * #newLayout} that has the same contents as {@code src}. Should only be called from {@link
+     * Coordinator}.
      */
     @RC.Out
     Frame replace(TState tstate, Frame src) {
       // TODO: think about where in here there might be big allocations and add reservations
       // and a clean exit if we run out of memory
       return replacer.copy(tstate, src);
+    }
+
+    /**
+     * May be used to shortcut the usual frame replacement steps if you know you've got the only
+     * pointer to a Frame.
+     */
+    @RC.Out
+    Frame replaceAndDrop(TState tstate, @RC.In Frame src) {
+      assert src.layout() == oldLayout && src.isNotShared();
+      Frame result = replacer.copy(tstate, src);
+      if (sharedArrayElements != null) {
+        // Clear any fields in f that were arrays shared by its replacement; then it will be safe to
+        // do the usual release.
+        ((VArrayLayout) oldLayout).clearElementArrays(src, sharedArrayElements);
+      }
+      tstate.dropReference(src);
+      return result;
     }
 
     /**

@@ -19,6 +19,15 @@ package org.retrolang.impl;
 /** Information passed to a method implementation about how its results will be represented. */
 public interface ResultsInfo {
 
+  /** A trivial ResultsInfo that returns default values for every TProperty. */
+  public static final ResultsInfo EMPTY =
+      new ResultsInfo() {
+        @Override
+        public <T> T result(int resultNum, TProperty<T> property) {
+          return property.fn.apply(Template.EMPTY);
+        }
+      };
+
   /** Returns the given property applied to the specified result. */
   <T> T result(int resultNum, TProperty<T> property);
 

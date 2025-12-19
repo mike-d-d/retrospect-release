@@ -26,11 +26,15 @@ import org.retrolang.impl.Condition;
 import org.retrolang.impl.Core;
 import org.retrolang.impl.Err;
 import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.impl.FrameLayout;
 import org.retrolang.impl.NumValue;
 import org.retrolang.impl.RC;
+import org.retrolang.impl.ResultsInfo;
 import org.retrolang.impl.Singleton;
+import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
+import org.retrolang.impl.ValueUtil;
 import org.retrolang.impl.VmFunctionBuilder;
 import org.retrolang.impl.VmType;
 
@@ -180,13 +184,14 @@ public final class ReducerCore {
    */
   @Core.Method("nextState(BooleanReducer, Absent, Boolean)")
   static Value nextStateBooleanReducer(TState tstate, Value reducer, Value state, Value value) {
-    Singleton exitOn = (Singleton) reducer.peekElement(1);
-    if (exitOn.equals(value)) {
-      Value initial = reducer.peekElement(0);
-      return tstate.compound(Core.LOOP_EXIT, Core.not(initial));
-    } else {
-      return Core.ABSENT;
-    }
+    Value exitOn = reducer.peekElement(1);
+    return Condition.equal(exitOn, value)
+        .choose(
+            () -> {
+              Value initial = reducer.peekElement(0);
+              return tstate.compound(Core.LOOP_EXIT, Core.not(initial));
+            },
+            () -> Core.ABSENT);
   }
 
   /**
@@ -396,16 +401,27 @@ public final class ReducerCore {
    * method nextState(SaveUnordered, state, value) = state &amp; [value]
    * </pre>
    */
-  @Core.Method("nextState(SaveUnordered, Array, _)")
-  static Value nextStateSaveUnordered(
-      TState tstate, Value reducer, @RC.In Value state, @RC.In Value value)
-      throws BuiltinException {
-    int prevSize = state.numElements();
-    state.reserveForChangeOrThrow(tstate, prevSize + 1, false);
-    // Add one TO_BE_SET element at the end of state.
-    state = state.removeRange(tstate, prevSize, prevSize, prevSize + 1, 0);
-    state = state.replaceElement(tstate, prevSize, value);
-    return state;
+  static class NextStateSaveUnordered extends BuiltinMethod {
+    @Core.Method("nextState(SaveUnordered, Array, _)")
+    static void begin(
+        TState tstate, ResultsInfo results, Value reducer, @RC.In Value state, @RC.In Value value)
+        throws BuiltinException {
+      Value prevSize = tstate.getArraySizeAndReserveForChange(state, NumValue.ONE, null);
+      // Add one TO_BE_SET element at the end of state.
+      FrameLayout resultLayout = results.result(TProperty.ARRAY_LAYOUT);
+      state =
+          ValueUtil.removeRange(tstate, state, prevSize, NumValue.ZERO, NumValue.ONE, resultLayout);
+      // When generating code, doing the replacement (which may fail if the array can't hold this
+      // value) in a separate step enables us to escape with the expanded array; otherwise we'd
+      // have to escape with the array before expansion, which would mean we'd always have to have
+      // a copy of it and could never do the replacement in place.
+      tstate.jump("replace", state, prevSize, value);
+    }
+
+    @Continuation
+    static Value replace(TState tstate, @RC.In Value state, Value index, @RC.In Value value) {
+      return ValueUtil.replaceElement(tstate, state, index, 0, value);
+    }
   }
 
   /**
@@ -413,24 +429,42 @@ public final class ReducerCore {
    * method combineStates(SaveUnordered, state1, state2) = state1 &amp; state2
    * </pre>
    */
-  @Core.Method("combineStates(SaveUnordered, Array, Array)")
-  static Value combineStatesSaveUnordered(
-      TState tstate, Value reducer, @RC.In Value state1, Value state2) throws BuiltinException {
-    int size1 = state1.numElements();
-    int size2 = state2.numElements();
-    if (size2 == 0) {
-      return state1;
-    } else if (size1 == 0) {
-      tstate.dropValue(state1);
-      return addRef(state2);
-    }
-    state1.reserveForChangeOrThrow(tstate, size1 + size2, false);
-    // Add size2 TO_BE_SET elements at the end of state1.
-    state1 = state1.removeRange(tstate, size1, size1, size1 + size2, 0);
-    for (int i = 0; i < size2; i++) {
-      state1 = state1.replaceElement(tstate, i + size1, state2.element(i));
-    }
-    return state1;
+  static void combineStatesSaveUnordered(
+      TState tstate,
+      ResultsInfo results,
+      Value reducer,
+      @RC.In Value state1,
+      @RC.In Value state2,
+      @Fn("copyElements:5") Caller copyElements)
+      throws BuiltinException {
+    Value size2 = ValueUtil.numElements(tstate, state2);
+    Condition.numericEq(size2, NumValue.ZERO)
+        .testExcept(
+            () -> {
+              tstate.dropValue(state2);
+              tstate.dropValue(size2);
+              tstate.setResult(state1);
+            },
+            () -> {
+              tstate.dropOnThrow(size2);
+              Value size1 = tstate.getArraySizeAndReserveForChange(state1, size2, null);
+              Condition.numericEq(size1, NumValue.ZERO)
+                  .testExcept(
+                      () -> {
+                        tstate.dropValue(state1);
+                        tstate.dropValue(size1);
+                        tstate.dropValue(size2);
+                        tstate.setResult(state2);
+                      },
+                      () -> {
+                        FrameLayout resultLayout = results.result(TProperty.ARRAY_LAYOUT);
+                        Value expanded =
+                            ValueUtil.removeRange(
+                                tstate, state1, size1, NumValue.ZERO, size2, resultLayout);
+                        tstate.startCall(
+                            copyElements, expanded, size1, state2, NumValue.ZERO, size2);
+                      });
+            });
   }
 
   private ReducerCore() {}

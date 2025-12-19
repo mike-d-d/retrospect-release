@@ -469,7 +469,7 @@ public class Core {
 
     @Continuation
     static Value afterLessThan(Value yLess, @Saved Value x, Value y) throws BuiltinException {
-      return addRef(testBoolean(yLess) ? y : x);
+      return addRef(Condition.fromBoolean(yLess).choose(y, x));
     }
   }
 
@@ -488,7 +488,7 @@ public class Core {
 
     @Continuation
     static Value afterLessThan(Value xLess, @Saved Value x, Value y) throws BuiltinException {
-      return addRef(testBoolean(xLess) ? y : x);
+      return addRef(Condition.fromBoolean(xLess).choose(y, x));
     }
   }
 

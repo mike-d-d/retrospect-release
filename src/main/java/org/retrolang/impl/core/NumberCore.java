@@ -22,7 +22,9 @@ import java.util.Arrays;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.IntBinaryOperator;
 import org.retrolang.code.CodeValue;
+import org.retrolang.code.FutureBlock;
 import org.retrolang.code.Op;
+import org.retrolang.code.Register;
 import org.retrolang.impl.Allocator;
 import org.retrolang.impl.CodeGen;
 import org.retrolang.impl.Condition;
@@ -200,6 +202,15 @@ public final class NumberCore {
     return doMath(tstate, x, y, Math::multiplyExact, (a, b) -> a * b);
   }
 
+  private static void checkForNaNResult(CodeGen codeGen, CodeValue result) {
+    result = codeGen.materialize(result, double.class);
+    FutureBlock isNotNaN = new FutureBlock();
+    codeGen.testIsNaN(result, true, isNotNaN);
+    codeGen.setResults(Core.NONE);
+    codeGen.cb.setNext(isNotNaN);
+    codeGen.setResults(codeGen.toValue(result));
+  }
+
   @Core.Method("divide(Number, Number)")
   static void divideNumbers(TState tstate, ResultsInfo results, Value x, Value y) {
     if (x instanceof RValue || y instanceof RValue) {
@@ -228,29 +239,51 @@ public final class NumberCore {
   }
 
   @Core.Method("floor(Number)")
-  static Value floor(TState tstate, Value x) {
-    return floorOrCeiling(tstate, x, true);
+  static Value floor(TState tstate, ResultsInfo results, Value x) throws BuiltinException {
+    return floorOrCeiling(tstate, results, x, true);
   }
 
   @Core.Method("ceiling(Number)")
-  static Value ceiling(TState tstate, Value x) {
-    return floorOrCeiling(tstate, x, false);
+  static Value ceiling(TState tstate, ResultsInfo results, Value x) throws BuiltinException {
+    return floorOrCeiling(tstate, results, x, false);
   }
 
-  private static Value floorOrCeiling(TState tstate, Value x, boolean floor) {
-    if (x instanceof NumValue.I) {
+  private static final Op FLOOR_OP = Op.forMethod(Math.class, "floor", double.class).build();
+  private static final Op CEIL_OP = Op.forMethod(Math.class, "ceil", double.class).build();
+  private static final Op FLOOR_DIV_OP =
+      Op.forMethod(Math.class, "floorDiv", int.class, int.class).build();
+
+  private static Value floorOrCeiling(TState tstate, ResultsInfo results, Value x, boolean floor)
+      throws BuiltinException {
+    if (!(x instanceof RValue)) {
+      if (x instanceof NumValue.I) {
+        return x;
+      }
+      double d = NumValue.asDouble(x);
+      double dResult = floor ? Math.floor(d) : Math.ceil(d);
+      int iResult = (int) dResult;
+      if (dResult == iResult) {
+        return NumValue.of(iResult, tstate);
+      } else if (dResult == d) {
+        return x;
+      } else {
+        return NumValue.of(dResult, tstate);
+      }
+    }
+    CodeGen codeGen = tstate.codeGen();
+    Register xr = codeGen.register(x);
+    if (xr.type() == int.class) {
       return x;
     }
-    double d = NumValue.asDouble(x);
-    double dResult = floor ? Math.floor(d) : Math.ceil(d);
-    int iResult = (int) dResult;
-    if (dResult == iResult) {
-      return NumValue.of(iResult, tstate);
-    } else if (dResult == d) {
-      return x;
+    CodeValue v = (floor ? FLOOR_OP : CEIL_OP).result(xr);
+    if (results.result(TProperty.COERCES_TO_FLOAT)) {
+      v = codeGen.materialize(v, double.class);
     } else {
-      return NumValue.of(dResult, tstate);
+      v =
+          codeGen.materializeCatchingArithmeticException(
+              Op.LONG_TO_INT_EXACT.result(Op.DOUBLE_TO_LONG.result(v)));
     }
+    return codeGen.toValue(v);
   }
 
   @Core.Method("div(Number, Number)")
@@ -275,18 +308,52 @@ public final class NumberCore {
     }
   }
 
+  private static final Op FLOOR_MOD_OP =
+      Op.forMethod(Math.class, "floorMod", int.class, int.class).build();
+
   @Core.Method("modulo(Number, Number)")
-  static Value moduloNumbers(TState tstate, Value x, Value y) {
-    if (x instanceof NumValue.I nix && y instanceof NumValue.I niy) {
-      int ix = nix.value;
-      int iy = niy.value;
-      if (iy == 0) {
-        return Core.NONE;
+  static void moduloNumbers(TState tstate, ResultsInfo results, Value x, Value y) {
+    if (!(x instanceof RValue || y instanceof RValue)) {
+      if (x instanceof NumValue.I nix && y instanceof NumValue.I niy) {
+        int ix = nix.value;
+        int iy = niy.value;
+        tstate.setResult(iy == 0 ? Core.NONE : NumValue.of(Math.floorMod(ix, iy), tstate));
       } else {
-        return NumValue.of(ix % iy, tstate);
+        double dx = NumValue.asDouble(x);
+        double dy = NumValue.asDouble(y);
+        tstate.setResult(NumValue.orNan(modulo(dx, dy), tstate));
       }
+      return;
     }
-    return NumValue.orNan(NumValue.asDouble(x) % NumValue.asDouble(y), tstate);
+    CodeGen codeGen = tstate.codeGen();
+    CodeValue cx = codeGen.asCodeValue(x);
+    CodeValue cy = codeGen.asCodeValue(y);
+    if (cx.type() == double.class || cy.type() == double.class) {
+      checkForNaNResult(codeGen, MODULO_OP.result(cx, cy));
+    } else {
+      Condition.intEq(cy, CodeValue.ZERO)
+          .test(
+              () -> codeGen.setResults(Core.NONE),
+              () -> {
+                codeGen.setResults(codeGen.intToValue(FLOOR_MOD_OP.result(cx, cy)));
+              });
+    }
+  }
+
+  private static final Op MODULO_OP =
+      Op.forMethod(NumberCore.class, "modulo", double.class, double.class).build();
+
+  public static double modulo(double x, double y) {
+    if (Double.isInfinite(y)) {
+      // Java thinks that x % inf == x, but that's bogus
+      return Double.NaN;
+    }
+    double r = x % y;
+    // Java gives us r with the same sign as x, but we want it to have the same sign as y
+    if ((Double.doubleToRawLongBits(r) ^ Double.doubleToRawLongBits(y)) < 0 && r != 0) {
+      r += y;
+    }
+    return r;
   }
 
   @Core.Method("exponent(Number, Number)")

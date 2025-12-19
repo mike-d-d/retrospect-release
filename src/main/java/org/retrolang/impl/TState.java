@@ -60,8 +60,59 @@ public final class TState extends MemoryHelper {
   static final Op DROP_ANY_OP =
       RcOp.forRcMethod(MemoryHelper.class, "dropAny", Object.class).build();
 
+  static final Op ALLOC_BYTE_ARRAY_OP =
+      RcOp.forRcMethod(MemoryHelper.class, "allocByteArray", int.class).build();
+
+  static final Op ALLOC_OBJ_ARRAY_OP =
+      RcOp.forRcMethod(MemoryHelper.class, "allocObjectArray", int.class).build();
+
   static final Op CLEAR_ARRAY_ELEMENTS_OP =
       RcOp.forRcMethod(MemoryHelper.class, "clearElements", Object[].class, int.class, int.class)
+          .build();
+
+  static final Op FILL_ARRAY_ELEMENTS_OP =
+      RcOp.forRcMethod(
+              MemoryHelper.class,
+              "fillElements",
+              Object[].class,
+              int.class,
+              int.class,
+              Object.class)
+          .build();
+
+  static final Op COPY_RANGE_OP =
+      RcOp.forRcMethod(
+              MemoryHelper.class,
+              "copyRange",
+              Object[].class,
+              int.class,
+              Object[].class,
+              int.class,
+              int.class)
+          .build();
+
+  static final Op REMOVE_RANGE_BYTES_OP =
+      RcOp.forRcMethod(
+              MemoryHelper.class,
+              "removeRange",
+              byte[].class,
+              int.class,
+              int.class,
+              int.class,
+              int.class,
+              boolean.class)
+          .build();
+
+  static final Op REMOVE_RANGE_OBJS_OP =
+      RcOp.forRcMethod(
+              MemoryHelper.class,
+              "removeRange",
+              Object[].class,
+              int.class,
+              int.class,
+              int.class,
+              int.class,
+              boolean.class)
           .build();
 
   static final MethodHandle HAS_CODEGEN = Handle.forMethod(TState.class, "hasCodeGen");
@@ -319,6 +370,80 @@ public final class TState extends MemoryHelper {
   /** Returns true if a call to {@link #discardDropOnThrow} would do anything. */
   boolean hasDropOnThrow() {
     return numDropOnThrow != 0;
+  }
+
+  /**
+   * Determines how much memory is required to make a modified version of {@code array}, increasing
+   * or decreasing its size by the given number of elements.
+   *
+   * <p>If {@link RefCounted#isNotShared} is true of {@code array} and either {@code parent} is null
+   * or {@code parent} is also unshared, assumes that {@code array} may be modified in place;
+   * otherwise assumes that it must be copied.
+   *
+   * <p>If the required memory can be reserved, does so and returns the array's current size;
+   * otherwise throws {@link Err#OUT_OF_MEMORY}.
+   */
+  @RC.Out
+  public Value getArraySizeAndReserveForChange(Value array, Value sizeDelta, Value parent)
+      throws Err.BuiltinException {
+    FrameLayout frameLayout = array.layout();
+    if (!(frameLayout instanceof VArrayLayout layout)) {
+      // Not a varray
+      int size = array.baseType().size();
+      if (!hasCodeGen()) {
+        int newSize = size + NumValue.asInt(sizeDelta);
+        // newSize < 0 probably means we overflowed an int?
+        Err.OUT_OF_MEMORY.when(newSize < 0);
+        if (newSize == 0) {
+          // result is the empty list singleton, so no reservation needed
+        } else if (array instanceof CompoundValue cv && cv.canUpdateInPlace(newSize)) {
+          // can modify the CompoundValue in place, so no reservation needed
+        } else {
+          // If frameLayout != null or newSize > MAX_ARRAY_COMPOUND_LENGTH we'll actually
+          // define a new varray layout and allocate one of them; in pathological cases
+          // (newSize very large and the varray template complex) this could be a significant
+          // underestimate of required memory; is that a problem?
+          reserve(CompoundValue.sizeOf(newSize));
+        }
+      }
+      return NumValue.of(size, this);
+    }
+    if (hasCodeGen()) {
+      return codeGen.getArraySizeAndReserveForChange(
+          layout,
+          codeGen.asCodeValue(array),
+          codeGen.asCodeValue(sizeDelta),
+          parent == null ? null : codeGen.asCodeValue(parent));
+    }
+    int size = layout.numElements((Frame) array);
+    int newSize = size + NumValue.asInt(sizeDelta);
+    if (parent != null && !RefCounted.isNotShared(parent)) {
+      // If the parent is shared we'll always have to copy, which we signal by passing null to
+      // reserveForChange()
+      array = null;
+    }
+    Err.OUT_OF_MEMORY.unless(reserveForChange(layout, (Frame) array, newSize));
+    return NumValue.of(size, this);
+  }
+
+  public static final Op RESERVE_FOR_CHANGE_OP =
+      RcOp.forRcMethod(TState.class, "reserveForChange", VArrayLayout.class, Frame.class, int.class)
+          .build();
+
+  /**
+   * Determines how much additional memory is needed to modify the given varray, given the size of
+   * the result. If {@code array} is null or is shared, assumes that a new varray must be allocated.
+   * If the required memory can be reserved, does so and returns true; otherwise returns false.
+   */
+  boolean reserveForChange(VArrayLayout layout, Frame array, int newSize) {
+    // newSize < 0 probably means we overflowed an int
+    return newSize > 0 ? tryReserve(layout.reservationForChange(array, newSize)) : newSize == 0;
+  }
+
+  @Override
+  public void reserve(long size) throws Err.BuiltinException {
+    assert !hasCodeGen();
+    super.reserve(size);
   }
 
   /** Allocates a new array with the given elements. */

@@ -90,7 +90,7 @@ function potentialEnergy(b1, b2) =
 /* RUN (nSteps=1000) RETURNS
   [-0.16907516382852442, -0.16908760523460617]
 ---
-allocated=194979312/7405945, peak=96
+allocated=194979504/7405953, peak=96
 $0 = *[]{mass: d0, pos: [d1, d2, d3], v: [d4, d5, d6]}
 $1 = *[]{mass: d0, pos: [d1, d2, d3], v: [d4, d5, d6]}
 $2 = *[]{mass: d0, pos: [d1, d2, d3], v: [d4, d5, d6]}

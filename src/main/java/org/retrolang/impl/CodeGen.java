@@ -35,7 +35,6 @@ import org.retrolang.code.ReturnBlock;
 import org.retrolang.code.SetBlock;
 import org.retrolang.code.TestBlock;
 import org.retrolang.code.ValueInfo;
-import org.retrolang.code.ValueInfo.BinaryOps;
 import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
@@ -95,8 +94,6 @@ public class CodeGen {
    * and it's easy to reuse them so we do.
    */
   private final Deque<Register> spareStackRests = new ArrayDeque<>();
-
-  private static final BinaryOps BINARY_OPS = new BinaryOps();
 
   CodeGen(CodeGenGroup group, CodeGenTarget target) {
     this.group = group;
@@ -693,11 +690,31 @@ public class CodeGen {
     }
   }
 
-  /** Configures the given test to branch to the current escape handler on failure, and emits it. */
-  public void escapeUnless(TestBlock newTest) {
-    if (cb.nextIsReachable()) {
-      newTest.setBranch(false, escape).addTo(cb);
+  /** Emits a branch to the current escape handler if the given condition is true. */
+  public void escapeWhen(Condition check) {
+    escapeUnless(check.not());
+  }
+
+  /** Implements {@link TState#getArraySizeAndReserveForChange} when generating code. */
+  Value getArraySizeAndReserveForChange(
+      VArrayLayout layout, CodeValue array, CodeValue sizeDelta, CodeValue parent) {
+    CodeValue size = materialize(layout.numElements(array), int.class);
+    CodeValue newSize = Op.ADD_INTS.result(size, sizeDelta);
+    // If parent != null and isShared(parent) then we should always copy, which we signal by
+    // passing null to reserveForChange()
+    if (parent != null) {
+      Register r = cb.newRegister(Object.class);
+      emitSet(r, array);
+      FutureBlock parentNotShared = new FutureBlock();
+      Condition.isSharedTest(parent).setBranch(false, parentNotShared).addTo(cb);
+      emitSet(r, CodeValue.NULL);
+      cb.mergeNext(parentNotShared);
+      array = r;
     }
+    CodeValue ok =
+        TState.RESERVE_FOR_CHANGE_OP.result(tstateRegister(), CodeValue.of(layout), array, newSize);
+    escapeUnless(Condition.isNonZero(ok));
+    return toValue(size);
   }
 
   /** Emits a return from the current function call. */
@@ -834,6 +851,12 @@ public class CodeGen {
   }
 
   /** Returns a CodeValue for the length of the given varray. */
+  CodeValue vArrayLength(Value array) {
+    RefVar refVar = (RefVar) ((RValue) array).template;
+    return vArrayLength(refVar);
+  }
+
+  /** Returns a CodeValue for the length of the given varray. */
   CodeValue vArrayLength(RefVar refVar) {
     VArrayLayout layout = (VArrayLayout) refVar.frameLayout();
     Register vArray = register(refVar);
@@ -923,7 +946,7 @@ public class CodeGen {
         return;
       }
     }
-    escapeUnless(checkLayout(frame, layout));
+    escapeUnless(Condition.fromTest(() -> checkLayout(frame, layout)));
   }
 
   /** Returns a new test that checks if {@code frame} has the specified layout. */
@@ -1018,6 +1041,55 @@ public class CodeGen {
     return false;
   }
 
+  static final ValueInfo.BinaryOps BINARY_OPS =
+      new ValueInfo.BinaryOps() {
+        @Override
+        protected ValueInfo unionConsts(Object x, Object y) {
+          if (x instanceof Number) {
+            return super.unionConsts(x, y);
+          }
+          ValueInfo info1 = CodeValue.of(x);
+          ValueInfo info2 = CodeValue.of(y);
+          return PtrInfo.union(info1, info2);
+        }
+
+        @Override
+        protected ValueInfo unionImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.union(x, y);
+          } else {
+            return super.unionImpl(x, y);
+          }
+        }
+
+        @Override
+        public ValueInfo intersectionImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.intersection(x, y);
+          } else {
+            return super.intersectionImpl(x, y);
+          }
+        }
+
+        @Override
+        public boolean mightIntersectImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.intersects(x, y);
+          } else {
+            return super.mightIntersectImpl(x, y);
+          }
+        }
+
+        @Override
+        protected boolean containsAllImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.containsAll(x, y);
+          } else {
+            return super.containsAllImpl(x, y);
+          }
+        }
+      };
+
   static final Op IS_NAN_OP = Op.forMethod(Double.class, "isNaN", double.class).build();
 
   static final Op INT_FROM_BYTES_OP =
@@ -1033,5 +1105,15 @@ public class CodeGen {
 
   static final Op SET_BYTES_FROM_DOUBLE_OP =
       Op.forMethodHandle("setDouble[]", ArrayUtil.BYTES_AS_DOUBLES.toMethodHandle(AccessMode.SET))
+          .build();
+
+  static final Op BYTES_FILL_B =
+      Op.forMethod(ArrayUtil.class, "bytesFillB", byte[].class, int.class, int.class, int.class)
+          .build();
+  static final Op BYTES_FILL_I =
+      Op.forMethod(ArrayUtil.class, "bytesFillI", byte[].class, int.class, int.class, int.class)
+          .build();
+  static final Op BYTES_FILL_D =
+      Op.forMethod(ArrayUtil.class, "bytesFillD", byte[].class, int.class, int.class, double.class)
           .build();
 }

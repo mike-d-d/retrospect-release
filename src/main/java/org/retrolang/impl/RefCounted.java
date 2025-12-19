@@ -47,6 +47,21 @@ public abstract class RefCounted {
       // but tell Op.Simple that we have no arguments.  Yes, it's a hack.
       Op.simple("addRefTOS", RefCounted.ADD_REF_OP.opEmit, void.class).build().result();
 
+  static final Op IS_NOT_SHARED_OP =
+      RcOp.forRcMethod(RefCounted.class, "isNotShared")
+          .withConstSimplifier(
+              x -> {
+                assert !RefCounted.isNotShared(x);
+                return CodeValue.ZERO;
+              })
+          // TODO: uncommment when PtrInfo is available
+          //          .withOpSimplifier(
+          //              (args, infos) -> {
+          //                ValueInfo info = args.get(0).info(infos);
+          //                return (info instanceof PtrInfo.IsNotShared) ? CodeValue.ONE : null;
+          //              })
+          .build();
+
   /**
    * The number of live references to this object; must include all links from other RefCounted
    * objects, and may also include references from in-progress method calls.

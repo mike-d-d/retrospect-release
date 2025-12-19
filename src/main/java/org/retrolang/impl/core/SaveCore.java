@@ -23,12 +23,16 @@ import org.retrolang.impl.BuiltinMethod.Fn;
 import org.retrolang.impl.Core;
 import org.retrolang.impl.Err;
 import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.impl.FrameLayout;
 import org.retrolang.impl.NumValue;
 import org.retrolang.impl.RC;
-import org.retrolang.impl.RefCounted;
+import org.retrolang.impl.RValue;
+import org.retrolang.impl.ResultsInfo;
 import org.retrolang.impl.Singleton;
+import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
+import org.retrolang.impl.ValueUtil;
 import org.retrolang.impl.VmFunctionBuilder;
 
 /** Implementation of save() and friends. */
@@ -193,12 +197,16 @@ public final class SaveCore {
     Err.INVALID_ARGUMENT.unless(keyValue.isArrayOfLength(2));
     Value key = keyValue.peekElement(0);
     Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(1));
-    Value index = key.peekElement(0);
-    Err.INVALID_ARGUMENT.unless(NumValue.isInt(index));
-    int i = NumValue.asInt(index) + swo.elementAsInt(0) - 1;
-    Err.INVALID_ARGUMENT.unless(ArrayCore.isValidIndex(state, i));
-    Value value = keyValue.element(1);
-    return state.replaceElement(tstate, i, value);
+    Value index = key.peekElement(0).verifyInt(Err.INVALID_ARGUMENT);
+    if (!(index instanceof RValue || swo instanceof RValue || state instanceof RValue)) {
+      int i = NumValue.asInt(index) + swo.elementAsInt(0) - 1;
+      Err.INVALID_ARGUMENT.unless(ArrayCore.isValidIndex(state, i));
+      Value value = keyValue.element(1);
+      return state.replaceElement(tstate, i, value);
+    }
+    Value i = ValueUtil.oneBasedOffset(tstate, index, swo.element(0));
+    ValueUtil.checkIndex(tstate, state, i);
+    return ValueUtil.replaceElement(tstate, state, i, 0, keyValue.element(1));
   }
 
   /**
@@ -217,6 +225,7 @@ public final class SaveCore {
   @Core.Method("nextState(SaverLoop, _, _)")
   static void nextStateSaverLoop(
       TState tstate,
+      ResultsInfo results,
       Value loop,
       @RC.In Value state,
       @RC.In Value element,
@@ -228,14 +237,17 @@ public final class SaveCore {
             () -> {
               // We have to do the memory check before we change any refcounts
               Value updates = state.peekElement(0);
-              int prevSize = updates.numElements();
-              updates.reserveForChangeOrThrow(tstate, prevSize + 1, !RefCounted.isNotShared(state));
+              Value prevSize = tstate.getArraySizeAndReserveForChange(updates, NumValue.ONE, state);
               // See docs/ref_counts.md#the-startupdate-idiom-for-compound-values
               updates = updates.makeStorable(tstate);
               Value updatedState = state.replaceElement(tstate, 0, Core.TO_BE_SET);
               // Add one TO_BE_SET element at the end of updates.
-              updates = updates.removeRange(tstate, prevSize, prevSize, prevSize + 1, 0);
-              updates = updates.replaceElement(tstate, prevSize, element);
+              FrameLayout resultLayout = results.result(TProperty.ARRAY_LAYOUT);
+              updates =
+                  ValueUtil.removeRange(
+                      tstate, updates, prevSize, NumValue.ZERO, NumValue.ONE, resultLayout);
+              updates = ValueUtil.replaceElement(tstate, updates, prevSize, 0, element);
+              tstate.dropValue(prevSize);
               tstate.setResult(updatedState.replaceElement(tstate, 0, updates));
             },
             () -> tstate.startCall(nextState, loop.element(0), state, element));

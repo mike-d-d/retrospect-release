@@ -161,30 +161,30 @@ public abstract class NumValue extends RefCounted implements Value {
     }
   }
 
-  /** Returns the given Value as a NumValue.I or throws an INVALID_ARGUMENT BuiltinException. */
-  @RC.Out
-  public static NumValue.I verifyInt(Value v, TState tstate) throws Err.BuiltinException {
+  /** Returns the given Value as a transient NumValue.I or throws the specified Err. */
+  public static NumValue.I verifyInt(Value v, Err err) throws Err.BuiltinException {
     if (v instanceof I ni) {
-      return (I) ni.makeStorable(tstate);
+      return ni;
     } else if (v instanceof D nd) {
       int i = (int) nd.value;
       if (i == nd.value) {
-        return of(i, tstate);
+        return of(i, Allocator.TRANSIENT);
       }
     }
-    throw Err.INVALID_ARGUMENT.asException();
+    throw err.asException();
   }
 
-  /** Returns the given Value as a NumValue.I or throws an INVALID_ARGUMENT BuiltinException. */
-  @RC.Out
-  public static NumValue.I verifyBoundedInt(Value v, TState tstate, int min, int max)
-      throws Err.BuiltinException {
+  /**
+   * Returns the given Value as a transient NumValue.I or throws an INVALID_ARGUMENT
+   * BuiltinException.
+   */
+  public static NumValue.I verifyBoundedInt(Value v, int min, int max) throws Err.BuiltinException {
     if (v instanceof I ni && ni.value >= min && ni.value <= max) {
-      return (I) ni.makeStorable(tstate);
+      return ni;
     } else if (v instanceof D nd) {
       int i = (int) nd.value;
       if (i == nd.value && i >= min && i <= max) {
-        return of(i, tstate);
+        return of(i, Allocator.TRANSIENT);
       }
     }
     throw Err.INVALID_ARGUMENT.asException();

@@ -1,0 +1,103 @@
+if prep {
+  assert test(2, 4) == 12  // 1*1 + 2*2 + 4*0 + 3*1 + 2*2 + 1*0
+  assert test(0, 3) == 7   // 3*1 + 2*2 * 1*0
+}
+return [test(4, 5),   // 1*1 + 2*2 + 3*0 + 4*1 + 5*2 + 4*0 + 3*1 + 2*2 + 1*0
+        test(0, 5)]   // 5*1 + 4*2 * 3*0 + 2*1 * 1*2
+
+function test(m, n) {
+  x = 1..m & reverse(1..n)
+  y = 1..(m + n) | -> # % 3
+  return x * y | sum
+}
+
+/* CODEGEN test RETURNS
+[26, 17]
+---
+test_0(i1, i2):
+  1: AtomicInteger.incrementAndGet(0);
+  2: test I1 < 0; T:→ 82
+  3: test I2 < 0; T:→ 82
+  4: test I1 == 0; T:→ 51
+  5: test I2 == 0; T:→ 82
+  6: I3 ← 0;
+  7: I4 ← iAdd(I1, I2);
+  8: I5 ← I2;
+= 9: I6 ← Math.addExact(I1, I2); ArithmeticException:→ 82
+ 10: test I6 < 0; T:→ 82
+ 11: test I4 < 0; T:→ 82
+ 12: test I4 == I6; F:→ 82
+ 13: test I3 1 (< 2); F:→ 54
+ 14: I5 ← iAdd(1, I4);
+ 15: I1 ← I4;
+ 16: I7 ← 0;
+ 17: I8 ← 0;
+ 18: I2 ← I5;
+ 19: I9 ← 0;
+=20: test I4 < 1; T:→ 69
+ 21: I14 ← Math.subtractExact(I4, 1); ArithmeticException:→ 72
+ 22: I12 ← Math.subtractExact(I2, I4); ArithmeticException:→ 72
+ 23: I13 ← I4;
+ 24: I15 ← 0;
+ 25: I11 ← 0;
+ 26: I16 ← 0;
+ 27: I17 ← 0;
+ 28: I10 ← I2;
+=29: I12 ← Math.addExact(1, Math.subtractExact(I12, 1)); ArithmeticException:→ 72
+ 30: I12 ← Math.floorMod(I12, 3);
+ 31: I12 ← Math.multiplyExact(I13, I12); ArithmeticException:→ 72
+ 32: I12 ← Math.addExact(I9, I12); ArithmeticException:→ 72
+ 33: I4 ← I14;
+ 34: I2 ← I10;
+ 35: I1 ← I15;
+ 36: I5 ← I11;
+ 37: I7 ← I16;
+ 38: I8 ← I17;
+ 39: I9 ← I12;
+ 40: test I3 0 (< 2); F:→ 20
+ 41: test I4 0 (< 2); T:→ 59
+=42: test I1 < I2; T:→ 59
+ 43: I10 ← Math.addExact(I2, 1); ArithmeticException:→ 72
+ 44: I12 ← I2;
+ 45: I13 ← I2;
+ 46: I14 ← 1;
+ 47: I15 ← I1;
+ 48: I11 ← I5;
+=49: I16 ← I7;
+ 50: I17 ← I8; → 29
+-51: I5 ← 0;
+ 52: I3 ← 1;
+ 53: I4 ← I2; → 9
+-54: I7 ← iAdd(1, I5);
+ 55: I8 ← I1;
+ 56: I4 ← 1;
+ 57: I2 ← 1;
+ 58: I9 ← 0; → 42
+-59: test I5 < 1; T:→ 69
+ 60: I11 ← Math.subtractExact(I5, 1); ArithmeticException:→ 72
+ 61: I10 ← Math.subtractExact(I7, I5); ArithmeticException:→ 72
+ 62: test I10 < 0; T:→ 72
+ 63: I12 ← iAdd(I10, I8);
+ 64: test I12 < 0; T:→ 72
+ 65: I13 ← I5;
+ 66: I10 ← 0;
+ 67: I15 ← 0;
+ 68: I14 ← 0; → 49
+-69: TState.setResultTemplates(X0, [i0]);
+ 70: setInt[](TState.fnResultBytes(X0, 4), 0, I9);
+ 71: return
+-72: X10 ← newStackEntry(CollectionCore.NextJoinedIterator.loop {innerIt=I3⸨0:ConcatIterator(I4⸨0:None; 1:RangeIterator(I2, I1, 0)⸩, ReversedRangeIterator(I5, 1, I7), I8); 1:ReversedRangeIterator(I4, 1, I2)⸩, it=JoinedIterator((empty), TransformedMatrix(Range(1, I6), lambda@10:19), EnumerateValues)});
+ 73: X1 ← TState.fillStackEntry(X0, null, X10, [⸨[b0, b0]; Absent⸩, JoinedIterator(⸨ConcatIterator(⸨None; RangeIterator(b0, b0, 0)⸩, ReversedRangeIterator(b0, 1, b0), b0); ReversedRangeIterator(b0, 1, b0)⸩, TransformedMatrix(Range(1, b0), lambda@10:19), EnumerateValues), TransformedIterator((empty), EnumerateValues, `multiply:2`)], mMemo_10@xxxx, null);
+ 74: X1 ← TState.fillStackEntry(X0, X1, CollectionCore.NextTransformedIterator.next {it=TransformedIterator(ToBeSet, EnumerateValues, `multiply:2`)}, [⸨b0; Absent⸩, TransformedIterator(JoinedIterator(⸨ConcatIterator(⸨None; RangeIterator(b0, b0, 0)⸩, ReversedRangeIterator(b0, 1, b0), b0); ReversedRangeIterator(b0, 1, b0)⸩, TransformedMatrix(Range(1, b0), lambda@10:19), EnumerateValues), EnumerateValues, `multiply:2`), Sum(0), b0], mMemo_13@xxxx, null);
+ 75: X2 ← newStackEntry(LoopCore.Iterate.next {loop=Sum(0), state=I9});
+ 76: X1 ← TState.fillStackEntry(X0, X1, X2, [b0, Sum(0)], mMemo_25@xxxx, null);
+ 77: X1 ← TState.fillStackEntry(X0, X1, LoopCore.enumerateDefault, [b0, Sum(0)], mMemo_26@xxxx, null);
+ 78: X1 ← TState.fillStackEntry(X0, X1, LoopCore.PipeCollectionCollector.enumerate {loop=Sum(0)}, b0, mMemo_30@xxxx, null);
+ 79: X1 ← TState.fillStackEntry(X0, X1, concat.r8t+0:11_9 _t0 = pipe(_t0, _t1), b0, mMemo_x@xxxx, null);
+=80: TState.setStackRest(X0, X1);
+ 81: return
+-82: X3 ← newStackEntry(concat.r8t+0:9_0 _t0 = range(1, m) {m=I1, n=I2});
+ 83: X1 ← TState.fillStackEntry(X0, null, X3, b0, mMemo_x@xxxx, null); → 80
+---
+allocated=152/6, peak=48
+*/

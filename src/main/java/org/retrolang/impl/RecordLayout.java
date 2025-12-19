@@ -44,8 +44,8 @@ import org.retrolang.util.SizeOf;
  * byte[] and/or Object[] to hold the overflow (and since any overflow arrays will require slots in
  * the frame, they have to be considered when assigning slots).
  */
-class RecordLayout extends FrameLayout {
-  final Template.Compound template;
+public class RecordLayout extends FrameLayout {
+  public final Template.Compound template;
 
   /**
    * The value of {@code alloc.ptrSize()} after our VarAllocator finished visiting each top-level
@@ -491,45 +491,6 @@ class RecordLayout extends FrameLayout {
   @Override
   Value peekElement(Frame f, int i) {
     return template.element(i).peekValue(asVarSource(f));
-  }
-
-  @Override
-  @RC.Out
-  Value removeRange(
-      TState tstate, @RC.In Frame f, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    assert baseType() instanceof Core.FixedArrayType;
-    assert keepPrefix >= 0
-        && moveLen >= 0
-        && moveFrom >= keepPrefix
-        && moveTo >= keepPrefix
-        && moveFrom + moveLen <= baseType().size();
-    int newSize = moveTo + moveLen;
-    if (newSize == baseType().size() && (moveFrom == moveTo || moveLen == 0)) {
-      // Just clearing some elements.
-      if (!f.isNotShared()) {
-        // We could be smarter here and only copy across the elements we want to keep, but it's
-        // easier to just copy everything and then clear the ones we don't want.
-        Frame f2 = duplicate(tstate, f);
-        tstate.dropReference(f);
-        f = f2;
-      }
-      clearElements(tstate, f, keepPrefix, moveTo);
-      return f;
-    } else {
-      // If we're doing something more complicated we can't use this layout for the result.
-      return CompoundValue.forRemoveRange(tstate, f, keepPrefix, moveFrom, moveTo, moveLen);
-    }
-  }
-
-  @Override
-  void reserveForChangeOrThrow(TState tstate, Frame f, int newSize, boolean isShared)
-      throws Err.BuiltinException {
-    if (!isShared && f.isNotShared() && newSize == baseType().size()) {
-      // We'll probably make this change in place, but even if we decide to allocate a Compound
-      // instead it's not going to be big enough to matter.
-    } else {
-      tstate.reserve(totalBytes);
-    }
   }
 
   /** Copy the specified range of pointers from one instance of this RecordLayout to another. */

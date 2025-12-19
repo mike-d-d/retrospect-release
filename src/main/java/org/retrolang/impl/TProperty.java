@@ -52,11 +52,43 @@ public final class TProperty<T> {
   public static final TProperty<FrameLayout> ARRAY_LAYOUT = layout(BaseType.SORT_ORDER_ARRAY);
 
   /**
+   * A TProperty that returns the FrameLayout that will be used for array values, or a
+   * FixedArrayType or null.
+   */
+  public static final TProperty<Object> ARRAY_LAYOUT_OR_BASE_TYPE =
+      layoutOrBaseType(BaseType.SORT_ORDER_ARRAY);
+
+  /**
    * A TProperty that returns the FrameLayout that will be used for values with the given sort
    * order, or null if none has been chosen.
    */
   public static TProperty<FrameLayout> layout(long sortOrder) {
     return new TProperty<>(t -> t.layout(sortOrder));
+  }
+
+  /**
+   * If a FrameLayout has been chosen for values with the given sort order, returns it. Otherwise if
+   * a compound is being used, returns its base type. Otherwise returns null.
+   */
+  public static TProperty<Object> layoutOrBaseType(long sortOrder) {
+    return new TProperty<>(
+        t -> {
+          if (t instanceof TemplateBuilder.UnionBase union) {
+            int i = union.indexOf(sortOrder);
+            if (i < 0) {
+              return null;
+            }
+            t = union.choiceBuilder(i);
+          } else if (t == Template.EMPTY) {
+            return null;
+          }
+          FrameLayout layout = t.layout(sortOrder);
+          if (layout != null) {
+            return layout;
+          }
+          BaseType baseType = t.baseType();
+          return (baseType.sortOrder == sortOrder) ? baseType : null;
+        });
   }
 
   /**

@@ -47,9 +47,9 @@ public final class CompoundValue extends RefCounted implements Value {
   @RC.Out
   public CompoundValue(Allocator allocator, BaseType baseType, @RC.In Object[] elements) {
     assert baseType.size() > 0 && Value.containsValues(elements, baseType.size());
+    assert Arrays.stream(elements).noneMatch(e -> e instanceof RValue);
     // If this Compound will be uncounted, all of its elements must also be uncounted.
-    assert allocator != Allocator.UNCOUNTED
-        || Arrays.stream(elements).noneMatch(RefCounted::isRefCounted);
+    assert allocator.isCounted() || Arrays.stream(elements).noneMatch(RefCounted::isRefCounted);
     this.baseType = baseType;
     this.elements = elements;
     allocator.recordAlloc(this, OBJ_SIZE);
@@ -200,67 +200,8 @@ public final class CompoundValue extends RefCounted implements Value {
     return OBJ_SIZE;
   }
 
-  @Override
-  @RC.Out
-  @RC.In
-  public Value removeRange(TState tstate, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    int size = baseType.size();
-    assert baseType.isArray()
-        && keepPrefix >= 0
-        && moveLen >= 0
-        && moveFrom >= keepPrefix
-        && moveTo >= keepPrefix
-        && moveFrom + moveLen <= size;
-    if (!isNotShared()) {
-      return forRemoveRange(tstate, this, keepPrefix, moveFrom, moveTo, moveLen);
-    }
-    int newSize = moveTo + moveLen;
-    if (MemoryHelper.isOkForSize(elements, newSize)) {
-      tstate.removeRange(elements, size, keepPrefix, moveFrom, moveTo, moveLen);
-    } else {
-      Object[] newElements = tstate.allocObjectArray(newSize);
-      // Copy across the elements we're keeping, and null them out in the old array since we're
-      // taking their refcount.
-      System.arraycopy(elements, 0, newElements, 0, keepPrefix);
-      Arrays.fill(elements, 0, keepPrefix, null);
-      System.arraycopy(elements, moveFrom, newElements, moveTo, moveLen);
-      Arrays.fill(elements, moveFrom, moveFrom + moveLen, null);
-      tstate.dropReference(elements);
-      elements = newElements;
-    }
-    Arrays.fill(elements, keepPrefix, moveTo, Core.TO_BE_SET);
-    baseType = Core.FixedArrayType.withSize(newSize);
-    return this;
-  }
-
-  /** Returns a new CompoundValue that satisfies the requirements of {@link Value#removeRange}. */
-  @RC.Out
-  static Value forRemoveRange(
-      TState tstate, @RC.In Value src, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    int newSize = moveTo + moveLen;
-    Value result =
-        CompoundValue.of(
-            tstate,
-            Core.FixedArrayType.withSize(newSize),
-            i -> {
-              if (i >= keepPrefix) {
-                if (i < moveTo) {
-                  return Core.TO_BE_SET;
-                }
-                i += moveFrom - moveTo;
-              }
-              return src.element(i);
-            });
-    tstate.dropValue(src);
-    return result;
-  }
-
-  @Override
-  public void reserveForChangeOrThrow(TState tstate, int newSize, boolean isShared)
-      throws Err.BuiltinException {
-    if (isShared || !isNotShared() || !MemoryHelper.isOkForSize(elements, newSize)) {
-      tstate.reserve(null, newSize);
-    }
+  boolean canUpdateInPlace(int newSize) {
+    return isNotShared() && MemoryHelper.isOkForSize(elements, newSize);
   }
 
   @Override
