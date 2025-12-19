@@ -64,6 +64,8 @@ public final class TState extends MemoryHelper {
       RcOp.forRcMethod(MemoryHelper.class, "clearElements", Object[].class, int.class, int.class)
           .build();
 
+  static final MethodHandle HAS_CODEGEN = Handle.forMethod(TState.class, "hasCodeGen");
+
   private static final ThreadLocal<TState> savedTState = new ThreadLocal<>();
 
   /**

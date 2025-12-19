@@ -803,6 +803,10 @@ class BuiltinSupport {
           }
         }
       }
+      // Skip dropArgs if we're generating code
+      dropArgs =
+          MethodHandles.guardWithTest(
+              TState.HAS_CODEGEN, MethodHandles.empty(dropArgs.type()), dropArgs);
       // Run dropArgs after mh, on the same arguments
       dropArgs = MethodHandles.dropArguments(dropArgs, 1, ResultsInfo.class, MethodMemo.class);
       mh = MethodHandles.foldArguments(dropArgs, mh);
