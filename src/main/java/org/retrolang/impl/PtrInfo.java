@@ -204,7 +204,7 @@ public interface PtrInfo extends ValueInfo {
 
     @Override
     public ValueInfo unionConst(CodeValue.Const constInfo) {
-      return ANY;
+      return layout.unionConst(constInfo);
     }
 
     // We create a single canonical IsNotShared instance for each FrameLayout, so we don't need to

@@ -882,7 +882,7 @@ public class CodeGen {
    * Emits blocks to set the registers in {@code dst} (whose indices must be in the range {@code
    * registerStart..registerEnd} from {@code src}; after the new blocks have executed, either {@code
    * RValue.fromTemplate(dst)} will have the same value as {@code RValue.fromTemplate(src)} or we
-   * will have branched the current escape handler.
+   * will have branched to the current escape handler.
    */
   void emitStore(Template src, Template dst, int registerStart, int registerEnd) {
     CopyPlan plan = CopyPlan.create(src, dst);
@@ -901,9 +901,13 @@ public class CodeGen {
       Err.ESCAPE.unless(NumValue.isInt(v));
       return CodeValue.of(NumValue.asInt(v));
     }
-    NumVar nv = (NumVar) rv.template;
-    assert nv.encoding != NumEncoding.FLOAT64;
-    return register(nv);
+    Register r = register((NumVar) rv.template);
+    if (r.type() == int.class) {
+      return r;
+    }
+    CodeValue asInt = materialize(Op.DOUBLE_TO_INT.result(r), int.class);
+    new TestBlock.IsEq(OpCodeType.DOUBLE, r, asInt).setBranch(false, escape).addTo(cb);
+    return asInt;
   }
 
   /**

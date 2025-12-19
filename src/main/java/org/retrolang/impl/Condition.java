@@ -290,6 +290,17 @@ public abstract class Condition {
     return intLessThan(v2, v1).not();
   }
 
+  /**
+   * Returns a Condition that is true if {@code v1} is less than {@code v2}; both must be of type
+   * int or long.
+   */
+  public static Condition longLessThan(CodeValue v1, CodeValue v2) {
+    if ((v1 instanceof CodeValue.Const) && (v2 instanceof CodeValue.Const)) {
+      return Condition.of(v1.lValue() < v2.lValue());
+    }
+    return fromTest(() -> new IsLessThan(OpCodeType.LONG, v1, v2));
+  }
+
   /** Returns a Condition that is true if {@code v} is null. */
   public static Condition isNull(CodeValue v) {
     if (v instanceof CodeValue.Const c) {

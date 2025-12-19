@@ -180,7 +180,8 @@ public abstract class BaseType implements PtrInfo {
    */
   boolean equalValues(Value v1, Value v2) {
     assert isCompositional() && v1.baseType() == this;
-    if (v2.baseType() == this || (isArray() && v2.isArrayOfLengthAsBoolean(size))) {
+    if (v2.baseType() == this
+        || (isArray() && v2.baseType().isArray() && v2.numElements() == size)) {
       return Value.equalElements(v1, v2, size);
     }
     return false;

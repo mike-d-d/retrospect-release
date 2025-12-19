@@ -91,6 +91,17 @@ public class RValue implements Value {
   }
 
   @Override
+  public Condition isArrayOfLength(int length) {
+    return isa(Core.VARRAY)
+        .ternary(
+            () -> {
+              CodeGen codeGen = TState.get().codeGen();
+              return Condition.intEq(CodeValue.of(length), codeGen.vArrayLength(this));
+            },
+            () -> isa(Core.FixedArrayType.withSize(length)));
+  }
+
+  @Override
   public Value verifyInt(Err err) throws Err.BuiltinException {
     Err.INVALID_ARGUMENT.unless(isa(Core.NUMBER));
     Template template = this.template;

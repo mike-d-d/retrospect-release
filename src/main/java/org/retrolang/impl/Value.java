@@ -107,14 +107,6 @@ public interface Value {
     return Condition.of(baseType().isArray() && numElements() == length);
   }
 
-  /**
-   * True if this Value is an array with the given length. Only for use when this is known to not be
-   * an RValue.
-   */
-  default boolean isArrayOfLengthAsBoolean(int length) {
-    return baseType().isArray() && numElements() == length;
-  }
-
   @CanIgnoreReturnValue
   public static Value addRef(Value v) {
     RefCounted.addRef(v);
