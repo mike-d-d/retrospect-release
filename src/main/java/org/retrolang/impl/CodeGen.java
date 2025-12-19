@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import org.retrolang.code.CodeBuilder;
@@ -35,7 +36,7 @@ import org.retrolang.code.ReturnBlock;
 import org.retrolang.code.SetBlock;
 import org.retrolang.code.TestBlock;
 import org.retrolang.code.ValueInfo;
-import org.retrolang.code.ValueInfo.BinaryOps;
+import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.impl.Template.NumVar;
 import org.retrolang.impl.Template.RefVar;
 import org.retrolang.util.ArrayUtil;
@@ -94,8 +95,6 @@ public class CodeGen {
    * and it's easy to reuse them so we do.
    */
   private final Deque<Register> spareStackRests = new ArrayDeque<>();
-
-  private static final BinaryOps BINARY_OPS = new BinaryOps();
 
   CodeGen(CodeGenGroup group, CodeGenTarget target) {
     this.group = group;
@@ -168,6 +167,33 @@ public class CodeGen {
     return (cv instanceof Register r)
         ? toValue(r)
         : NumValue.of(cv.numberValue(), Allocator.UNCOUNTED);
+  }
+
+  /**
+   * Given a register containing a value of the given (non-compositional) baseType, returns the
+   * corresponding RValue.
+   */
+  public Value toValue(Register r, BaseType.NonCompositional baseType) {
+    return RValue.fromTemplate(baseType.asRefVar.withIndex(r.index));
+  }
+
+  /**
+   * Given a register or constant containing a value of the given (non-compositional) baseType,
+   * returns the corresponding RValue.
+   */
+  public Value toValue(CodeValue cv, BaseType.NonCompositional baseType) {
+    assert cv.isPtr();
+    if (cv instanceof Register r) {
+      return toValue(r, baseType);
+    }
+    Value result = (Value) cv.constValue();
+    assert result == null || result.baseType() == baseType;
+    return result;
+  }
+
+  /** Given an int-valued CodeValue, returns the corresponding Value. */
+  public Value intToValue(CodeValue cv) {
+    return toValue(materialize(cv, int.class));
   }
 
   /**
@@ -343,28 +369,85 @@ public class CodeGen {
   }
 
   /**
-   * The instruction currently being emitted; attached to blocks (via {@link
+   * A description of the instruction currently being emitted; attached to blocks (via {@link
    * CodeBuilder#setNextSrc}) as an aid to debugging code generation.
    */
-  private Instruction currentInstruction;
+  private CodeBuilder.Printable currentInstruction;
 
   /** Called each time we start emitting an instruction. */
-  void setCurrentInstruction(Instruction inst) {
-    this.currentInstruction = inst;
-    cb.setNextSrc(inst.describe());
+  void setCurrentInstruction(Value stackEntry) {
+    currentInstruction = printStackEntry(stackEntry);
+    cb.setNextSrc(currentInstruction);
   }
 
   /**
    * Called each time we start emitting the next step of a builtin method, to add clues for
    * debugging code generation.
    */
-  void setNextSrc(Object info) {
-    assert !(info instanceof Instruction);
+  void setCurrentBuiltinStep(Value stackEntry) {
+    CodeBuilder.Printable src = printStackEntry(stackEntry);
     // Both the builtin step and the instruction that invoked it are useful to know.
     if (currentInstruction != null) {
-      info = info + " // " + currentInstruction; // TODO: .describe() ?
+      CodeBuilder.Printable fromBuiltin = src;
+      CodeBuilder.Printable fromInstruction = currentInstruction;
+      src = options -> fromBuiltin.toString(options) + " // " + fromInstruction.toString(options);
     }
-    cb.setNextSrc(info);
+    cb.setNextSrc(src);
+  }
+
+  /**
+   * Convert a StackEntry value to something that can be included as an annotation to our generated
+   * code for debugging purposes.
+   */
+  private CodeBuilder.Printable printStackEntry(Value stackEntry) {
+    return options -> {
+      BaseType type = stackEntry.baseType();
+      assert type instanceof BaseType.StackEntryType;
+      if (type.isSingleton()) {
+        return stackEntry.toString();
+      }
+      // Each element of stackEntry is the value of a local; we'll render them all with a
+      // register-aware Template.Printer.  The catch is that if this is late in code generation
+      // (after register assignment) a register reference may no longer be valid (if it has been
+      // optimized away completely, or aliases another register but is no longer in use).  To
+      // avoid showing something misleading in this case we check that registers are still live,
+      // and if not replace the whole result with "_".
+
+      // We don't need this to be atomic, just a mutable Boolean.
+      AtomicBoolean allLive = new AtomicBoolean();
+
+      Template.Printer printer =
+          new Template.Printer() {
+            private String reg(int i) {
+              if (options.useJvmLocals() && !options.isLive(i)) {
+                // If we're rendering after register assignment and this register is no longer
+                // live, don't print a local that might actually be holding a different value.
+                allLive.setPlain(false);
+                return "";
+              }
+              return cb.register(i).toString(options);
+            }
+
+            @Override
+            public String toString(NumVar nv) {
+              return reg(nv.index);
+            }
+
+            @Override
+            public String toString(RefVar rv) {
+              return reg(rv.index);
+            }
+          };
+
+      Template t = RValue.toTemplate(stackEntry);
+      return type.toString(
+          i -> {
+            // This will be run once for each local.
+            allLive.setPlain(true);
+            String s = t.element(i).toBuilder().toString(printer);
+            return allLive.getPlain() ? s : "_";
+          });
+    };
   }
 
   /**
@@ -528,6 +611,11 @@ public class CodeGen {
               cb.branchTo(parent.continueUnwinding);
             });
     currentCall = nested;
+    if (caller == null) {
+      // Once we've started executing methods only a subset of the caller's locals are still live.
+      assert stackEntry.baseType() instanceof Instruction.DuringCallStackEntryType;
+      currentInstruction = printStackEntry(stackEntry);
+    }
     // VmFunction.emitCall() determines the appropriate method(s) and emits them.
     fn.emitCall(this, parent.methodMemo, callSite, args);
     // Now emit the post-call instructions.
@@ -566,7 +654,8 @@ public class CodeGen {
       ExlinedCall.emitCall(this, link.next(group, args), args);
     } else {
       currentCall.methodMemo = mMemo;
-      Instruction currentInst = currentInstruction;
+      // Save and restore the currentInstruction, since emitting a method may overwrite it.
+      CodeBuilder.Printable currentInst = currentInstruction;
       impl.emit(this, currentCall.done, mMemo, args);
       currentCall.methodMemo = null;
       currentCall.builtinEmitState = null;
@@ -665,11 +754,31 @@ public class CodeGen {
     }
   }
 
-  /** Configures the given test to branch to the current escape handler on failure, and emits it. */
-  public void escapeUnless(TestBlock newTest) {
-    if (cb.nextIsReachable()) {
-      newTest.setBranch(false, escape).addTo(cb);
+  /** Emits a branch to the current escape handler if the given condition is true. */
+  public void escapeWhen(Condition check) {
+    escapeUnless(check.not());
+  }
+
+  /** Implements {@link TState#getArraySizeAndReserveForChange} when generating code. */
+  Value getArraySizeAndReserveForChange(
+      VArrayLayout layout, CodeValue array, CodeValue sizeDelta, CodeValue parent) {
+    CodeValue size = materialize(layout.numElements(array), int.class);
+    CodeValue newSize = Op.ADD_INTS.result(size, sizeDelta);
+    // If parent != null and isShared(parent) then we should always copy, which we signal by
+    // passing null to reserveForChange()
+    if (parent != null) {
+      Register r = cb.newRegister(Object.class);
+      emitSet(r, array);
+      FutureBlock parentNotShared = new FutureBlock();
+      Condition.isSharedTest(parent).setBranch(false, parentNotShared).addTo(cb);
+      emitSet(r, CodeValue.NULL);
+      cb.mergeNext(parentNotShared);
+      array = r;
     }
+    CodeValue ok =
+        TState.RESERVE_FOR_CHANGE_OP.result(tstateRegister(), CodeValue.of(layout), array, newSize);
+    escapeUnless(Condition.isNonZero(ok));
+    return toValue(size);
   }
 
   /** Emits a return from the current function call. */
@@ -701,9 +810,8 @@ public class CodeGen {
       // This assumes that the register has previously been checked for NaN.
       v = toValue(r);
     } else {
-      Register result = cb.newRegister(rhs.type());
-      emitSet(result, rhs);
-      if (rhs.isDouble()) {
+      CodeValue result = materialize(rhs, rhs.type());
+      if (result.isDouble()) {
         FutureBlock isNotNaN = new FutureBlock();
         testIsNaN(result, true, isNotNaN);
         setResults(Core.NONE);
@@ -774,7 +882,7 @@ public class CodeGen {
    * Emits blocks to set the registers in {@code dst} (whose indices must be in the range {@code
    * registerStart..registerEnd} from {@code src}; after the new blocks have executed, either {@code
    * RValue.fromTemplate(dst)} will have the same value as {@code RValue.fromTemplate(src)} or we
-   * will have branched the current escape handler.
+   * will have branched to the current escape handler.
    */
   void emitStore(Template src, Template dst, int registerStart, int registerEnd) {
     CopyPlan plan = CopyPlan.create(src, dst);
@@ -783,11 +891,37 @@ public class CodeGen {
   }
 
   /**
+   * Returns an int CodeValue equal to {@code v}, or escapes if {@code v} is not an int. Throws a
+   * BuiltInException if {@code v} could never be an int.
+   */
+  public CodeValue verifyInt(Value v) throws BuiltinException {
+    Err.ESCAPE.unless(v.isa(Core.NUMBER));
+    v = simplify(v);
+    if (!(v instanceof RValue rv)) {
+      Err.ESCAPE.unless(NumValue.isInt(v));
+      return CodeValue.of(NumValue.asInt(v));
+    }
+    Register r = register((NumVar) rv.template);
+    if (r.type() == int.class) {
+      return r;
+    }
+    CodeValue asInt = materialize(Op.DOUBLE_TO_INT.result(r), int.class);
+    new TestBlock.IsEq(OpCodeType.DOUBLE, r, asInt).setBranch(false, escape).addTo(cb);
+    return asInt;
+  }
+
+  /**
    * Given a register containing a pointer to a Frame and the layout of the frame, returns a Value.
    */
   public static Value asValue(Register register, FrameLayout layout) {
     int resultIndex = register.index;
     return RValue.fromTemplate(new RefVar(resultIndex, layout.baseType(), layout, false));
+  }
+
+  /** Returns a CodeValue for the length of the given varray. */
+  CodeValue vArrayLength(Value array) {
+    RefVar refVar = (RefVar) ((RValue) array).template;
+    return vArrayLength(refVar);
   }
 
   /** Returns a CodeValue for the length of the given varray. */
@@ -852,6 +986,24 @@ public class CodeGen {
     }
   }
 
+  /**
+   * If {@code v} is an Op.Result, allocates a new int register and stores {@code v} there, escaping
+   * if an ArithmeticException is thrown. If {@code v} is a register or constant just returns it.
+   */
+  public CodeValue materializeCatchingArithmeticException(CodeValue v) throws BuiltinException {
+    if (v instanceof Op.Result) {
+      Register register = cb.newRegister(int.class);
+      emitSetCatchingArithmeticException(register, v);
+      return register;
+    } else if (CodeValue.isThrown(v, ArithmeticException.class)) {
+      // An ArithmeticException was thrown trying to simplify the Op.Result
+      throw Err.ESCAPE.asException();
+    } else {
+      assert v.type() == int.class;
+      return v;
+    }
+  }
+
   /** Emits a test to escape unless {@code frame} has the specified layout. */
   void ensureLayout(CodeValue frame, FrameLayout layout) {
     if (frame instanceof Register r) {
@@ -862,7 +1014,7 @@ public class CodeGen {
         return;
       }
     }
-    escapeUnless(checkLayout(frame, layout));
+    escapeUnless(Condition.fromTest(() -> checkLayout(frame, layout)));
   }
 
   /** Returns a new test that checks if {@code frame} has the specified layout. */
@@ -957,6 +1109,55 @@ public class CodeGen {
     return false;
   }
 
+  static final ValueInfo.BinaryOps BINARY_OPS =
+      new ValueInfo.BinaryOps() {
+        @Override
+        protected ValueInfo unionConsts(Object x, Object y) {
+          if (x instanceof Number) {
+            return super.unionConsts(x, y);
+          }
+          ValueInfo info1 = CodeValue.of(x);
+          ValueInfo info2 = CodeValue.of(y);
+          return PtrInfo.union(info1, info2);
+        }
+
+        @Override
+        protected ValueInfo unionImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.union(x, y);
+          } else {
+            return super.unionImpl(x, y);
+          }
+        }
+
+        @Override
+        public ValueInfo intersectionImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.intersection(x, y);
+          } else {
+            return super.intersectionImpl(x, y);
+          }
+        }
+
+        @Override
+        public boolean mightIntersectImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.intersects(x, y);
+          } else {
+            return super.mightIntersectImpl(x, y);
+          }
+        }
+
+        @Override
+        protected boolean containsAllImpl(ValueInfo x, ValueInfo y) {
+          if (PtrInfo.isPtrInfo(x)) {
+            return PtrInfo.containsAll(x, y);
+          } else {
+            return super.containsAllImpl(x, y);
+          }
+        }
+      };
+
   static final Op IS_NAN_OP = Op.forMethod(Double.class, "isNaN", double.class).build();
 
   static final Op INT_FROM_BYTES_OP =
@@ -972,5 +1173,15 @@ public class CodeGen {
 
   static final Op SET_BYTES_FROM_DOUBLE_OP =
       Op.forMethodHandle("setDouble[]", ArrayUtil.BYTES_AS_DOUBLES.toMethodHandle(AccessMode.SET))
+          .build();
+
+  static final Op BYTES_FILL_B =
+      Op.forMethod(ArrayUtil.class, "bytesFillB", byte[].class, int.class, int.class, int.class)
+          .build();
+  static final Op BYTES_FILL_I =
+      Op.forMethod(ArrayUtil.class, "bytesFillI", byte[].class, int.class, int.class, int.class)
+          .build();
+  static final Op BYTES_FILL_D =
+      Op.forMethod(ArrayUtil.class, "bytesFillD", byte[].class, int.class, int.class, double.class)
           .build();
 }

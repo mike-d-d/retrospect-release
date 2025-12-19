@@ -19,6 +19,7 @@ package org.retrolang.impl;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import org.retrolang.code.CodeValue;
 import org.retrolang.code.CodeValue.Const;
 import org.retrolang.code.Register;
 import org.retrolang.code.TestBlock;
@@ -90,13 +91,24 @@ public class RValue implements Value {
   }
 
   @Override
-  public Value verifyInt(TState tstate) throws Err.BuiltinException {
+  public Condition isArrayOfLength(int length) {
+    return isa(Core.VARRAY)
+        .ternary(
+            () -> {
+              CodeGen codeGen = TState.get().codeGen();
+              return Condition.intEq(CodeValue.of(length), codeGen.vArrayLength(this));
+            },
+            () -> isa(Core.FixedArrayType.withSize(length)));
+  }
+
+  @Override
+  public Value verifyInt(Err err) throws Err.BuiltinException {
     Err.INVALID_ARGUMENT.unless(isa(Core.NUMBER));
     Template template = this.template;
     if (template instanceof Union u) {
       template = u.choice(u.indexOf(Core.NUMBER.sortOrder));
       if (template instanceof Template.Constant c) {
-        return NumValue.verifyInt(c.value, tstate);
+        return NumValue.verifyInt(c.value, err);
       }
     }
     NumVar nv = (NumVar) template;
@@ -153,6 +165,9 @@ public class RValue implements Value {
         ValueInfo info = infos.apply(union.untagged.index);
         if (info instanceof Const c) {
           return (Value) c.value;
+        } else if (PtrInfo.isPtrInfo(info)) {
+          long sortOrder = PtrInfo.sortOrder(info);
+          choice = union.choice(union.indexOf(sortOrder));
         }
       }
       if (choice != null) {
@@ -206,8 +221,7 @@ public class RValue implements Value {
       return Condition.fromTest(
           () -> new TestBlock.TagCheck(codeGen.register(union.tag), numChoices, bits));
     } else {
-      // TODO: handle untagged unions
-      throw new UnsupportedOperationException();
+      return new PtrInfo.TypeTest(union, bits, codeGen.register(union.untagged));
     }
   }
 
@@ -224,7 +238,11 @@ public class RValue implements Value {
           return union.choice(c.iValue());
         }
       } else {
-        // TODO: resolve untagged unions
+        ValueInfo info = codeGen.cb.nextInfoResolved(union.untagged.index);
+        if (PtrInfo.isPtrInfo(info)) {
+          long sortOrder = PtrInfo.sortOrder(info);
+          return union.choice(union.indexOf(sortOrder));
+        }
       }
     }
     return template;
@@ -275,13 +293,16 @@ public class RValue implements Value {
   @Override
   public Value replaceElement(TState tstate, int index, Value newElement) {
     Template template = resolveUnion(this.template);
-    if (!(template instanceof RefVar)) {
+    if (!(template instanceof RefVar rv)) {
       BaseType baseType = template.baseType();
       Template[] newElements = new Template[baseType.size()];
       Arrays.setAll(newElements, i -> (i == index) ? toTemplate(newElement) : template.element(i));
       return RValue.fromTemplate(Compound.of(baseType, newElements));
     }
-    // TODO: emit code to replaceElement() on a Frame
-    throw new UnsupportedOperationException();
+    CodeGen codeGen = tstate.codeGen();
+    Register result =
+        rv.frameLayout()
+            .emitReplaceElement(codeGen, codeGen.register(rv), CodeValue.of(index), newElement);
+    return RValue.fromTemplate(rv.withIndex(result.index));
   }
 }

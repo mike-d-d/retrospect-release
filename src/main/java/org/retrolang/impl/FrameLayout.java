@@ -240,7 +240,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
       FrameLayout fLayout = f.layout();
       if (fLayout.latest() != this) {
         scope.evolver.merge(this, fLayout);
-        // TODO(mdixon): update f to this new layout
+        // TODO: update f to this new layout
       }
       f.addRef();
       return f;
@@ -417,7 +417,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
   // "hasSideEffect" doesn't seem exactly right here, but we want to stop the optimizer from moving
   // operations that reference the pointer from before a call to after it
   private static final Op CHECK_BEFORE_DUPLICATE_OP =
-      Handle.opForMethod(FrameLayout.class, "checkBeforeDuplicate", TState.class, Frame.class)
+      RcOp.forRcMethod(FrameLayout.class, "checkBeforeDuplicate", TState.class, Frame.class)
           .hasSideEffect()
           .withOpSimplifier(
               ((args, registerInfo) -> {
@@ -459,15 +459,14 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
     if (f instanceof Register r && PtrInfo.isUnshared(codeGen.cb.nextInfoResolved(r.index))) {
       return r;
     }
-    Register result = codeGen.cb.newRegister(Frame.class);
-    CodeValue rhs =
+    CodeValue result =
         ENSURE_UNSHARED_OP.resultWithInfo(
             notSharedInfo, CodeValue.of(this), codeGen.tstateRegister(), f);
-    codeGen.emitSet(result, rhs);
+    result = codeGen.materialize(result, Frame.class);
     // Reusing an escape from before the call to ensureUnshared will require keeping a reference
     // to f, which we'd like to avoid.
     codeGen.setPreferNewEscape();
-    return result;
+    return (Register) result;
   }
 
   /**
@@ -484,6 +483,102 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
     return emitEnsureUnshared(codeGen, f);
   }
 
+  /**
+   * Returns a varray containing
+   *
+   * <ul>
+   *   <li>the first {@code keepPrefix} elements of {@code array}, followed by
+   *   <li>{@code addSize} uninitialized elements, followed by
+   *   <li>the elements of {@code array} from {@code keepPrefix+removeSize} to its end.
+   * </ul>
+   *
+   * <p>This method is used to implement replaceElement (with a range index) and concatenation.
+   *
+   * <p>If {@code array} is not a Frame and {@code resultLayout} is non-null, it will be used for
+   * the result (evolving it if necessary).
+   */
+  @RC.Out
+  public static Frame removeRange(
+      TState tstate,
+      @RC.In Value array,
+      int keepPrefix,
+      int removeSize,
+      int addSize,
+      FrameLayout resultLayout) {
+    if (array instanceof Frame f) {
+      FrameLayout layout = f.layout();
+      if (layout instanceof RecordLayout rLayout) {
+        var unused = rLayout.evolveToVArray(Template.EMPTY);
+        f = Frame.latest(f);
+        layout = f.layout();
+      }
+      return ((VArrayLayout) layout).removeRange(tstate, f, keepPrefix, removeSize, addSize);
+    }
+    // We need to create a new varray; figure out what layout it should use
+    int size = array.numElements();
+    int newSize = size + addSize - removeSize;
+    VArrayLayout layout;
+    if (resultLayout instanceof VArrayLayout) {
+      // We've done this before, so just try the same layout we came up with last time.
+      layout = (VArrayLayout) resultLayout;
+    } else {
+      // Construct a template that will hold all the elements we're going to store
+      TemplateBuilder element =
+          Template.EMPTY
+              .addElements(array, 0, keepPrefix)
+              .addElements(array, keepPrefix + removeSize, size);
+      if (resultLayout == null) {
+        layout = VArrayLayout.newFromBuilder(tstate.scope(), element);
+      } else {
+        // If we make a new layout it will just be merged with this RecordLayout anyway, so we might
+        // as well evolve the RecordLayout
+        layout = (VArrayLayout) ((RecordLayout) resultLayout).evolveToVArray(element);
+      }
+    }
+    // Allocate the result varray and copy the selected elements into it.
+    Frame result = layout.alloc(tstate, newSize);
+    int resultPos = 0;
+    for (int i = 0; ; i++) {
+      if (i == keepPrefix) {
+        i += removeSize;
+        resultPos += addSize;
+      }
+      if (i == size) {
+        break;
+      }
+      Value element = array.peekElement(i);
+      while (!layout.setElement(tstate, result, resultPos, element)) {
+        // The only way that setElement could fail is if we used the resultLayout -- in the cases
+        // where we construct a new layout we've already ensured that it will hold all the elements.
+        assert layout == resultLayout;
+        // Expand the varray template to handle this element and all the remaining ones,
+        // so we should never go through this loop a second time.
+        TemplateBuilder newElement =
+            layout.template.toBuilder()
+                .addElements(array, i, keepPrefix)
+                .addElements(array, Math.max(i, keepPrefix + removeSize), size);
+        var unused = layout.evolveTemplate(newElement);
+        // Now update the frame to the new layout.  We could use Frame.latest(), but since we've got
+        // the only pointer to result we can skip synchronizing with the Coordinator.
+        Evolution evolution = layout.evolution();
+        result = evolution.replaceAndDrop(tstate, result);
+        layout = (VArrayLayout) evolution.newLayout;
+        assert result.layout() == layout;
+        // The updating of result could have introduced "phantom objects" (because it can't always
+        // tell that an element is cleared), so to be safe we have to clear the uninitialized
+        // elements again.
+        layout.clearElements(tstate, result, resultPos, newSize);
+        if (i >= keepPrefix) {
+          layout.clearElements(tstate, result, keepPrefix, keepPrefix + addSize);
+        }
+      }
+      resultPos++;
+    }
+    assert resultPos == newSize;
+    tstate.dropValue(array);
+    return result;
+  }
+
   /** Implements {@link Value#replaceElement} for a Frame that uses this FrameLayout. */
   @RC.Out
   Value replaceElement(TState tstate, @RC.In Frame f, int index, @RC.In Value newElement) {
@@ -492,47 +587,43 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
       tstate.dropReference(f);
       f = f2;
     }
-    clearElement(tstate, f, index);
-    if (setElement(tstate, f, index, newElement)) {
-      tstate.dropValue(newElement);
-      return f;
+    // We'll start with this layout, but it's possible that we'll have to evolve it and retry;
+    // we should never have to do this loop more than twice
+    for (FrameLayout layout = this; ; ) {
+      assert f.layout() == layout;
+      layout.clearElement(tstate, f, index);
+      if (layout.setElement(tstate, f, index, newElement)) {
+        tstate.dropValue(newElement);
+        return f;
+      }
+      // If this is our second time through the loop, setElement() should have succeeded
+      assert layout == this;
+      // Evolve our layout to include the new element.
+      var unused = layout.evolveElement(index, newElement);
+      // Now update f to the new layout.  We could use Frame.latest(f), but since we've got
+      // the only pointer to f we can skip synchronizing with the Coordinator.
+      Evolution evolution = layout.evolution();
+      f = evolution.replaceAndDrop(tstate, f);
+      layout = evolution.newLayout;
+      // The element was cleared before the frame was updated, but in some cases frame replacement
+      // can introduce "phantom objects" (because it can't always tell that an element is cleared),
+      // so to be safe we have to clear it again.
     }
-    FrameLayout newLayout = evolveElement(index, newElement);
-    assert newLayout != this;
-    int size = numElements(f);
-    Frame f2 = newLayout.alloc(tstate, size);
-    for (int i = 0; i < size; i++) {
-      Value element = (i == index) ? newElement : peekElement(f, i);
-      boolean success = newLayout.setElement(tstate, f2, i, element);
-      assert success;
-    }
-    tstate.dropValue(newElement);
-    tstate.dropReference(f);
-    return f2;
   }
 
   /**
    * Returns a CodeValue representing the result of a call to {@link #replaceElement} on a frame
    * with this layout.
    */
-  CodeValue emitReplaceElement(CodeGen codeGen, CodeValue f, CodeValue index, Value newElement) {
+  Register emitReplaceElement(CodeGen codeGen, CodeValue f, CodeValue index, Value newElement) {
     // TODO: should we sometimes be checking here?
-    f = emitEnsureUnshared(codeGen, f);
-    emitClearElement(codeGen, f, index);
+    Register result = emitEnsureUnshared(codeGen, f);
+    emitClearElement(codeGen, result, index);
     if (newElement != Core.TO_BE_SET) {
-      emitSetElement(codeGen, f, index, RValue.toTemplate(newElement));
+      emitSetElement(codeGen, result, index, RValue.toTemplate(newElement));
     }
-    return f;
+    return result;
   }
-
-  /** Implements {@link Value#removeRange} for a Frame that uses this FrameLayout. */
-  @RC.Out
-  abstract Value removeRange(
-      TState tstate, @RC.In Frame f, int keepPrefix, int moveFrom, int moveTo, int moveLen);
-
-  /** Implements {@link Value#reserveForChangeOrThrow} for a Frame that uses this FrameLayout. */
-  abstract void reserveForChangeOrThrow(TState tstate, Frame f, int newSize, boolean isShared)
-      throws Err.BuiltinException;
 
   // ValueInfo methods
 
@@ -549,7 +640,7 @@ public abstract class FrameLayout extends Frame.LayoutOrReplacement implements P
   /** Implements RefCounted.visitRefs() for a Frame that uses this FrameLayout. */
   @Override
   final long visitRefs(Frame f, RefVisitor visitor) {
-    // TODO(mdixon): if visitor is a releaser, add f to a freeList on TState *unless* we've been
+    // TODO: if visitor is a releaser, add f to a freeList on TState *unless* we've been
     // called from Frame.Replacement.clearOriginal()
     return frameClass.visitRefs(f, visitor, nPtrs);
   }

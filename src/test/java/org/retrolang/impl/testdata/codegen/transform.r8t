@@ -27,8 +27,8 @@ transform_0([d1, i2], ⸨False; x3:String⸩):
  14: setDouble[](X2, 8, D7);
  15: setObject[](X1, 0, X4);
  16: return
--17: X5 ← newStackEntry(transform.r8t+0:6_0 _t0 = pipe(nums, lambda@6:15) {nums=[D1, I3], tag=⸨False; X4⸩});
- 18: X1 ← TState.fillStackEntry(X0, null, X5, [d0, d0, ⸨False; x0:String⸩], mMemo_x@xxxx, null);
+-17: X5 ← newStackEntry(⟦transform.r8t+0:6_0 _t0 = pipe(nums, lambda@6:15) ∥ nums=[D1, I3], tag=⸨False; X4⸩⟧);
+ 18: X1 ← TState.fillStackEntry(X0, null, X5, ⟨[d0, d0, ⸨False; x0:String⸩]⟩, mMemo_x@xxxx, null);
  19: TState.setStackRest(X0, X1);
  20: return
 ---

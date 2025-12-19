@@ -20,6 +20,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import java.util.Arrays;
 import java.util.stream.IntStream;
+import org.retrolang.util.StringUtil;
 
 /**
  * A ValueMemo is called repeatedly with Value tuples of a fixed size (e.g. the arguments each time
@@ -117,7 +118,7 @@ public abstract class ValueMemo implements ResultsInfo {
 
     @Override
     public synchronized String toString() {
-      return forwardedTo != null ? "(forwarded)" : contents.toString();
+      return forwardedTo != null ? "(forwarded)" : "⟨" + contents + "⟩";
     }
   }
 
@@ -151,7 +152,9 @@ public abstract class ValueMemo implements ResultsInfo {
 
     @Override
     public synchronized String toString() {
-      return forwardedTo != null ? "(forwarded)" : Arrays.toString(contents);
+      return forwardedTo != null
+          ? "(forwarded)"
+          : StringUtil.joinElements("⟨", "⟩", contents.length, i -> contents[i]);
     }
   }
 

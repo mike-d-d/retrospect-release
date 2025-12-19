@@ -22,6 +22,6 @@ return primes
 /* RUN (n=16) RETURNS
   [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53]
 ---
-allocated=96904/3596, peak=64
+allocated=95592/3541, peak=64
 $0 = *[]b0
 */

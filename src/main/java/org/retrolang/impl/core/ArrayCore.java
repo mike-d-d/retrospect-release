@@ -20,6 +20,7 @@ import static org.retrolang.impl.Value.addRef;
 
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.Op;
+import org.retrolang.code.Register;
 import org.retrolang.impl.BaseType;
 import org.retrolang.impl.BuiltinMethod;
 import org.retrolang.impl.CodeGen;
@@ -27,10 +28,13 @@ import org.retrolang.impl.Condition;
 import org.retrolang.impl.Core;
 import org.retrolang.impl.Err;
 import org.retrolang.impl.Err.BuiltinException;
+import org.retrolang.impl.FrameLayout;
 import org.retrolang.impl.NumValue;
 import org.retrolang.impl.RC;
 import org.retrolang.impl.RValue;
 import org.retrolang.impl.RefCounted;
+import org.retrolang.impl.ResultsInfo;
+import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
 import org.retrolang.impl.Value;
 import org.retrolang.impl.ValueUtil;
@@ -190,18 +194,18 @@ public final class ArrayCore {
                 tstate.startCall(sizes, addRef(value)).saving(array, k.makeStorable(tstate), value);
               },
               () -> {
-                if (tstate.hasCodeGen()) {
-                  CodeGen codeGen = tstate.codeGen();
-                  Value index = validateIndex(tstate, array, k);
-                  // TODO: insert check for OUT_OF_MEMORY
-                  codeGen.setResults(ValueUtil.replaceElement(tstate, array, index, 1, value));
-                } else {
+                if (!tstate.hasCodeGen()) {
                   int i = NumValue.asIntOrMinusOne(k) - 1;
                   Err.INVALID_ARGUMENT.unless(isValidIndex(array, i));
                   if (!RefCounted.isNotShared(array)) {
                     tstate.reserve(array.layout(), array.numElements());
                   }
                   tstate.setResult(array.replaceElement(tstate, i, value));
+                } else {
+                  CodeGen codeGen = tstate.codeGen();
+                  Value index = validateIndex(tstate, array, k);
+                  // TODO: insert check for OUT_OF_MEMORY
+                  codeGen.setResults(ValueUtil.replaceElement(tstate, array, index, 1, value));
                 }
               });
     }
@@ -209,6 +213,7 @@ public final class ArrayCore {
     @Continuation
     static void afterSizes(
         TState tstate,
+        ResultsInfo results,
         Value valueSizes,
         @Saved @RC.In Value array,
         Value range,
@@ -216,38 +221,96 @@ public final class ArrayCore {
         @Fn("enumerate:4") Caller enumerate)
         throws BuiltinException {
       Err.INVALID_SIZES.unless(valueSizes.isArrayOfLength(1));
-      int vSize = valueSizes.elementAsIntOrMinusOne(0);
-      Err.INVALID_SIZES.unless(vSize >= 0);
-      int size = array.numElements();
       Value min = range.peekElement(0);
       Value max = range.peekElement(1);
-      int keepPrefix = (min == Core.NONE) ? 0 : NumValue.asInt(min) - 1;
-      int moveFrom = (max == Core.NONE) ? size : NumValue.asInt(max);
-      Err.INVALID_ARGUMENT.unless(keepPrefix >= 0 && moveFrom <= size && moveFrom >= keepPrefix);
-      if (keepPrefix == moveFrom && vSize == 0) {
-        tstate.setResult(array);
-        return;
-      } else if (keepPrefix == 0 && moveFrom == size && vSize == 0) {
-        tstate.dropValue(array);
-        tstate.setResult(Core.EMPTY_ARRAY);
-        return;
+      if (!tstate.hasCodeGen()) {
+        int vSize = valueSizes.elementAsIntOrMinusOne(0);
+        Err.INVALID_SIZES.unless(vSize >= 0);
+        int size = array.numElements();
+        int keepPrefix = (min == Core.NONE) ? 0 : NumValue.asInt(min) - 1;
+        int removeEnd = (max == Core.NONE) ? size : NumValue.asInt(max);
+        Err.INVALID_ARGUMENT.unless(
+            keepPrefix >= 0 && removeEnd >= keepPrefix && removeEnd <= size);
+        if (keepPrefix == removeEnd && vSize == 0) {
+          tstate.setResult(array);
+          return;
+        }
+        FrameLayout resultLayout = results.result(0, TProperty.ARRAY_LAYOUT);
+        Value updated =
+            FrameLayout.removeRange(
+                tstate, array, keepPrefix, removeEnd - keepPrefix, vSize, resultLayout);
+        Value loop = tstate.compound(SaveCore.SAVE_WITH_OFFSET, NumValue.of(keepPrefix, tstate));
+        // Wrapping SaveWithOffset (a sequential loop) in SaverLoop makes it parallelizable (since
+        // we don't care in which order the elements are computed, as long as each is saved in the
+        // corresponding element of the result).
+        loop = tstate.compound(SaveCore.SAVER_LOOP, loop);
+        // Enumerate the elements of value and store each into the appropriate place in the copy
+        // (EnumerateAllKeys because even Absents need to be copied -- we don't want to leave a
+        // ToBeSet in the result).
+        tstate.startCall(enumerate, addRef(value), LoopCore.ENUMERATE_ALL_KEYS, loop, updated);
+      } else {
+        CodeGen codeGen = tstate.codeGen();
+        CodeValue addSize = codeGen.verifyInt(valueSizes.peekElement(0));
+        codeGen.escapeWhen(Condition.intLessThan(addSize, CodeValue.ZERO));
+        CodeValue iaSize = ValueUtil.numElementsAsCodeValue(codeGen, array);
+        Register keepPrefix = codeGen.cb.newRegister(int.class);
+        min.is(Core.NONE)
+            .testExcept(
+                () -> codeGen.emitSet(keepPrefix, CodeValue.ZERO),
+                () -> {
+                  CodeValue iMin = codeGen.asCodeValue(min);
+                  codeGen.escapeUnless(Condition.intLessThan(CodeValue.ZERO, iMin));
+                  codeGen.emitSet(keepPrefix, Op.SUBTRACT_INTS.result(iMin, CodeValue.ONE));
+                });
+        Register removeEnd = codeGen.cb.newRegister(int.class);
+        max.is(Core.NONE)
+            .testExcept(
+                () -> codeGen.emitSet(removeEnd, iaSize),
+                () -> {
+                  CodeValue iMax = codeGen.asCodeValue(max);
+                  codeGen.escapeWhen(Condition.intLessThan(iaSize, iMax));
+                  codeGen.emitSet(removeEnd, iMax);
+                });
+        codeGen.escapeWhen(Condition.intLessThan(removeEnd, keepPrefix));
+        CodeValue removeSize =
+            codeGen.materialize(Op.SUBTRACT_INTS.result(removeEnd, keepPrefix), int.class);
+        Condition.intEq(addSize, CodeValue.ZERO)
+            .and(Condition.intEq(removeSize, CodeValue.ZERO))
+            .testExcept(
+                () -> tstate.setResult(array),
+                () -> {
+                  FrameLayout resultLayout = results.result(0, TProperty.ARRAY_LAYOUT);
+                  Value updated =
+                      ValueUtil.removeRange(
+                          codeGen, array, keepPrefix, removeSize, addSize, resultLayout);
+                  Value loop =
+                      tstate.compound(SaveCore.SAVE_WITH_OFFSET, codeGen.toValue(keepPrefix));
+                  loop = tstate.compound(SaveCore.SAVER_LOOP, loop);
+                  tstate.startCall(enumerate, value, LoopCore.ENUMERATE_ALL_KEYS, loop, updated);
+                });
       }
-      array = array.removeRange(tstate, keepPrefix, moveFrom, keepPrefix + vSize, size - moveFrom);
-      Value loop = tstate.compound(SaveCore.SAVE_WITH_OFFSET, NumValue.of(keepPrefix, tstate));
-      // Wrapping SaveWithOffset (a sequential loop) in SaverLoop makes it parallelizable (since
-      // we don't care in which order the elements are computed, as long as each is saved in the
-      // corresponding element of the result).
-      loop = tstate.compound(SaveCore.SAVER_LOOP, loop);
-      // Enumerate the elements of value and store each into the appropriate place in the copy
-      // (EnumerateAllKeys because even Absents need to be copied -- we don't want to leave a
-      // ToBeSet in lhs).
-      tstate.startCall(enumerate, addRef(value), LoopCore.ENUMERATE_ALL_KEYS, loop, array);
     }
   }
 
   /** Returns true if {@code index} is a valid zero-based index for {@code array}. */
   static boolean isValidIndex(Value array, long index) {
     return index >= 0 && index < array.numElements();
+  }
+
+  /**
+   * The key matrix of an empty one-dimensional matrix is []. No other array is a valid key matrix.
+   *
+   * <pre>
+   * method new(Array empty, initialValue) {
+   *   assert size(empty) == 0
+   *   return []
+   * }
+   * </pre>
+   */
+  @Core.Method("new(Array, _)")
+  static Value newArray(TState tstate, Value empty, Value initial) throws BuiltinException {
+    Err.INVALID_ARGUMENT.unless(empty.isArrayOfLength(0));
+    return Core.EMPTY_ARRAY;
   }
 
   /**
@@ -267,10 +330,7 @@ public final class ArrayCore {
     } else {
       key = validateIndex(tstate, array, key.peekElement(0));
       CodeGen codeGen = tstate.codeGen();
-      CodeValue zeroBasedKey =
-          codeGen.materialize(
-              Op.SUBTRACT_INTS.result(codeGen.asCodeValue(key), CodeValue.ONE), int.class);
-      key = codeGen.toValue(zeroBasedKey);
+      key = codeGen.intToValue(Op.SUBTRACT_INTS.result(codeGen.asCodeValue(key), CodeValue.ONE));
       Value element = ValueUtil.element(tstate, array, key, 0);
       array = ValueUtil.replaceElement(tstate, array, key, 0, Core.TO_BE_SET);
       tstate.setResults(element, tstate.compound(ARRAY_UPDATER, array, key));

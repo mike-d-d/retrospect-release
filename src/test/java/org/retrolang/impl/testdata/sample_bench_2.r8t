@@ -99,7 +99,7 @@ function dist(pt, centroid) = (centroid - pt) ** 2 | sum
      distance9: 0.04305405985016195,
      filter: 0}}
 ---
-allocated=2941128264/111346698, peak=12384
-$0 = *[]Struct(["b0", "b1", "b2", "b3", "class", "distance0", "distance1", "distance10", "distance2", "distance3", "distance4", "distance5", "distance6", "distance7", "distance8", "distance9", "filter"], x0:$1)
-$1 = *[]d0
+allocated=2904671128/109894175, peak=8248
+$0 = *[]x0:$1
+$1 = *{b0: d4, b1: d12, b2: d20, b3: i0, class: b28, distance0: d36, distance1: d44, distance10: d52, distance2: d60, distance3: d68, distance4: d76, distance5: d84, distance6: d92, distance7: d100, distance8: d108, distance9: d116, filter: i32}
 */

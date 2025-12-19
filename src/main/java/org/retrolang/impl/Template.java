@@ -201,6 +201,44 @@ public sealed interface Template {
   }
 
   /**
+   * A simple VarVisitor for finding the minimum and maximum indices of the NumVars and RefVars in a
+   * given template.
+   */
+  static class IndexBounds implements VarVisitor {
+    /**
+     * The minimum index of any NumVar or RefVar in the given template, or Integer.MAX_VALUE if the
+     * template has no NumVar or RefVar.
+     */
+    int minIndex = Integer.MAX_VALUE;
+
+    /**
+     * The maximum index of any NumVar or RefVar in the given template, or Integer.MIN_VALUE if the
+     * template has no NumVar or RefVar.
+     */
+    int maxIndex = Integer.MIN_VALUE;
+
+    /** Creates an IndexBounds with its minIndex and maxIndex initialized for the given template. */
+    IndexBounds(Template t) {
+      Template.visitVars(t, this);
+    }
+
+    private void update(int i) {
+      minIndex = Math.min(minIndex, i);
+      maxIndex = Math.max(maxIndex, i);
+    }
+
+    @Override
+    public void visitNumVar(NumVar v) {
+      update(v.index);
+    }
+
+    @Override
+    public void visitRefVar(RefVar v) {
+      update(v.index);
+    }
+  }
+
+  /**
    * A Printer is used to modify the output of the {@code toString()} methods of Templates and
    * TemplateBuilders. It only controls the representations chosen for NumVars and RefVars.
    */

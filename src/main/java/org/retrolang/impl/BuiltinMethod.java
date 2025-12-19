@@ -144,6 +144,26 @@ public abstract class BuiltinMethod {
       this.continuationName = continuationName;
     }
 
+    /**
+     * Returns information about the values that have been passed as one of the arguments to this
+     * Caller.
+     */
+    public <T> T argInfo(TState tstate, MethodMemo memo, int argIndex, TProperty<T> property) {
+      ResultsInfo resultsInfo;
+      synchronized (tstate.scope().memoMerger) {
+        CallMemo cm = memo.memoForCall(callSite);
+        if (cm == null) {
+          resultsInfo = ResultsInfo.EMPTY;
+        } else {
+          // If this caller has dispatched to more than one method, we're only going to look at
+          // the args that were passed in calls to one of those methods.  This is kinda lame, but
+          // is good enough for current purposes.
+          resultsInfo = cm.firstMethodMemo().argsMemo;
+        }
+      }
+      return resultsInfo.result(argIndex, property);
+    }
+
     /** Creates a fully-initialized tail-calling Caller. */
     Caller(String where, String fnKey, VmFunction fn, BuiltinImpl impl) {
       this.fnKey = fnKey;

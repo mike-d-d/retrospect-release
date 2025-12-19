@@ -19,6 +19,8 @@ package org.retrolang.impl;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 import org.retrolang.Vm;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.ValueInfo;
 import org.retrolang.util.StringUtil;
 
 /**
@@ -27,8 +29,12 @@ import org.retrolang.util.StringUtil;
  *
  * <p>(The only exception is the Integer type, which includes some but not all Values with BaseType
  * Number. Integer is a special case in many ways, and probably shouldn't be a VmType at all.)
+ *
+ * <p>Non-singleton BaseTypes may also be used as the ValueInfo for a pointer-valued variable,
+ * indicating that it points to a Value with this BaseType (if {@link #usesFrames} is false), or
+ * that it points to a Frame whose BaseType has the same sortOrder (if {@link #usesFrames} is true).
  */
-public abstract class BaseType {
+public abstract class BaseType implements PtrInfo {
 
   /**
    * The size of a BaseType is
@@ -174,7 +180,8 @@ public abstract class BaseType {
    */
   boolean equalValues(Value v1, Value v2) {
     assert isCompositional() && v1.baseType() == this;
-    if (v2.baseType() == this || (isArray() && v2.isArrayOfLengthAsBoolean(size))) {
+    if (v2.baseType() == this
+        || (isArray() && v2.baseType().isArray() && v2.numElements() == size)) {
       return Value.equalElements(v1, v2, size);
     }
     return false;
@@ -206,6 +213,30 @@ public abstract class BaseType {
   public Value uncountedOf(RC.RCIntFunction<Value> elements) {
     assert isCompositional();
     return CompoundValue.of(Allocator.UNCOUNTED, this, elements);
+  }
+
+  // PtrInfo methods
+  @Override
+  public BaseType baseType() {
+    return this;
+  }
+
+  @Override
+  public boolean containsValue(Object value) {
+    assert !isSingleton();
+    return value == null || ((Value) value).baseType().sortOrder == sortOrder;
+  }
+
+  @Override
+  public ValueInfo unionConst(CodeValue.Const constInfo) {
+    assert !isSingleton();
+    return PtrInfo.union(this, constInfo);
+  }
+
+  @Override
+  public ValueInfo removeConst(CodeValue.Const constInfo) {
+    assert !isSingleton();
+    return this;
   }
 
   /** A subclass for BaseTypes that correspond to Retrospect-language types. */
@@ -262,13 +293,21 @@ public abstract class BaseType {
      */
     final Template.RefVar asRefVar;
 
-    NonCompositional(VmModule module, String name, long sortOrder, Vm.Type... superTypes) {
+    final Class<?> javaType;
+
+    NonCompositional(
+        VmModule module, String name, Class<?> javaType, long sortOrder, Vm.Type... superTypes) {
       super(module, name, -1, sortOrder, superTypes);
+      assert (sortOrder == SORT_ORDER_ARRAY)
+          ? javaType == null
+          : Value.class.isAssignableFrom(javaType);
+      this.javaType = javaType;
       asRefVar = (sortOrder == SORT_ORDER_ARRAY) ? null : new Template.RefVar(0, this, null, false);
     }
 
-    public NonCompositional(VmModule module, String name, Vm.Type... superTypes) {
-      this(module, name, ALLOC_NEW_SORT_ORDER, superTypes);
+    public NonCompositional(
+        VmModule module, String name, Class<?> javaType, Vm.Type... superTypes) {
+      this(module, name, javaType, ALLOC_NEW_SORT_ORDER, superTypes);
     }
   }
 
@@ -313,8 +352,11 @@ public abstract class BaseType {
 
     @Override
     String toString(IntFunction<Object> elements) {
+      if (isSingleton()) {
+        return "⟦" + this + "⟧";
+      }
       return StringUtil.joinElements(
-          this + " {", "}", size(), i -> localName(i) + "=" + elements.apply(i));
+          "⟦" + this + " ∥ ", "⟧", size(), i -> localName(i) + "=" + elements.apply(i));
     }
   }
 

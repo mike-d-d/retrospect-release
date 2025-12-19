@@ -48,25 +48,6 @@ public final class Singleton extends VmExpr.Constant implements Value, Vm.Single
   }
 
   @Override
-  @RC.Out
-  public Value removeRange(TState tstate, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    // Can only be called to add elements to the empty array.
-    assert this == Core.EMPTY_ARRAY
-        && keepPrefix == 0
-        && moveFrom == 0
-        && moveTo >= 0
-        && moveLen == 0;
-    return CompoundValue.of(tstate, Core.FixedArrayType.withSize(moveTo), i -> Core.TO_BE_SET);
-  }
-
-  @Override
-  public void reserveForChangeOrThrow(TState tstate, int newSize, boolean isShared)
-      throws Err.BuiltinException {
-    assert this == Core.EMPTY_ARRAY;
-    tstate.reserve(null, newSize);
-  }
-
-  @Override
   public int hashCode() {
     // Despite our override of equals(), the default hashCode() is still good enough
     // (Frame.hashCode() is responsible for matching our value on empty arrays).
@@ -82,6 +63,9 @@ public final class Singleton extends VmExpr.Constant implements Value, Vm.Single
 
   @Override
   public String toString() {
-    return baseType.toString();
+    // StackEntry values get extra delimiters.
+    return (baseType instanceof BaseType.StackEntryType)
+        ? baseType.toString(null)
+        : baseType.toString();
   }
 }

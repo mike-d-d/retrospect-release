@@ -99,7 +99,7 @@ class Coordinator {
    */
   @GuardedBy("this")
   private int threadIndex(TState tstate) {
-    // TODO(mdixon): linear search will become suboptimal with large numbers of active threads
+    // TODO: linear search will become suboptimal with large numbers of active threads
     // (maybe > 16?); consider doing something a little more sophisticated.
     int index = 0;
     while (activeThreads[index] != tstate) {
@@ -210,7 +210,7 @@ class Coordinator {
         }
       }
     }
-    // TODO(mdixon): should we try to bound the size of pendingClear?  If it gets too large we're
+    // TODO: should we try to bound the size of pendingClear?  If it gets too large we're
     // tying down a lot of memory with replaced-but-not-cleared Frames.  That could theoretically
     // happen if we had one or more threads doing a lot of replacements and another thread (active
     // in the same ResourceTracker) that was never calling syncWithCoordinator().  The best response

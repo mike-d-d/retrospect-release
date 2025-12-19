@@ -63,10 +63,10 @@ public class TStackTest {
     assertThat(tstack.stringStream().toArray())
         .asList()
         .containsExactly(
-            "Undefined var {varName=\"x\"}",
-            "myCall {saved=\"call2\"}",
-            "myCall {saved=\"call1\"}",
-            "StackBase");
+            "⟦Undefined var ∥ varName=\"x\"⟧",
+            "⟦myCall ∥ saved=\"call2\"⟧",
+            "⟦myCall ∥ saved=\"call1\"⟧",
+            "⟦StackBase⟧");
     // Drop it, and make sure that everyone did the reference counting properly.
     tstate.dropReference(tstack);
     tstate.bindTo(null);

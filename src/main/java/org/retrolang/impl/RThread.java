@@ -208,7 +208,7 @@ class RThread extends RefCounted {
       // but guaranteed to be visible (in that order!) from other threads.
       WAITER.setOpaque(this, null);
       visitor.visitRefCounted(takeSuspended());
-      // TODO(mdixon): if a Java thread is currently executing this RThread, notify it
+      // TODO: if a Java thread is currently executing this RThread, notify it
     } else {
       visitor.visitRefCounted(suspended);
     }

@@ -196,6 +196,11 @@ class ResourceTracker implements Allocator, Vm.ResourceTracker {
     recordAlloc(obj, size, null);
   }
 
+  @Override
+  public boolean isCounted() {
+    return true;
+  }
+
   /**
    * Records the allocation of the given object.
    *

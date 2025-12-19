@@ -423,6 +423,16 @@ public final class CollectionCore {
 
   /**
    * <pre>
+   * method size(tc) (tc is TransformedCollection or tc is TransformedMatrix) = size(tc_.base)
+   * </pre>
+   */
+  @Core.Method("size(TransformedCollection|TransformedMatrix)")
+  static void sizeTransformed(TState tstate, Value tc, @Fn("size:1") Caller size) {
+    tstate.startCall(size, tc.element(0));
+  }
+
+  /**
+   * <pre>
    * method iterator(tc, eKind) (tc is TransformedCollection or tc is TransformedMatrix) =
    *     TransformedIterator_({it: iterator(tc_.base, eKind), eKind, lambda: tc_.lambda})
    * </pre>

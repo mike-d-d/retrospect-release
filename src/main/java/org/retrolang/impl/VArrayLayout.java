@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.retrolang.code.CodeBuilder;
+import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
 import org.retrolang.code.Op;
@@ -44,7 +45,7 @@ import org.retrolang.util.StringUtil;
  * element of the Retrospect array is described by the template, with variable values supplied by
  * corresponding elements of the Java arrays.
  */
-class VArrayLayout extends FrameLayout {
+public class VArrayLayout extends FrameLayout {
   final Template template;
 
   /** Maps the index of each NumVar in {@link #template} to its NumEncoding. */
@@ -72,6 +73,12 @@ class VArrayLayout extends FrameLayout {
   /** One more than the maximum RefVar index in this layout's template. */
   final int numRV;
 
+  /**
+   * Either 1 (if numRV == 0 and all nvEncodings are UINT8), 8 (if nvEncodings contains at least one
+   * FLOAT64) or 4 (otherwise).
+   */
+  final int maxVarSize;
+
   private final Choice numberChoice;
 
   /**
@@ -81,14 +88,40 @@ class VArrayLayout extends FrameLayout {
   final Frame.Replacement emptyReplacement;
 
   /**
+   * An Op with arguments (TState, int size) that allocates and initializes a new instance. Built
+   * lazily.
+   */
+  private Op allocOp;
+
+  /**
    * An Op with arguments (TState, Frame, int start, int end) that clears all pointers associated
    * with elements between {@code start} (inclusive) and {@code end} (exclusive). Built lazily, and
    * only for layouts with at least one RefVar.
    */
   private Op clearElementsOp;
 
+  /**
+   * An Op with arguments (TState, Frame, int keepPrefix, int removeSize, int addSize) that
+   * implements {@link #removeRange(TState, Frame, int, int, int)} for frames with this layout.
+   * Built lazily.
+   */
+  private Op removeRangeOp;
+
+  /**
+   * An Op with arguments (Frame dst, int dstStart, Frame src, int srcStart, int count) that clears
+   * all pointers associated with elements between {@code start} (inclusive) and {@code end}
+   * (exclusive). Built lazily, and only for layouts with at least one RefVar.
+   */
+  private Op copyRangeOp;
+
+  private static final VarHandle ALLOC_OP =
+      Handle.forVar(MethodHandles.lookup(), VArrayLayout.class, "allocOp", Op.class);
   private static final VarHandle CLEAR_ELEMENTS_OP =
       Handle.forVar(MethodHandles.lookup(), VArrayLayout.class, "clearElementsOp", Op.class);
+  private static final VarHandle REMOVE_RANGE_OP =
+      Handle.forVar(MethodHandles.lookup(), VArrayLayout.class, "removeRangeOp", Op.class);
+  private static final VarHandle COPY_RANGE_OP =
+      Handle.forVar(MethodHandles.lookup(), VArrayLayout.class, "copyRangeOp", Op.class);
 
   /** Builds a template with the given builder, and creates a VArrayLayout using the result. */
   static VArrayLayout newFromBuilder(Scope scope, TemplateBuilder builder) {
@@ -140,17 +173,23 @@ class VArrayLayout extends FrameLayout {
     // Initialize the layout and length of our empty instance.  We can leave all the element arrays
     // null, since they'll never be accessed.
     empty.layoutOrReplacement = this;
-    frameClass.setI(empty, LENGTH_FIELD_OFFSET, 0);
+    setNumElements(empty, 0);
+    if (overflowSize != 0) {
+      frameClass.setX(empty, OVERFLOW_FIELD, new Object[overflowSize]);
+    }
     emptyReplacement = new Frame.Replacement(null, empty);
     baseSize =
         frameClass.byteSize
             + ptrSize * SizeOf.ARRAY_HEADER
             + (overflowSize == 0 ? 0 : SizeOf.array(overflowSize, SizeOf.PTR));
     long perElementSize = numRV * (long) SizeOf.PTR;
+    int maxVarSize = (numRV == 0) ? 1 : 4;
     for (NumEncoding nvEncoding : nvEncodings) {
       perElementSize += nvEncoding.nBytes;
+      maxVarSize = Math.max(maxVarSize, nvEncoding.nBytes);
     }
     this.perElementSize = perElementSize;
+    this.maxVarSize = maxVarSize;
     this.numberChoice = Choice.forBaseType(Core.NUMBER, template);
   }
 
@@ -194,7 +233,8 @@ class VArrayLayout extends FrameLayout {
     return (start < end) ? evolveElement(start, newElement) : this;
   }
 
-  private FrameLayout evolveTemplate(TemplateBuilder newTemplate) {
+  /** Caller is responsible for ensuring that newTemplate includes the current template. */
+  FrameLayout evolveTemplate(TemplateBuilder newTemplate) {
     return (newTemplate == template) ? this : scope.evolver.evolve(this, newTemplate, true);
   }
 
@@ -233,6 +273,21 @@ class VArrayLayout extends FrameLayout {
     }
   }
 
+  /** Returns a CodeValue equivalent to calling {@link #allocElementArray} with the given args. */
+  private CodeValue emitAllocElementArray(CodeValue tstate, int index, CodeValue size) {
+    Op op;
+    if (index < numVarIndexLimit()) {
+      op = TState.ALLOC_BYTE_ARRAY_OP;
+      int shift = nvEncodings[index].nBytesLog2;
+      if (shift != 0) {
+        size = Op.SHIFT_LEFT_INT.result(size, CodeValue.of(shift));
+      }
+    } else {
+      op = TState.ALLOC_OBJ_ARRAY_OP;
+    }
+    return op.result(tstate, size);
+  }
+
   /**
    * Returns the index of the pointer field containing the first element array, i.e. 0 if there is
    * no overflow array, 1 if there is.
@@ -256,10 +311,20 @@ class VArrayLayout extends FrameLayout {
   Frame alloc(TState tstate, int size, Bits omitElementArrays) {
     if (size == 0) {
       return empty;
+    } else if (omitElementArrays == null) {
+      // If we've already generated code for this layout, we might as well use it here.
+      Op allocOp = allocOp(false);
+      if (allocOp != null) {
+        try {
+          return (Frame) allocOp.mh.invokeExact(tstate, size);
+        } catch (Throwable e) {
+          throw new AssertionError(e);
+        }
+      }
     }
     Frame result = frameClass.alloc(tstate);
     result.layoutOrReplacement = this;
-    frameClass.setI(result, LENGTH_FIELD_OFFSET, size);
+    setNumElements(result, size);
     // Each pointer field (except the first, if we're using an overflow array) contains an
     // element array.
     int start = firstElementArray();
@@ -278,6 +343,63 @@ class VArrayLayout extends FrameLayout {
       }
     }
     return result;
+  }
+
+  Op allocOp(boolean build) {
+    Op op = (Op) ALLOC_OP.getAcquire(this);
+    if (op != null || !build) {
+      return op;
+    }
+    // Since there are currently no other places we want to synchronize on a FrameLayout, use it
+    // to avoid races when constructing MethodHandles.  If we had some other reason to synchronize
+    // on it we could just add a special-purpose lock object.
+    synchronized (this) {
+      if (this.allocOp != null) {
+        return this.allocOp;
+      }
+      CodeBuilder cb = CodeGen.newCodeBuilder();
+      Register tstate = cb.newArg(TState.class);
+      Register size = cb.newArg(int.class);
+      FutureBlock sizeNonZero = new FutureBlock();
+      new TestBlock.IsEq(OpCodeType.INT, size, CodeValue.ZERO)
+          .setBranch(false, sizeNonZero)
+          .addTo(cb);
+      new ReturnBlock(CodeValue.of(empty)).addTo(cb);
+      cb.setNext(sizeNonZero);
+      Register result = cb.newRegister(frameClass.javaClass);
+      new SetBlock(result, frameClass.emitAlloc(tstate)).addTo(cb);
+      Frame.SET_LAYOUT_OR_REPLACEMENT.block(result, CodeValue.of(this)).addTo(cb);
+      frameClass.setIntField.get(LENGTH_FIELD).block(result, size).addTo(cb);
+      int start = firstElementArray();
+      for (int i = start; i < nPtrs; i++) {
+        frameClass
+            .setPtrField
+            .get(i)
+            .block(result, emitAllocElementArray(tstate, i - start, size))
+            .addTo(cb);
+      }
+      if (overflowSize != 0) {
+        Register overflow = cb.newRegister(Object[].class);
+        new SetBlock(overflow, TState.ALLOC_OBJ_ARRAY_OP.result(tstate, CodeValue.of(overflowSize)))
+            .addTo(cb);
+        frameClass.setPtrField.get(OVERFLOW_FIELD).block(result, overflow).addTo(cb);
+        for (int i = 0; i < overflowSize; i++) {
+          RcOp.SET_OBJ_ARRAY_ELEMENT
+              .block(overflow, CodeValue.of(i), emitAllocElementArray(tstate, i + nPtrs - 1, size))
+              .addTo(cb);
+        }
+      }
+      new ReturnBlock(result).addTo(cb);
+      MethodHandle mh =
+          cb.load("allocVArray_" + StringUtil.id(this), null, Frame.class, Handle.lookup);
+      op = RcOp.forMethodHandle("alloc" + this, mh).resultIsRcOut().build();
+      ALLOC_OP.setRelease(this, op);
+      return op;
+    }
+  }
+
+  public CodeValue emitAlloc(CodeGen codeGen, CodeValue size) {
+    return allocOp(true).resultWithInfo(notSharedInfo, codeGen.tstateRegister(), size);
   }
 
   /**
@@ -314,6 +436,16 @@ class VArrayLayout extends FrameLayout {
     }
   }
 
+  private CodeValue elementArray(CodeValue frame, Template t) {
+    int index = firstElementArray() + varIndex(t);
+    if (index < nPtrs) {
+      return frameClass.getPtrField.get(index).result(frame);
+    } else {
+      CodeValue overflow = frameClass.getPtrField.get(OVERFLOW_FIELD).result(frame);
+      return Op.OBJ_ARRAY_ELEMENT.result(overflow, CodeValue.of(index - nPtrs));
+    }
+  }
+
   /**
    * Sets the element array used for the specified variable; see {@link #varIndex} for the
    * interpretation of {@code index}.
@@ -337,11 +469,12 @@ class VArrayLayout extends FrameLayout {
   }
 
   /**
-   * Clears the given frame's element array for the specified variable; see {@link #varIndex} for
-   * the interpretation of {@code index}.
+   * Clears some of the given frame's pointers to its element arrays; see {@link #varIndex} for the
+   * interpretation of {@code indices}.
    *
-   * <p>Used when a replacement frame is sharing this element array and will take responsibility for
-   * releasing it.
+   * <p>Used when a replacement frame is sharing some of the original frame's element arrays and we
+   * are about to release the original frame; we need to ensure that the shared arrays are not
+   * released along with it.
    */
   void clearElementArrays(Frame f, int[] indices) {
     for (int index : indices) {
@@ -356,122 +489,92 @@ class VArrayLayout extends FrameLayout {
   }
 
   /**
-   * A record describing how the elements of a VArray are to be copied to a new VArray or moved in
-   * place.
+   * Modifies a varray by removing some elements and inserting some number of TO_BE_SET elements in
+   * their place. On return the array will contain
    *
-   * <p>Elements [0, keepPrefix) will be preserved in their current positions. Elements [moveFrom,
-   * moveFrom+moveLen) will be moved to [moveTo, moveTo+moveLen). Any other elements will be
-   * removed.
+   * <ul>
+   *   <li>the first {@code keepPrefix} elements unchanged, followed by
+   *   <li>{@code addSize} elements that are {@code TO_BE_SET}, followed by
+   *   <li>the elements that previously started at {@code keepPrefix+removeSize} to the end.
+   * </ul>
+   *
+   * <p>This method is used to implement replaceElement and concatenation.
    */
-  private static class ElementMove {
-    final int originalSize;
-    final int keepPrefix;
-    final int moveFrom;
-    final int moveTo;
-    final int moveLen;
-
-    ElementMove(int originalSize, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-      assert keepPrefix >= 0
-          && moveLen >= 0
-          && moveFrom >= keepPrefix
-          && moveTo >= keepPrefix
-          && moveFrom + moveLen <= originalSize;
-      this.originalSize = originalSize;
-      if (moveFrom == 0 && moveTo == 0) {
-        // Convert to an equivalent but slightly more efficient form.
-        this.keepPrefix = moveLen;
-        this.moveFrom = moveLen;
-        this.moveTo = moveLen;
-        this.moveLen = 0;
+  @RC.Out
+  Frame removeRange(TState tstate, @RC.In Frame f, int keepPrefix, int removeSize, int addSize) {
+    assert f.layout() == this;
+    // If we've already generated code for this layout, we might as well use it here.
+    Op op = removeRangeOp(false);
+    if (op != null) {
+      try {
+        return (Frame) op.mh.invokeExact(tstate, f, keepPrefix, removeSize, addSize);
+      } catch (Throwable e) {
+        throw new AssertionError(e);
+      }
+    }
+    // If we haven't generated code just do it the slow way.
+    Frame result;
+    boolean copy;
+    if (f.isNotShared()) {
+      // Make the change in place
+      result = f;
+      copy = false;
+    } else {
+      result = frameClass.alloc(tstate);
+      result.layoutOrReplacement = this;
+      copy = true;
+    }
+    int size = numElements(f);
+    int newSize = size + addSize - removeSize;
+    assert newSize >= 0;
+    setNumElements(result, newSize);
+    int start = firstElementArray();
+    for (int i = start; i < nPtrs; i++) {
+      Object array = frameClass.getX(f, i);
+      array =
+          removeRangeFromElementArray(
+              tstate, array, i - start, size, keepPrefix, removeSize, addSize, copy);
+      frameClass.setX(result, i, array);
+    }
+    if (overflowSize != 0) {
+      Object[] fOverflow = (Object[]) frameClass.getX(f, OVERFLOW_FIELD);
+      Object[] resultOverflow;
+      if (!copy) {
+        resultOverflow = fOverflow;
       } else {
-        this.keepPrefix = keepPrefix;
-        this.moveFrom = moveFrom;
-        this.moveTo = moveTo;
-        this.moveLen = moveLen;
+        resultOverflow = tstate.allocObjectArray(overflowSize);
+        frameClass.setX(result, OVERFLOW_FIELD, resultOverflow);
+      }
+      for (int i = 0; i < overflowSize; i++) {
+        Object array = fOverflow[i];
+        array =
+            removeRangeFromElementArray(
+                tstate, array, i + nPtrs - 1, size, keepPrefix, removeSize, addSize, copy);
+        resultOverflow[i] = array;
       }
     }
-
-    /**
-     * Returns an ElementMove appropriate for moving the elements from start (inclusive) to end
-     * (exclusive) to the start of the array and discarding everything else.
-     */
-    static ElementMove forRange(int originalSize, int start, int end) {
-      return new ElementMove(originalSize, 0, start, 0, end - start);
+    if (copy) {
+      tstate.dropReference(f);
     }
-
-    /** Returns the size of the resulting VArray. */
-    int newSize() {
-      return moveTo + moveLen;
-    }
-
-    /** Copies the corresponding elements of a byte array. */
-    void copyBytes(byte[] src, byte[] dst, int bytesPerElementLog2) {
-      System.arraycopy(src, 0, dst, 0, keepPrefix << bytesPerElementLog2);
-      System.arraycopy(
-          src,
-          moveFrom << bytesPerElementLog2,
-          dst,
-          moveTo << bytesPerElementLog2,
-          moveLen << bytesPerElementLog2);
-    }
-
-    /**
-     * Copies the corresponding elements of a Value array.
-     *
-     * <p>If {@code destructive} is true, the copied values will be nulled in the source array (so
-     * the reference counts are unchanged). If {@code destructive} is false, the source array is
-     * unchanged and each copied value's reference count will be incremented.
-     */
-    void copyValues(Object[] src, Object[] dst, boolean destructive) {
-      if (keepPrefix != 0) {
-        copyValues(src, 0, dst, 0, keepPrefix, destructive);
-      }
-      if (moveLen != 0) {
-        copyValues(src, moveFrom, dst, moveTo, moveLen, destructive);
-      }
-    }
-
-    private static void copyValues(
-        Object[] src, int srcStart, Object[] dst, int dstStart, int length, boolean destructive) {
-      System.arraycopy(src, srcStart, dst, dstStart, length);
-      if (destructive) {
-        Arrays.fill(src, srcStart, srcStart + length, null);
-      } else {
-        for (int i = 0; i < length; i++) {
-          RefCounted.addRef(src[srcStart + i]);
-        }
-      }
-    }
-
-    /** Moves the corresponding elements of a byte array in place. */
-    void updateBytes(byte[] bytes, int bytesPerElementLog2) {
-      System.arraycopy(
-          bytes,
-          moveFrom << bytesPerElementLog2,
-          bytes,
-          moveTo << bytesPerElementLog2,
-          moveLen << bytesPerElementLog2);
-    }
-
-    /** Moves the corresponding elements of a Value array in place. */
-    void updateValues(TState tstate, Object[] values) {
-      tstate.removeRange(values, originalSize, keepPrefix, moveFrom, moveTo, moveLen);
-    }
+    return result;
   }
 
-  /** Copies elements from the given element array into a new array. */
-  @RC.Out
-  private Object duplicateElementArray(TState tstate, int index, Object src, ElementMove mover) {
-    if (index < numVarIndexLimit()) {
-      int bytesPerElementLog2 = nvEncodings[index].nBytesLog2;
-      byte[] result = tstate.allocByteArray(mover.newSize() << bytesPerElementLog2);
-      mover.copyBytes((byte[]) src, result, bytesPerElementLog2);
-      return result;
-    } else {
-      Object[] result = tstate.allocObjectArray(mover.newSize());
-      mover.copyValues((Object[]) src, result, false);
-      return result;
-    }
+  Register emitRemoveRange(
+      CodeGen codeGen,
+      CodeValue frame,
+      CodeValue keepPrefix,
+      CodeValue removeSize,
+      CodeValue addSize) {
+    Register result = codeGen.cb.newRegister(Frame.class);
+    codeGen.emitSet(
+        result,
+        removeRangeOp(true)
+            .resultWithInfo(
+                notSharedInfo, codeGen.tstateRegister(), frame, keepPrefix, removeSize, addSize));
+    // Reusing an escape from before the call to removeRange would require keeping a reference
+    // to frame, which would prevent us from ever making the update in place.
+    codeGen.setPreferNewEscape();
+    return result;
   }
 
   @Override
@@ -479,7 +582,8 @@ class VArrayLayout extends FrameLayout {
   Frame duplicate(TState tstate, Frame f) {
     assert f.layout() == this;
     int size = numElements(f);
-    return (size == 0) ? empty : duplicate(tstate, f, ElementMove.forRange(size, 0, size));
+    f.addRef();
+    return removeRange(tstate, f, size, 0, 0);
   }
 
   @Override
@@ -488,26 +592,355 @@ class VArrayLayout extends FrameLayout {
     return sizeOf(numElements(f));
   }
 
+  private Object removeRangeFromElementArray(
+      TState tstate,
+      Object array,
+      int index,
+      int size,
+      int keepPrefix,
+      int removeSize,
+      int addSize,
+      boolean copy) {
+    if (index < numVarIndexLimit()) {
+      int bytesPerElementLog2 = nvEncodings[index].nBytesLog2;
+      return tstate.removeRange(
+          (byte[]) array,
+          size << bytesPerElementLog2,
+          keepPrefix << bytesPerElementLog2,
+          removeSize << bytesPerElementLog2,
+          addSize << bytesPerElementLog2,
+          copy);
+    } else {
+      return tstate.removeRange((Object[]) array, size, keepPrefix, removeSize, addSize, copy);
+    }
+  }
+
+  Op removeRangeOp(boolean build) {
+    Op op = (Op) REMOVE_RANGE_OP.getAcquire(this);
+    if (op != null || !build) {
+      return op;
+    }
+    // See comment in allocOp() about this synchronization.
+    synchronized (this) {
+      if (this.removeRangeOp != null) {
+        return this.removeRangeOp;
+      }
+      CodeBuilder cb = CodeGen.newCodeBuilder();
+      Register tstate = cb.newArg(TState.class);
+      Register frame = cb.newArg(Frame.class);
+      Register keepPrefix = cb.newArg(int.class);
+      Register removeSize = cb.newArg(int.class);
+      Register addSize = cb.newArg(int.class);
+
+      Register result = cb.newRegister(frameClass.javaClass);
+      Register copy = cb.newRegister(int.class);
+      {
+        FutureBlock needCopy = new FutureBlock();
+        Condition.isSharedTest(frame).setBranch(true, needCopy).addTo(cb);
+        new SetBlock(result, frame).addTo(cb);
+        new SetBlock(copy, CodeValue.ZERO).addTo(cb);
+        FutureBlock done = cb.swapNext(needCopy);
+        new SetBlock(result, frameClass.emitAlloc(tstate)).addTo(cb);
+        Frame.SET_LAYOUT_OR_REPLACEMENT.block(result, CodeValue.of(this)).addTo(cb);
+        new SetBlock(copy, CodeValue.ONE).addTo(cb);
+        cb.mergeNext(done);
+      }
+      Register size = cb.newRegister(int.class);
+      new SetBlock(size, frameClass.getIntField.get(LENGTH_FIELD).result(frame)).addTo(cb);
+      Register newSize = cb.newRegister(int.class);
+      new SetBlock(newSize, Op.SUBTRACT_INTS.result(Op.ADD_INTS.result(size, addSize), removeSize))
+          .addTo(cb);
+      frameClass.setIntField.get(LENGTH_FIELD).block(result, newSize).addTo(cb);
+      int start = firstElementArray();
+      for (int i = start; i < nPtrs; i++) {
+        CodeValue array = frameClass.getPtrField.get(i).result(frame);
+        array =
+            emitRemoveRangeFromElementArray(
+                tstate, array, i - start, size, keepPrefix, removeSize, addSize, copy);
+        frameClass.setPtrField.get(i).block(result, array).addTo(cb);
+      }
+      if (overflowSize != 0) {
+        Register fOverflow = cb.newRegister(Object[].class);
+        new SetBlock(fOverflow, frameClass.getPtrField.get(OVERFLOW_FIELD).result(frame)).addTo(cb);
+        Register resultOverflow = cb.newRegister(Object[].class);
+        {
+          FutureBlock copyRequested = new FutureBlock();
+          new TestBlock.IsEq(OpCodeType.INT, copy, CodeValue.ZERO)
+              .setBranch(false, copyRequested)
+              .addTo(cb);
+          new SetBlock(resultOverflow, fOverflow).addTo(cb);
+          FutureBlock done = cb.swapNext(copyRequested);
+          new SetBlock(
+                  resultOverflow,
+                  TState.ALLOC_OBJ_ARRAY_OP.result(tstate, CodeValue.of(overflowSize)))
+              .addTo(cb);
+          frameClass.setPtrField.get(OVERFLOW_FIELD).block(result, resultOverflow).addTo(cb);
+          cb.mergeNext(done);
+        }
+        for (int i = 0; i < overflowSize; i++) {
+          CodeValue array = Op.OBJ_ARRAY_ELEMENT.result(fOverflow, CodeValue.of(i));
+          array =
+              emitRemoveRangeFromElementArray(
+                  tstate, array, i + nPtrs - 1, size, keepPrefix, removeSize, addSize, copy);
+          RcOp.SET_OBJ_ARRAY_ELEMENT.block(resultOverflow, CodeValue.of(i), array).addTo(cb);
+        }
+      }
+      {
+        FutureBlock done = new FutureBlock();
+        // if copy==0 is false, i.e. if copy
+        new TestBlock.IsEq(OpCodeType.INT, copy, CodeValue.ZERO).setBranch(true, done).addTo(cb);
+        TState.DROP_REFERENCE_OP.block(tstate, frame).addTo(cb);
+        cb.mergeNext(done);
+      }
+      new ReturnBlock(result).addTo(cb);
+      MethodHandle mh =
+          cb.load("removeRangeVArray_" + StringUtil.id(this), null, Frame.class, Handle.lookup);
+      op = RcOp.forMethodHandle("removeRange" + this, mh).resultIsRcOut().argIsRcIn(1).build();
+      REMOVE_RANGE_OP.setRelease(this, op);
+      return op;
+    }
+  }
+
+  private CodeValue emitRemoveRangeFromElementArray(
+      CodeValue tstate,
+      CodeValue array,
+      int index,
+      CodeValue size,
+      CodeValue keepPrefix,
+      CodeValue removeSize,
+      CodeValue addSize,
+      CodeValue copy) {
+    Op op;
+    if (index < numVarIndexLimit()) {
+      op = TState.REMOVE_RANGE_BYTES_OP;
+      int shift = nvEncodings[index].nBytesLog2;
+      if (shift != 0) {
+        size = Op.SHIFT_LEFT_INT.result(size, CodeValue.of(shift));
+        keepPrefix = Op.SHIFT_LEFT_INT.result(keepPrefix, CodeValue.of(shift));
+        removeSize = Op.SHIFT_LEFT_INT.result(removeSize, CodeValue.of(shift));
+        addSize = Op.SHIFT_LEFT_INT.result(addSize, CodeValue.of(shift));
+      }
+    } else {
+      op = TState.REMOVE_RANGE_OBJS_OP;
+    }
+    return op.result(tstate, array, size, keepPrefix, removeSize, addSize, copy);
+  }
+
+  /**
+   * Copies elements from an array with this layout into an array with the same layout (possibly the
+   * same array).
+   *
+   * <p>This method is used to implement replaceElement and concatenation.
+   */
   @RC.Out
-  private Frame duplicate(TState tstate, Frame f, ElementMove mover) {
-    assert f.layout() == this;
-    Frame result = frameClass.alloc(tstate);
-    result.layoutOrReplacement = this;
-    frameClass.setI(result, LENGTH_FIELD_OFFSET, mover.newSize());
+  Value fastCopyRange(
+      TState tstate, @RC.In Value dst, Value dstStart, Value src, Value srcStart, Value count)
+      throws Err.BuiltinException {
+    assert dst.layout() == this && ((VArrayLayout) src.layout()).template.equals(template);
+    // We can treat src as an instance of this layout, even if it's a different layout with the
+    // same template.
+    if (tstate.hasCodeGen()) {
+      // first need to copy if shared, then just call emitCopyRange
+      CodeGen codeGen = tstate.codeGen();
+      CodeValue dstCV = codeGen.asCodeValue(dst);
+      Register unshared = emitEnsureUnsharedWithCheck(codeGen, dstCV);
+      copyRangeOp(true)
+          .block(
+              unshared,
+              codeGen.asCodeValue(dstStart),
+              codeGen.asCodeValue(src),
+              codeGen.asCodeValue(srcStart),
+              codeGen.asCodeValue(count))
+          .addTo(codeGen.cb);
+      return (unshared == dstCV) ? dst : CodeGen.asValue(unshared, this);
+    }
+    Frame dstFrame = (Frame) dst;
+    if (!dstFrame.isNotShared()) {
+      tstate.reserve(sizeOf(numElements(dstFrame)));
+      dstFrame = duplicate(tstate, dstFrame);
+      tstate.dropValue(dstFrame);
+    }
+    Frame srcFrame = (Frame) src;
+    assert frameClass.javaClass.isInstance(srcFrame);
+    int iDstStart = NumValue.asInt(dstStart);
+    int iSrcStart = NumValue.asInt(srcStart);
+    int iCount = NumValue.asInt(count);
+    Op op = copyRangeOp(false);
+    if (op != null) {
+      try {
+        op.mh.invokeExact(dstFrame, iDstStart, srcFrame, iSrcStart, iCount);
+      } catch (Throwable e) {
+        throw new AssertionError(e);
+      }
+      return dstFrame;
+    }
     int start = firstElementArray();
     for (int i = start; i < nPtrs; i++) {
-      frameClass.setX(
-          result, i, duplicateElementArray(tstate, i - start, frameClass.getX(f, i), mover));
+      Object dstArray = frameClass.getX(dstFrame, i);
+      Object srcArray = frameClass.getX(srcFrame, i);
+      copyRangeFromElementArray(i - start, dstArray, iDstStart, srcArray, iSrcStart, iCount);
     }
     if (overflowSize != 0) {
-      Object[] newOverflow = tstate.allocObjectArray(overflowSize);
-      frameClass.setX(result, OVERFLOW_FIELD, newOverflow);
-      Object[] fOverflow = (Object[]) frameClass.getX(f, OVERFLOW_FIELD);
+      Object[] dstOverflow = (Object[]) frameClass.getX(dstFrame, OVERFLOW_FIELD);
+      Object[] srcOverflow = (Object[]) frameClass.getX(srcFrame, OVERFLOW_FIELD);
       for (int i = 0; i < overflowSize; i++) {
-        newOverflow[i] = duplicateElementArray(tstate, i + nPtrs - 1, fOverflow[i], mover);
+        Object dstArray = dstOverflow[i];
+        Object srcArray = srcOverflow[i];
+        copyRangeFromElementArray(i + nPtrs - 1, dstArray, iDstStart, srcArray, iSrcStart, iCount);
       }
     }
-    return result;
+    return dstFrame;
+  }
+
+  private void copyRangeFromElementArray(
+      int index, Object dstArray, int dstStart, Object srcArray, int srcStart, int count) {
+    if (index < numVarIndexLimit()) {
+      int bytesPerElementLog2 = nvEncodings[index].nBytesLog2;
+      assert dstArray instanceof byte[] && srcArray instanceof byte[];
+      System.arraycopy(
+          srcArray,
+          srcStart << bytesPerElementLog2,
+          dstArray,
+          dstStart << bytesPerElementLog2,
+          count << bytesPerElementLog2);
+    } else {
+      MemoryHelper.copyRange((Object[]) dstArray, dstStart, (Object[]) srcArray, srcStart, count);
+    }
+  }
+
+  void emitCopyRange(
+      CodeGen codeGen,
+      VArrayLayout srcLayout,
+      CodeValue dst,
+      CodeValue dstStart,
+      CodeValue src,
+      CodeValue srcStart,
+      CodeValue count) {
+    if (srcLayout.template.equals(template)) {
+      copyRangeOp(true).block(dst, dstStart, src, srcStart, count).addTo(codeGen.cb);
+      return;
+    }
+    CopyPlan plan = CopyPlan.create(srcLayout.template, template);
+    if (plan.steps == null) {
+      codeGen.escape();
+      return;
+    }
+    plan = CopyOptimizer.optimize(plan, this, CopyOptimizer.Policy.NO_CONFLICTS);
+    // first pass: everything except COPY_REF, FRAME_TO_COMPOUND, COMPOUND_TO_FRAME, and Switch
+    for (CopyPlan.Step step : plan.steps) {
+      if (step instanceof CopyPlan.Basic basic) {
+        switch (basic.type) {
+          case COPY_NUM:
+            NumVar srcVar = (NumVar) basic.src;
+            NumVar dstVar = (NumVar) basic.dst;
+            CodeValue srcArray = elementArray(src, srcVar);
+            CodeValue dstArray = elementArray(dst, dstVar);
+            if (dstVar.encoding == srcVar.encoding) {
+              emitCopyRangeFromElementArray(
+                  codeGen.cb, dstVar.encoding, dstArray, dstStart, srcArray, srcStart, count);
+            } else {
+              throw new UnsupportedOperationException();
+            }
+            break;
+          case COPY_REF:
+          case SET_NUM:
+          case SET_REF:
+          case VERIFY_NUM:
+          case VERIFY_REF:
+          case VERIFY_REF_TYPE:
+          case FRAME_TO_COMPOUND:
+          case COMPOUND_TO_FRAME:
+            throw new UnsupportedOperationException();
+        }
+      }
+    }
+  }
+
+  private Op copyRangeOp(boolean build) {
+    Op op = (Op) COPY_RANGE_OP.getAcquire(this);
+    if (op != null || !build) {
+      return op;
+    }
+    // See comment in allocOp() about this synchronization.
+    synchronized (this) {
+      if (this.copyRangeOp != null) {
+        return this.copyRangeOp;
+      }
+      CodeBuilder cb = CodeGen.newCodeBuilder();
+      Register dst = cb.newArg(Frame.class);
+      Register dstStart = cb.newArg(int.class);
+      Register src = cb.newArg(Frame.class);
+      Register srcStart = cb.newArg(int.class);
+      Register count = cb.newArg(int.class);
+      int start = firstElementArray();
+      for (int i = start; i < nPtrs; i++) {
+        CodeValue srcArray = frameClass.getPtrField.get(i).result(src);
+        CodeValue dstArray = frameClass.getPtrField.get(i).result(dst);
+        emitCopyRangeFromElementArray(cb, i - start, dstArray, dstStart, srcArray, srcStart, count);
+      }
+      if (overflowSize != 0) {
+        Register srcOverflow = cb.newRegister(Object[].class);
+        new SetBlock(srcOverflow, frameClass.getPtrField.get(OVERFLOW_FIELD).result(src)).addTo(cb);
+        Register dstOverflow = cb.newRegister(Object[].class);
+        new SetBlock(dstOverflow, frameClass.getPtrField.get(OVERFLOW_FIELD).result(dst)).addTo(cb);
+        for (int i = 0; i < overflowSize; i++) {
+          CodeValue srcArray = Op.OBJ_ARRAY_ELEMENT.result(srcOverflow, CodeValue.of(i));
+          CodeValue dstArray = Op.OBJ_ARRAY_ELEMENT.result(dstOverflow, CodeValue.of(i));
+          emitCopyRangeFromElementArray(
+              cb, i + nPtrs - 1, dstArray, dstStart, srcArray, srcStart, count);
+        }
+      }
+      new ReturnBlock(null).addTo(cb);
+      MethodHandle mh =
+          cb.load("copyVArray_" + StringUtil.id(this), null, void.class, Handle.lookup);
+      op = Op.forMethodHandle("copy" + this, mh).build();
+      COPY_RANGE_OP.setRelease(this, op);
+      return op;
+    }
+  }
+
+  private static final Op SYSTEM_ARRAY_COPY_OP =
+      Op.forMethod(
+              System.class,
+              "arraycopy",
+              Object.class,
+              int.class,
+              Object.class,
+              int.class,
+              int.class)
+          .build();
+
+  private void emitCopyRangeFromElementArray(
+      CodeBuilder cb,
+      int index,
+      CodeValue dstArray,
+      CodeValue dstStart,
+      CodeValue srcArray,
+      CodeValue srcStart,
+      CodeValue count) {
+    if (index < numVarIndexLimit()) {
+      emitCopyRangeFromElementArray(
+          cb, nvEncodings[index], dstArray, dstStart, srcArray, srcStart, count);
+    } else {
+      TState.COPY_RANGE_OP.block(dstArray, dstStart, srcArray, srcStart, count).addTo(cb);
+    }
+  }
+
+  private static void emitCopyRangeFromElementArray(
+      CodeBuilder cb,
+      NumEncoding encoding,
+      CodeValue dstArray,
+      CodeValue dstStart,
+      CodeValue srcArray,
+      CodeValue srcStart,
+      CodeValue count) {
+    int shift = encoding.nBytesLog2;
+    if (shift != 0) {
+      dstStart = Op.SHIFT_LEFT_INT.result(dstStart, CodeValue.of(shift));
+      srcStart = Op.SHIFT_LEFT_INT.result(srcStart, CodeValue.of(shift));
+      count = Op.SHIFT_LEFT_INT.result(count, CodeValue.of(shift));
+    }
+    SYSTEM_ARRAY_COPY_OP.block(srcArray, srcStart, dstArray, dstStart, count).addTo(cb);
   }
 
   @Override
@@ -521,12 +954,19 @@ class VArrayLayout extends FrameLayout {
 
   private static final ValueInfo NON_NEGATIVE_INT = ValueInfo.IntRange.of(0, Integer.MAX_VALUE);
 
+  private void setNumElements(Frame f, int size) {
+    frameClass.setI(f, LENGTH_FIELD_OFFSET, size);
+  }
+
   @Override
   void clearElement(TState tstate, Frame f, int index) {
     clearElements(tstate, f, index, index + 1);
   }
 
-  private void clearElements(TState tstate, Frame f, int start, int end) {
+  void clearElements(TState tstate, Frame f, int start, int end) {
+    if (numRV == 0) {
+      return;
+    }
     int firstPtrElement = firstElementArray() + numVarIndexLimit();
     for (int i = firstPtrElement; i < nPtrs; i++) {
       Object[] elementArray = (Object[]) frameClass.getX(f, i);
@@ -648,7 +1088,7 @@ class VArrayLayout extends FrameLayout {
 
           @Override
           public void setI(int index, int value) {
-            // TODO(mdixon): maybe optimize this?
+            // TODO: maybe optimize this?
             byte[] bytes = (byte[]) getElementArray(f, index);
             for (int i = start; i < end; i++) {
               ArrayUtil.bytesSetI(bytes, i, value);
@@ -657,7 +1097,7 @@ class VArrayLayout extends FrameLayout {
 
           @Override
           public void setD(int index, double value) {
-            // TODO(mdixon): maybe optimize this?
+            // TODO: maybe optimize this?
             byte[] bytes = (byte[]) getElementArray(f, index);
             for (int i = start; i < end; i++) {
               ArrayUtil.bytesSetD(bytes, i, value);
@@ -692,6 +1132,36 @@ class VArrayLayout extends FrameLayout {
         return codeValue(t, frame, index);
       }
     };
+  }
+
+  /**
+   * Set all elements of {@code f} with indices between {@code start} and {@code end} to {@code
+   * newElement}
+   */
+  public void emitSetElements(
+      CodeGen codeGen, CodeValue f, CodeValue start, CodeValue end, Template newElement) {
+    CopyEmitter emitter =
+        new CopyEmitter() {
+          @Override
+          void setDstVar(CodeGen codeGen, Template t, CodeValue v) {
+            Op op;
+            if (t instanceof NumVar nv) {
+              op =
+                  switch (nv.encoding) {
+                    case UINT8 -> CodeGen.BYTES_FILL_B;
+                    case INT32 -> CodeGen.BYTES_FILL_I;
+                    case FLOAT64 -> CodeGen.BYTES_FILL_D;
+                    default -> throw new AssertionError();
+                  };
+            } else {
+              op = TState.FILL_ARRAY_ELEMENTS_OP;
+            }
+            op.block(elementArray(f, t), start, end, v).addTo(codeGen.cb);
+          }
+        };
+    CopyPlan plan = CopyPlan.create(newElement, template);
+    plan = CopyOptimizer.optimize(plan, this, CopyOptimizer.Policy.UNANIMOUS_PROMOTION_ONLY);
+    emitter.emit(codeGen, plan, codeGen.escapeLink());
   }
 
   /**
@@ -769,98 +1239,26 @@ class VArrayLayout extends FrameLayout {
     return template.peekValue(asVarSource(f, i));
   }
 
-  @Override
-  void reserveForChangeOrThrow(TState tstate, Frame f, int newSize, boolean isShared)
-      throws Err.BuiltinException {
-    long reservation;
-    if (!isShared && f.isNotShared()) {
-      int size = numElements(f);
-      if (size <= newSize) {
-        return;
-      }
-      reservation = (newSize - size) * perElementSize;
-      // The actual requirement may be less (e.g. we may not need any additional allocations if the
-      // element arrays are already big enough) or more (because we round array sizes up).  For
-      // large sizes (the only ones we care about) it will be at most 25% more than our calculation
-      // (see {@link MemoryHelper#chooseCapacity}), so let's be pessimistic (we risk getting a
-      // premature OOM when you're close to the limit and try to do a large allocation).
-      reservation += reservation / 4;
-    } else {
-      reservation = sizeOf(newSize);
-    }
-    tstate.reserve(reservation);
-  }
-
   /**
-   * Moves elements in the given element array as specified by {@code mover}. The move will be done
-   * in place (returning {@code src}) if possible, but if the resulting array is bigger than {@code
-   * src} or much smaller than it (so that we'd be wasting too much memory) we'll allocate a new
-   * array, copy the desired values, and then release {@code src}.
+   * Returns the number of bytes that should be reserved for an update to {@code f} that will change
+   * its size to {@code newSize}.
    */
-  @RC.Out
-  private Object updateElementArray(
-      TState tstate, int index, @RC.In Object src, ElementMove mover) {
-    if (index < numVarIndexLimit()) {
-      int bytesPerElementLog2 = nvEncodings[index].nBytesLog2;
-      int dstByteSize = mover.newSize() << bytesPerElementLog2;
-      byte[] srcBytes = (byte[]) src;
-      if (MemoryHelper.isOkForSize(srcBytes, dstByteSize)) {
-        mover.updateBytes(srcBytes, bytesPerElementLog2);
-        return srcBytes;
-      }
-      byte[] result = tstate.allocByteArray(dstByteSize);
-      assert result.length != srcBytes.length;
-      mover.copyBytes(srcBytes, result, bytesPerElementLog2);
-      tstate.dropReference(srcBytes);
-      return result;
-    } else {
-      Object[] srcValues = (Object[]) src;
-      if (MemoryHelper.isOkForSize(srcValues, mover.newSize())) {
-        mover.updateValues(tstate, srcValues);
-        return srcValues;
-      }
-      Object[] result = tstate.allocObjectArray(mover.newSize());
-      assert result.length != srcValues.length;
-      mover.copyValues(srcValues, result, true);
-      tstate.dropReference(srcValues);
-      return result;
+  long reservationForChange(Frame f, int newSize) {
+    if (f == null || !f.isNotShared()) {
+      return sizeOf(newSize);
     }
-  }
-
-  @Override
-  @RC.Out
-  Value removeRange(
-      TState tstate, @RC.In Frame f, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
     int size = numElements(f);
-    assert keepPrefix >= 0
-        && moveLen >= 0
-        && moveFrom >= keepPrefix
-        && moveTo >= keepPrefix
-        && moveFrom + moveLen <= size;
-    if (keepPrefix == 0 && moveLen == 0) {
-      // No elements are being kept
-      tstate.dropReference(f);
-      return alloc(tstate, moveTo);
+    if (size >= newSize) {
+      return 0;
     }
-    ElementMove mover = new ElementMove(size, keepPrefix, moveFrom, moveTo, moveLen);
-    if (!f.isNotShared()) {
-      Frame result = duplicate(tstate, f, mover);
-      tstate.dropReference(f);
-      return result;
-    } else {
-      frameClass.setI(f, LENGTH_FIELD_OFFSET, mover.newSize());
-      int start = firstElementArray();
-      for (int i = start; i < nPtrs; i++) {
-        frameClass.setX(f, i, updateElementArray(tstate, i - start, frameClass.getX(f, i), mover));
-      }
-      if (overflowSize != 0) {
-        Object[] fOverflow = (Object[]) frameClass.getX(f, OVERFLOW_FIELD);
-        for (int i = 0; i < overflowSize; i++) {
-          fOverflow[i] = updateElementArray(tstate, i + nPtrs - 1, fOverflow[i], mover);
-        }
-      }
-      return f;
-    }
+    long result = Math.max(newSize * (long) maxVarSize, (newSize - size) * perElementSize);
+    // The actual requirement may be less (e.g. we may not need any additional allocations if the
+    // element arrays are already big enough) or more (because we round array sizes up).  For
+    // large sizes (the only ones we care about) it will be at most 25% more than our calculation
+    // (see {@link MemoryHelper#chooseCapacity}), so let's be pessimistic (we risk getting a
+    // premature OOM when you're close to the limit and try to do a large allocation).
+    result += result / 4;
+    return result;
   }
 
   @Override

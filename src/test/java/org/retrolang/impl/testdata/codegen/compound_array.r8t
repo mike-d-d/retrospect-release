@@ -50,5 +50,5 @@ sumSqDistance_0([d1, d2], [i3⸨0:[-1, -1]; 1:Absent⸩, i4⸨0:[-1, 0]; 1:Absen
  33: D10 ← dAdd(D10, dAdd(dMul(D15, D15), dMul(D13, D13))); → 11
 -34: I13 ← 1; → 29
 ---
-allocated=11576/434, peak=96
+allocated=11480/430, peak=96
 */

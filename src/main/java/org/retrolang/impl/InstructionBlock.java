@@ -296,11 +296,12 @@ class InstructionBlock implements MethodImpl {
         // Don't generate code for unreachable instructions
         continue;
       }
+      Value stackEntry =
+          instruction.stackEntryType().newStackEntry(codeGen.tstate(), emitState.locals);
+      codeGen.setCurrentInstruction(stackEntry);
       if (codeGen.needNewEscape() && instruction.couldEscape()) {
-        codeGen.setNewEscape(
-            instruction.stackEntryType().newStackEntry(codeGen.tstate(), emitState.locals));
+        codeGen.setNewEscape(stackEntry);
       }
-      codeGen.setCurrentInstruction(instruction);
       instruction.emit(codeGen, emitState);
     }
   }

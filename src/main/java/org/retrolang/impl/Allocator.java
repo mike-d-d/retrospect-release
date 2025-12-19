@@ -55,6 +55,9 @@ public interface Allocator {
    */
   void adjustAlloc(RefCounted obj, long sizeDelta);
 
+  /** Records true if objects returned created with this allocator are counted. */
+  boolean isCounted();
+
   static final byte[] EMPTY_BYTES = new byte[0];
   static final Object[] EMPTY_OBJECTS = new Object[0];
 
@@ -88,6 +91,11 @@ public interface Allocator {
 
       @Override
       public void adjustAlloc(RefCounted obj, long sizeDelta) {}
+
+      @Override
+      public boolean isCounted() {
+        return false;
+      }
     };
   }
 

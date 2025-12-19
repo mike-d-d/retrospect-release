@@ -23,9 +23,9 @@ import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 import org.retrolang.Vm;
+import org.retrolang.code.FutureBlock;
 import org.retrolang.impl.BaseType.SimpleStackEntryType;
 import org.retrolang.impl.Err.BuiltinException;
 import org.retrolang.util.Bits;
@@ -348,32 +348,66 @@ public abstract class VmFunction implements Vm.Function {
 
     @Override
     void emitCall(CodeGen codeGen, MethodMemo callerMemo, CallSite callSite, Object[] args) {
-      // This is an incomplete version that (a) only handles calls that have resolved to a single
-      // method, and (b) doesn't properly verify that no other method is applicable.
-
-      // We don't need atomicity here, just an easy way to save something from inside the
-      // forEachChild call.
-      AtomicReference<MethodMemo> onlyMethod = new AtomicReference<>();
+      MethodCollector matches = new MethodCollector();
+      // First get the methods that we have memos for, i.e. that have been chosen at least once by
+      // this CallMemo
       synchronized (codeGen.tstate().scope().memoMerger) {
         CallMemo callMemo = callerMemo.memoForCall(callSite);
         if (callMemo != null) {
-          callMemo.forEachChild(
-              (mm, count) -> {
-                assert onlyMethod.getPlain() == null;
-                onlyMethod.setPlain(mm);
-              });
+          callMemo.forEachChild(matches::addFromCallMemo);
         }
       }
-      MethodMemo mm = onlyMethod.getPlain();
-      if (mm == null) {
-        codeGen.escape();
-        return;
+      // Then find any other methods that could potentially match these args; we won't generate
+      // code for them, but we have to verify that they don't match (and escape if they do).
+      // Note that these will always be inserted after the methods with memos (while keeping all the
+      // preferred methods before all the default methods).
+      matches.addMatching(methods, args);
+      if (argKeys != null) {
+        matches.addFromArgKeys(argKeys, args);
       }
-      VmMethod method = mm.perMethod.method;
-      // TODO: test method predicate
-      if (codeGen.cb.nextIsReachable()) {
-        codeGen.emitMethodCall(method.impl, mm, args);
+      // Any methods added from the CallMemo should also have been found in the second step, and had
+      // their Condition filled in.
+      assert matches.stream().allMatch(mm -> mm.condition != null);
+      // Now emit instructions to identify and invoke the correct method for these args
+      CodeGen.EscapeState savedEscape = codeGen.escapeState();
+      for (int i = 0; i < matches.size(); i++) {
+        if (!codeGen.cb.nextIsReachable()) {
+          // All possible arg values have been handled, so there's nothing left to do
+          return;
+        }
+        MatchingMethod mm = matches.get(i);
+        if (mm.memo == null) {
+          int next = matches.nextWithMemo(i);
+          if (next < 0) {
+            // None of the remaining methods have memos, so if we get here we should just escape
+            break;
+          }
+          // There are preferred methods without memos, but at least one default method with a
+          // memo.  We need to verify that none of the preferred methods match before considering
+          // a default method.
+          assert !mm.method.isDefault && matches.get(next).method.isDefault;
+          matches.escapeIfAnyMatch(codeGen, false, i);
+          // Jump to the start of the default methods (-1 because the loop will increment it)
+          i = next - 1;
+          continue;
+        }
+        FutureBlock tryNext = new FutureBlock();
+        mm.condition.addTest(codeGen, tryNext);
+        // This method matched, but we also need to ensure that no other method (with the same
+        // preferred/default status) does
+        matches.escapeIfAnyMatch(codeGen, mm.method.isDefault, i + 1);
+        // Now we can actually emit the method body
+        if (codeGen.cb.nextIsReachable()) {
+          codeGen.emitMethodCall(mm.method.impl, mm.memo, args);
+        }
+        // That will have either branched to the callDone link or escaped, so we're ready to
+        // consider the next method.
+        codeGen.cb.setNext(tryNext);
+        codeGen.restore(savedEscape);
       }
+      // If none of the previously-executed methods matched, it might be because we need to try
+      // a new method or it might just be an error.  The interpreter will sort it out.
+      codeGen.escape();
     }
 
     /** Add a method to this function. Only called while building this function's module. */
@@ -440,6 +474,171 @@ public abstract class VmFunction implements Vm.Function {
         restriction.type.addMethod(argKey(restriction.argIndex), method);
       }
       return true;
+    }
+  }
+
+  /** Information about a method that might match at a CallSite for which we are generating code. */
+  static class MatchingMethod {
+    final VmMethod method;
+    final MethodMemo memo;
+
+    /** The number of calls we've seen to this method at this site, as recorded in the CallMemo. */
+    final int count;
+
+    /** This method is only applicable if {@code condition} is true. */
+    Condition condition;
+
+    MatchingMethod(VmMethod method, MethodMemo memo, int count) {
+      // condition will be set later
+      this.method = method;
+      this.memo = memo;
+      this.count = count;
+    }
+  }
+
+  /**
+   * A list of MatchingMethods with non-FALSE conditions, sorted first by preferred before default,
+   * and then by count.
+   */
+  static class MethodCollector extends ArrayList<MatchingMethod> {
+    /**
+     * The first {@code numPreferred} elements are preferred (i.e. not default) methods; the rest
+     * are default methods. Within each group methods are sorted by count (decreasing).
+     */
+    int numPreferred;
+
+    /** Creates and inserts a new MatchingMethod. We'll fill in the Condition later. */
+    void addFromCallMemo(MethodMemo memo, int count) {
+      VmMethod method = memo.perMethod.method;
+      MatchingMethod mm = new MatchingMethod(method, memo, count);
+      // Entries in [start, pos) have the same isDefault status as this method
+      int pos;
+      int start;
+      if (method.isDefault) {
+        start = numPreferred;
+        pos = size();
+      } else {
+        start = 0;
+        pos = numPreferred++;
+      }
+      // Scan from the back of the list until we find the right place to insert it.
+      while (pos > start && get(pos - 1).count < count) {
+        --pos;
+      }
+      add(pos, mm);
+    }
+
+    /**
+     * Ensure that we have a complete MatchingMethod (i.e. including {@link
+     * MatchingMethod#condition}) for each entry in {@code methods} that could match the given args.
+     */
+    void addMatching(List<VmMethod> methods, Object[] args) {
+      if (methods != null) {
+        for (VmMethod method : methods) {
+          Condition condition = method.predicate.test(args);
+          if (condition != Condition.FALSE) {
+            MatchingMethod mm = findOrInsert(method);
+            // It's possible that we'll set the condition more than once (due to ArgKeys), but
+            // we should construct the same Condition each time.
+            mm.condition = condition;
+          }
+        }
+      }
+    }
+
+    /**
+     * If there is already a MatchingMethod for the given method, return it; otherwise create a new
+     * one (with null MethodMemo and zero count).
+     */
+    private MatchingMethod findOrInsert(VmMethod method) {
+      // We could just search the subrange before or after numPreferred based on method.isDefault,
+      // but my guess is that wouldn't actually be faster.
+      for (MatchingMethod mm : this) {
+        if (mm.method == method) {
+          return mm;
+        }
+      }
+      MatchingMethod mm = new MatchingMethod(method, null, 0);
+      // Since count is zero it's easy to insert this in the right place.
+      if (method.isDefault) {
+        add(mm);
+      } else {
+        add(numPreferred++, mm);
+      }
+      return mm;
+    }
+
+    /**
+     * Ensure that we have complete MatchingMethods for all the methods reachable from these ArgKeys
+     * for these args.
+     */
+    void addFromArgKeys(ArgKey[] argKeys, Object[] args) {
+      for (int i = 0; i < argKeys.length; i++) {
+        ArgKey argKey = argKeys[i];
+        if (argKey == null) {
+          continue;
+        }
+        // Check if there are any methods associated with this arg's type.
+        Value arg = (Value) args[i];
+        if (!(arg instanceof RValue)) {
+          // The arg is constant, so we know its type.
+          addFromArgType(argKey, arg.baseType(), args);
+        } else {
+          Template template = ((RValue) arg).template;
+          if (!(template instanceof Template.Union union)) {
+            // The arg is not a constant, but we still know its type.
+            addFromArgType(argKey, template.baseType(), args);
+          } else {
+            // The arg is a union, so we don't know its type, but we can enumerate the possibilities
+            // and check them all.
+            int nChoices = union.numChoices();
+            for (int c = 0; c < nChoices; c++) {
+              addFromArgType(argKey, union.choice(c).baseType(), args);
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     * Given an ArgKey and the BaseType of the corresponding arg, find all associated methods and
+     * ensure that we have a complete MatchingMethod for each of them.
+     */
+    private void addFromArgType(ArgKey argKey, BaseType baseType, Object[] args) {
+      VmType argType = baseType.vmType();
+      addMatching(argType.getMethods(argKey), args);
+      for (VmType superType : argType.superTypes.asSet) {
+        addMatching(superType.getMethods(argKey), args);
+      }
+    }
+
+    /**
+     * Given the index of MatchingMethod with no memo, returns the index of the next MatchingMethod
+     * that does have a memo, or -1 if there is none.
+     */
+    int nextWithMemo(int i) {
+      assert get(i).memo == null;
+      // Because our list was constructed to have MatchingMethods with memos before those without,
+      // the only way there can be a MatchingMethod with a memo following one without is if we
+      // were given the index of a preferred MatchingMethod, and there are default MatchingMethods
+      // with memos (in which case the first default MatchingMethod is the one we want).
+      int result = -1;
+      if (i < numPreferred && numPreferred < size() && get(numPreferred).memo != null) {
+        result = numPreferred;
+      }
+      assert subList(i + 1, result < 0 ? size() : result).stream().allMatch(mm -> mm.memo == null);
+      return result;
+    }
+
+    /**
+     * Given the index of a MatchingMethod, emit instructions to escape if any of the methods with
+     * index >= and the specified preferred/default status have true Conditions.
+     */
+    void escapeIfAnyMatch(CodeGen codeGen, boolean isDefault, int start) {
+      int end = isDefault ? size() : numPreferred;
+      for (int i = start; i < end; i++) {
+        codeGen.escapeUnless(get(i).condition.not());
+      }
     }
   }
 }

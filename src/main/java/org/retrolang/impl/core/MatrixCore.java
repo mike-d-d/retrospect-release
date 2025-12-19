@@ -20,6 +20,8 @@ import static org.retrolang.impl.Value.addRef;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
+import org.retrolang.code.CodeValue;
+import org.retrolang.code.Register;
 import org.retrolang.impl.*;
 import org.retrolang.impl.BuiltinMethod.Caller;
 import org.retrolang.impl.BuiltinMethod.Fn;
@@ -113,7 +115,7 @@ public final class MatrixCore {
   /**
    * {@code private compound BaseMatrix is Matrix}
    *
-   * <p>Element is array of sizes.
+   * <p>Element is an array of sizes; all elements are integers greater than zero.
    *
    * <p>A BaseMatrix is returned by {@code matrix(sizes)}; its values are the same as its keys.
    */
@@ -225,63 +227,46 @@ public final class MatrixCore {
 
     @Continuation
     static Value afterSizes(TState tstate, Value sizes) throws BuiltinException {
-      return sizeFromSizes(tstate, sizes, Err.INVALID_SIZES);
+      return ValueUtil.sizeFromSizes(tstate, sizes, Err.INVALID_SIZES);
     }
   }
 
-  /**
-   * If {@code sizes} is an Array of non-negative integers and their product is an int, returns it;
-   * otherwise throws the specified error.
-   */
-  @RC.Out
-  private static Value sizeFromSizes(TState tstate, Value sizes, Err err) throws BuiltinException {
-    err.unless(sizes.isa(Core.ARRAY));
-    int nDims = sizes.numElements();
-    // If iProduct is negative, we overflowed and are using dProduct
-    int result = 1;
-    for (int i = 0; i < nDims; i++) {
-      int si = sizes.elementAsIntOrMinusOne(i);
-      err.unless(si >= 0);
-      try {
-        result = Math.multiplyExact(result, si);
-      } catch (ArithmeticException e) {
-        throw err.asException();
-      }
-    }
-    return NumValue.of(result, tstate);
+  /** {@code method size(m) (m is Reshaped or m is ReshapedArray) = size(m_.elements)} */
+  @Core.Method("size(Reshaped|ReshapedArray)")
+  static void sizeReshaped(TState tstate, Value m, @Fn("size:1") Caller size) {
+    tstate.startCall(size, m.element(1));
   }
 
   /**
    * <pre>
    * method matrix(Array sizes) {
    *   assert sizes | -&gt; # is Integer and # &gt;= 0 | allTrue
-   *   return BaseMatrix_(sizes)
+   *   if sizes | -&gt; # == 0 | anyTrue {
+   *     return size(sizes) == 1 ? [] : ReshapedArray_({sizes, elements: []})
+   *   } else {
+   *     return BaseMatrix_(sizes)
+   *   }
    * }
    * </pre>
    */
   @Core.Method("matrix(Array)")
-  static Value matrix1(TState tstate, @RC.In Value sizes) throws BuiltinException {
-    int nDims = sizes.numElements();
-    // sizes may contain NumValue.Ds, as long as they are actually integers.
-    // For simplicity we only construct BaseMatrix values with sizes that are NumValue.I, so if
-    // there were any Ds here we need to notice and construct a new copy without them.
-    boolean allInt = true;
-    for (int i = 0; i < nDims; i++) {
-      Value s = sizes.peekElement(i);
-      Err.INVALID_ARGUMENT.unless(NumValue.isNonNegativeInt(s));
-      if (!(s instanceof NumValue.I)) {
-        allInt = false;
-      }
-    }
-    if (!allInt) {
-      Object[] newSizes = tstate.allocObjectArray(nDims);
-      for (int i = 0; i < nDims; i++) {
-        newSizes[i] = NumValue.asInt(sizes.peekElement(i), tstate);
-      }
-      tstate.dropValue(sizes);
-      sizes = tstate.asArrayValue(newSizes, nDims);
-    }
-    return tstate.compound(BASE_MATRIX, sizes);
+  static void matrix1(TState tstate, @RC.In Value sizes) throws BuiltinException {
+    ValueUtil.checkSizes(sizes, Err.INVALID_ARGUMENT);
+    ValueUtil.containsZero(sizes)
+        .test(
+            () -> setResultToEmptyMatrix(tstate, sizes),
+            () -> tstate.setResult(tstate.compound(BASE_MATRIX, sizes)));
+  }
+
+  private static void setResultToEmptyMatrix(TState tstate, @RC.In Value sizes) {
+    sizes
+        .isArrayOfLength(1)
+        .test(
+            () -> {
+              tstate.dropValue(sizes);
+              tstate.setResult(Core.EMPTY_ARRAY);
+            },
+            () -> tstate.setResult(tstate.compound(RESHAPED_ARRAY, sizes, Core.EMPTY_ARRAY)));
   }
 
   /**
@@ -308,7 +293,7 @@ public final class MatrixCore {
     @Core.Method("matrix(Array, Matrix)")
     static void begin(TState tstate, @RC.In Value newSizes, @RC.In Value base)
         throws BuiltinException {
-      Value newSize = sizeFromSizes(tstate, newSizes, Err.INVALID_ARGUMENT);
+      Value newSize = ValueUtil.sizeFromSizes(tstate, newSizes, Err.INVALID_ARGUMENT);
       base.isa(RESHAPED)
           .test(
               () -> {
@@ -328,25 +313,24 @@ public final class MatrixCore {
         @RC.In Value newSizes,
         @RC.In Value base)
         throws BuiltinException {
-      Value baseSize = sizeFromSizes(tstate, baseSizes, Err.INVALID_SIZES);
-      boolean sizeMatches = NumValue.equals(baseSize, NumValue.asInt(newSize));
-      // Drop the reference that sizeFromSizes() added to its result before we potentially
-      // throw an exception.
-      tstate.dropValue(baseSize);
-      // sizeMatches is true if the reshaped Matrix has the right number of elements
-      Err.INVALID_ARGUMENT.unless(sizeMatches);
-      int nDims = newSizes.numElements();
-      if (baseSizes.numElements() == nDims
-          && IntStream.range(0, nDims)
-              .allMatch(i -> baseSizes.elementAsInt(i) == newSizes.elementAsInt(i))) {
-        // Reshape to the same sizes is a no-op.
-        tstate.dropValue(newSizes);
-        return base;
-      }
-      return base.isa(Core.ARRAY)
-          .choose(
-              () -> tstate.compound(RESHAPED_ARRAY, newSizes, base),
-              () -> tstate.compound(RESHAPED, newSizes, base));
+      return Condition.equal(baseSizes, newSizes)
+          .chooseExcept(
+              () -> {
+                // Reshape to the same sizes is a no-op.
+                tstate.dropValue(newSizes);
+                return base;
+              },
+              () -> {
+                // The Matrix to be reshaped must have the right number of elements
+                Value baseSize = ValueUtil.sizeFromSizes(tstate, baseSizes, Err.INVALID_ARGUMENT);
+                Condition sizeMatches = Condition.numericEq(baseSize, newSize);
+                tstate.dropValue(baseSize);
+                Err.INVALID_ARGUMENT.unless(sizeMatches);
+                return base.isa(Core.ARRAY)
+                    .choose(
+                        () -> tstate.compound(RESHAPED_ARRAY, newSizes, base),
+                        () -> tstate.compound(RESHAPED, newSizes, base));
+              });
     }
   }
 
@@ -417,7 +401,7 @@ public final class MatrixCore {
    *   if not isSubset {
    *     return m
    *   } else if isEmpty {
-   *     return BaseMatrix_(newSizes)
+   *     return size(newSizes) == 1 ? [] : ReshapedArray_({sizes: newSizes, elements: []})
    *   } else {
    *     return SubMatrix_({matrix: m, baseKey, axes, sizes: newSizes})
    *   }
@@ -426,7 +410,7 @@ public final class MatrixCore {
    *
    * Checks that {@code key} is an array of the appropriate length and that each {@code key[i]} is
    * either an integer in {@code 1..sizes()[i]} or a subbrange of that range. Returns an appropriate
-   * SubMatrix (or BaseMatrix, if the result is empty).
+   * SubMatrix (or empty matrix).
    */
   static class SubMatrix extends BuiltinMethod {
     static final Caller sizes = new Caller("sizes:1", "afterSizes");
@@ -439,7 +423,7 @@ public final class MatrixCore {
     @Continuation
     static void afterSizes(TState tstate, Value sizes, @Saved Value m, Value key)
         throws BuiltinException {
-      ValueUtil.checkSizes(tstate, sizes);
+      ValueUtil.checkSizes(sizes, Err.INVALID_SIZES);
       int nDims = sizes.numElements();
       Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(nDims));
       int numRanges =
@@ -529,7 +513,9 @@ public final class MatrixCore {
                         } else {
                           tstate.setResult(
                               tstate.compound(
-                                  BASE_MATRIX, tstate.asArrayValue(newSizes, numRanges)));
+                                  RESHAPED_ARRAY,
+                                  tstate.asArrayValue(newSizes, numRanges),
+                                  Core.EMPTY_ARRAY));
                         }
                       },
                       () ->
@@ -576,23 +562,44 @@ public final class MatrixCore {
     }
 
     @Continuation
-    static Value afterSizes(TState tstate, @RC.In Value sizes) throws BuiltinException {
-      return matrix1(tstate, sizes);
+    static void afterSizes(TState tstate, @RC.In Value sizes) throws BuiltinException {
+      matrix1(tstate, sizes);
     }
   }
 
   /** {@code method new(BaseMatrix base, initialValue) = newMatrix(sizes(base), initialValue)} */
   @Core.Method("new(BaseMatrix, _)")
-  static Value newBaseMatrix(TState tstate, ResultsInfo results, Value baseMatrix, Value initial)
+  static void newBaseMatrix(TState tstate, ResultsInfo results, Value baseMatrix, Value initial)
       throws BuiltinException {
     Value sizes = baseMatrix.element(0);
     tstate.dropOnThrow(sizes);
-    return newMatrix(tstate, results, sizes, initial);
+    newMatrix(tstate, results, sizes, initial);
+  }
+
+  /**
+   * The key matrix of an empty multi-dimensional matrix is a reshaped []. No other ReshapedArray is
+   * a valid key matrix.
+   *
+   * <pre>
+   * method new(ReshapedArray empty, initialValue) {
+   *   assert size(empty_.elements) == 0
+   *   return empty
+   * }
+   * </pre>
+   */
+  @Core.Method("new(ReshapedArray, _)")
+  static Value newArray(TState tstate, @RC.In Value empty, Value initial) throws BuiltinException {
+    Err.INVALID_ARGUMENT.unless(empty.peekElement(1).isArrayOfLength(0));
+    return empty;
   }
 
   /** A TProperty for the layout of the Array element of a ReshapedArray result. */
   private static final TProperty<FrameLayout> RESHAPED_ARRAY_LAYOUT =
       TProperty.ARRAY_LAYOUT.elementOf(RESHAPED_ARRAY, 1);
+
+  /** A TProperty for the layout or base type of the Array element of a ReshapedArray result. */
+  private static final TProperty<Object> RESHAPED_ARRAY_LAYOUT_OR_BASE_TYPE =
+      TProperty.ARRAY_LAYOUT_OR_BASE_TYPE.elementOf(RESHAPED_ARRAY, 1);
 
   /**
    * newMatrix() results with more than this many elements will always be represented with a Frame.
@@ -601,19 +608,31 @@ public final class MatrixCore {
 
   /** {@code method newMatrix(Array sizes) = newMatrix(sizes, Absent)} */
   @Core.Method("newMatrix(Array)")
-  static Value newMatrix(TState tstate, ResultsInfo results, @RC.In Value sizes)
+  static void newMatrix(TState tstate, ResultsInfo results, @RC.In Value sizes)
       throws BuiltinException {
-    return newMatrix(tstate, results, sizes, Core.ABSENT);
+    newMatrix(tstate, results, sizes, Core.ABSENT);
   }
 
   /** {@code method newMatrix(Array sizes, initialValue) = ...} */
   @Core.Method("newMatrix(Array, _)")
-  static Value newMatrix(TState tstate, ResultsInfo results, @RC.In Value sizes, Value initial)
+  static void newMatrix(TState tstate, ResultsInfo results, @RC.In Value sizes, Value initial)
       throws BuiltinException {
-    Value size = sizeFromSizes(tstate, sizes, Err.INVALID_ARGUMENT);
+    Value size = ValueUtil.sizeFromSizes(tstate, sizes, Err.INVALID_ARGUMENT);
+    if (tstate.hasCodeGen()) {
+      sizes
+          .isArrayOfLength(1)
+          .testExcept(
+              () -> tstate.setResult(emitNewArray(tstate, results, size, initial, false)),
+              () -> {
+                Value array = emitNewArray(tstate, results, size, initial, true);
+                tstate.setResult(tstate.compound(RESHAPED_ARRAY, sizes, array));
+              });
+      return;
+    }
     int iSize = NumValue.asInt(size);
+    assert iSize >= 0;
     tstate.dropValue(size);
-    int nDims = sizes.numElements();
+    boolean needsReshape = (sizes.numElements() != 1);
     Value result;
     if (iSize == 0) {
       result = Core.EMPTY_ARRAY;
@@ -622,7 +641,7 @@ public final class MatrixCore {
       // multi-dimensional matrix we have to look inside the RESHAPED_ARRAY compound that we'll
       // wrap it in).
       FrameLayout layout =
-          results.result(0, nDims == 1 ? TProperty.ARRAY_LAYOUT : RESHAPED_ARRAY_LAYOUT);
+          results.result(0, needsReshape ? RESHAPED_ARRAY_LAYOUT : TProperty.ARRAY_LAYOUT);
       if (layout != null || iSize > MAX_ARRAY_COMPOUND_LENGTH) {
         result = FrameLayout.newArray(tstate, layout, iSize, initial);
       } else {
@@ -633,12 +652,51 @@ public final class MatrixCore {
         result = tstate.asArrayValue(array, iSize);
       }
     }
-    if (nDims != 1) {
+    if (needsReshape) {
       result = tstate.compound(RESHAPED_ARRAY, sizes, result);
     } else {
       tstate.dropValue(sizes);
     }
-    return result;
+    tstate.setResult(result);
+  }
+
+  private static Value emitNewArray(
+      TState tstate, ResultsInfo results, Value size, Value initial, boolean needsReshape)
+      throws BuiltinException {
+    Object layoutOrBaseType =
+        results.result(
+            0,
+            needsReshape
+                ? RESHAPED_ARRAY_LAYOUT_OR_BASE_TYPE
+                : TProperty.ARRAY_LAYOUT_OR_BASE_TYPE);
+    if (layoutOrBaseType instanceof VArrayLayout layout) {
+      CodeGen codeGen = tstate.codeGen();
+      CodeValue cvSize = codeGen.asCodeValue(size);
+      Err.ESCAPE.unless(
+          Condition.isNonZero(
+              TState.RESERVE_FOR_CHANGE_OP.result(
+                  codeGen.tstateRegister(), CodeValue.of(layout), CodeValue.NULL, cvSize)));
+      Register result = codeGen.cb.newRegister(Object.class);
+      codeGen.emitSet(result, layout.emitAlloc(codeGen, cvSize));
+      layout.emitSetElements(codeGen, result, CodeValue.ZERO, cvSize, RValue.toTemplate(initial));
+      return CodeGen.asValue(result, layout);
+    } else {
+      Err.ESCAPE.when(layoutOrBaseType == null);
+      BaseType baseType =
+          (layoutOrBaseType instanceof BaseType bt)
+              ? bt
+              : ((RecordLayout) layoutOrBaseType).template.baseType();
+      assert baseType.isArray();
+      int iSize = baseType.size();
+      Err.ESCAPE.unless(Condition.numericEq(size, NumValue.of(iSize, Allocator.UNCOUNTED)));
+      if (iSize == 0) {
+        return Core.EMPTY_ARRAY;
+      }
+      assert !RefCounted.isRefCounted(initial);
+      Value[] elements = new Value[iSize];
+      Arrays.fill(elements, 0, iSize, initial);
+      return tstate.arrayValue(elements);
+    }
   }
 
   /** {@code method sizes(m) (m is Reshaped or m is ReshapedArray) = m_.sizes} */
@@ -667,24 +725,10 @@ public final class MatrixCore {
 
   /** {@code method element(BaseMatrix base, key) = key} */
   @Core.Method("element(BaseMatrix, _)")
-  static Value elementBaseMatrix(Value baseMatrix, @RC.In Value key) throws BuiltinException {
-    Err.INVALID_ARGUMENT.unless(isValidKey(key, baseMatrix.element(0)));
+  static Value elementBaseMatrix(TState tstate, Value baseMatrix, @RC.In Value key)
+      throws BuiltinException {
+    ValueUtil.checkKey(tstate, key, baseMatrix.peekElement(0));
     return key;
-  }
-
-  private static Condition isValidKey(Value key, Value sizes) {
-    int n = sizes.numElements();
-    if (!key.isArrayOfLengthAsBoolean(n)) {
-      return Condition.FALSE;
-    }
-    for (int i = 0; i < n; i++) {
-      int ki = key.elementAsIntOrMinusOne(i);
-      int si = sizes.elementAsInt(i);
-      if (ki <= 0 || ki > si) {
-        return Condition.FALSE;
-      }
-    }
-    return Condition.TRUE;
   }
 
   /**
@@ -703,11 +747,21 @@ public final class MatrixCore {
 
     @Continuation
     static void afterSizes(
-        TState tstate, Value outSizes, @Saved Value m, Value key, @Fn("element:2") Caller element)
+        TState tstate,
+        MethodMemo mMemo,
+        Value baseSizes,
+        @Saved Value m,
+        Value key,
+        @Fn("element:2") Caller element)
         throws BuiltinException {
-      ValueUtil.checkSizes(tstate, outSizes);
-      Value inSizes = m.peekElement(0);
-      Value transformedKey = convertKey(tstate, key, inSizes, outSizes);
+      ValueUtil.checkSizes(baseSizes, Err.INVALID_SIZES);
+      Value index = ValueUtil.keyToIndex(tstate, key, m.peekElement(0));
+      Value transformedKey =
+          ValueUtil.indexToKey(
+              tstate,
+              index,
+              baseSizes,
+              () -> element.argInfo(tstate, mMemo, 1, TProperty.ARRAY_LAYOUT_OR_BASE_TYPE));
       tstate.startCall(element, m.element(1), transformedKey);
     }
   }
@@ -723,15 +777,13 @@ public final class MatrixCore {
   static Value replaceElement(TState tstate, @RC.In Value matrix, Value key, @RC.In Value value)
       throws BuiltinException {
     Value sizes = matrix.peekElement(0);
+    Value index = ValueUtil.keyToIndex(tstate, key, sizes);
     Value elements = matrix.element(1);
-    long index = convertKey(key, sizes);
-    if (!ArrayCore.isValidIndex(elements, index)) {
-      tstate.dropValue(elements);
-      throw Err.INVALID_ARGUMENT.asException();
-    }
+    tstate.dropOnThrow(elements);
+    ValueUtil.checkIndex(tstate, elements, index);
     // See docs/ref_counts.md#the-startupdate-idiom-for-compound-values
     matrix = matrix.replaceElement(tstate, 1, Core.TO_BE_SET);
-    elements = elements.replaceElement(tstate, (int) index, value);
+    elements = ValueUtil.replaceElement(tstate, elements, index, 0, value);
     matrix = matrix.replaceElement(tstate, 1, elements);
     return matrix;
   }
@@ -744,19 +796,16 @@ public final class MatrixCore {
   @Core.Method("startUpdate(ReshapedArray, Array)")
   static void startUpdate(TState tstate, @RC.In Value matrix, Value key) throws BuiltinException {
     Value sizes = matrix.peekElement(0);
+    Value index = ValueUtil.keyToIndex(tstate, key, sizes);
     Value elements = matrix.element(1);
-    long longIndex = convertKey(key, sizes);
-    if (!ArrayCore.isValidIndex(elements, longIndex)) {
-      tstate.dropValue(elements);
-      throw Err.INVALID_ARGUMENT.asException();
-    }
-    int index = (int) longIndex;
+    tstate.dropOnThrow(elements);
+    ValueUtil.checkIndex(tstate, elements, index);
     // See docs/ref_counts.md#the-startupdate-idiom-for-compound-values
     matrix = matrix.replaceElement(tstate, 1, Core.TO_BE_SET);
-    Value element = elements.element(index);
-    elements = elements.replaceElement(tstate, index, Core.TO_BE_SET);
+    Value element = ValueUtil.element(tstate, elements, index, 0);
+    elements = ValueUtil.replaceElement(tstate, elements, index, 0, Core.TO_BE_SET);
     tstate.setResults(
-        element, tstate.compound(MATRIX_UPDATER, matrix, elements, NumValue.of(index, tstate)));
+        element, tstate.compound(MATRIX_UPDATER, matrix, elements, index.makeStorable(tstate)));
   }
 
   /**
@@ -769,9 +818,9 @@ public final class MatrixCore {
     Value matrix = updater.element(0);
     assert matrix.baseType() == RESHAPED_ARRAY;
     Value elements = updater.element(1);
-    int index = updater.elementAsInt(2);
+    Value index = updater.peekElement(2);
     tstate.dropValue(updater);
-    elements = elements.replaceElement(tstate, index, v);
+    elements = ValueUtil.replaceElement(tstate, elements, index, 0, v);
     return matrix.replaceElement(tstate, 1, elements);
   }
 
@@ -812,10 +861,13 @@ public final class MatrixCore {
     static Value afterSizes(
         TState tstate, @RC.In Value inSizes, @Saved @RC.In Value it, @RC.In Value outSizes)
         throws BuiltinException {
-      ValueUtil.checkSizes(tstate, inSizes);
+      ValueUtil.checkSizes(inSizes, Err.INVALID_SIZES);
       return tstate.compound(RESHAPED_ITERATOR, it, inSizes, outSizes);
     }
   }
+
+  private static final TProperty<Object> ARRAY_LAYOUT_OR_BASETYPE_IN_PAIR =
+      TProperty.ARRAY_LAYOUT_OR_BASE_TYPE.elementOf(Core.FixedArrayType.withSize(2), 0);
 
   /**
    * <pre>
@@ -842,7 +894,8 @@ public final class MatrixCore {
     }
 
     @Continuation
-    static void afterNext(TState tstate, Value x, @RC.In Value innerIt, @Saved @RC.In Value it)
+    static void afterNext(
+        TState tstate, ResultsInfo results, Value x, @RC.In Value innerIt, @Saved @RC.In Value it)
         throws BuiltinException {
       Value result =
           x.is(Core.ABSENT)
@@ -853,9 +906,14 @@ public final class MatrixCore {
                     Value k = x.peekElement(0);
                     Value inSizes = it.peekElement(1);
                     Value outSizes = it.peekElement(2);
-                    Value convertedKey = convertKey(tstate, k, inSizes, outSizes);
-                    Value v = x.element(1);
-                    return tstate.arrayValue(convertedKey, v);
+                    Value index = ValueUtil.keyToIndex(tstate, k, inSizes);
+                    Value convertedKey =
+                        ValueUtil.indexToKey(
+                            tstate,
+                            index,
+                            outSizes,
+                            () -> results.result(ARRAY_LAYOUT_OR_BASETYPE_IN_PAIR));
+                    return tstate.arrayValue(convertedKey, x.element(1));
                   });
       tstate.setResults(result, it.replaceElement(tstate, 0, innerIt));
     }
@@ -905,6 +963,10 @@ public final class MatrixCore {
     tstate.startCall(element, base, newKey);
   }
 
+  /** A TProperty for the layout or base type of the prev element of a BaseIterator result. */
+  private static final TProperty<Object> BASE_ITERATOR_PREV_LAYOUT_OR_BASE_TYPE =
+      TProperty.ARRAY_LAYOUT_OR_BASE_TYPE.elementOf(BASE_ITERATOR, 1);
+
   /**
    * <pre>
    * method iterator(SubMatrix m, EnumerationKind eKind) =
@@ -912,21 +974,30 @@ public final class MatrixCore {
    * </pre>
    */
   @Core.Method("iterator(SubMatrix, EnumerationKind)")
-  static Value iteratorSubMatrix(TState tstate, @RC.In Value m, @RC.Singleton Value eKind) {
+  static Value iteratorSubMatrix(
+      TState tstate, ResultsInfo results, @RC.In Value m, @RC.Singleton Value eKind) {
     Value sizes = m.element(3);
+    Object layoutOrBaseType = results.result(TRANSFORMED_BASE_ITERATOR_PREV_LAYOUT_OR_BASE_TYPE);
     return tstate.compound(
         CollectionCore.TRANSFORMED_ITERATOR,
-        iteratorForNonEmptyBaseMatrixWithSizes(tstate, sizes, eKind),
+        iteratorForBaseMatrixWithSizes(tstate, sizes, eKind, layoutOrBaseType),
         eKind,
         tstate.compound(BinaryOp.ELEMENT.partialLeft, m));
   }
+
+  // Trivial results results returned by iterator(emptyMatrix
+  private static final Value EMPTY_ARRAY_ONLY =
+      LoopCore.TRIVIAL_ITERATOR.uncountedOf(Core.EMPTY_ARRAY);
+  private static final Value EMPTY_PAIR =
+      Core.FixedArrayType.withSize(2).uncountedOf(Core.EMPTY_ARRAY, Core.EMPTY_ARRAY);
+  private static final Value EMPTY_PAIR_ONLY = LoopCore.TRIVIAL_ITERATOR.uncountedOf(EMPTY_PAIR);
 
   /**
    * <pre>
    * method iterator(BaseMatrix m, EnumerationKind eKind) {
    *   sizes = m_
-   *   if sizes | -&gt; # == 0 | anyTrue {
-   *     return emptyIterator()
+   *   if size(sizes) == 0 {
+   *     return oneElementIterator(eKind is EnumerateValues ? [] : [[], []])
    *   } else {
    *     nDims = size(sizes)
    *     prev = newMatrix(nDims, 1)
@@ -937,21 +1008,47 @@ public final class MatrixCore {
    * </pre>
    */
   @Core.Method("iterator(BaseMatrix, EnumerationKind)")
-  static Value iteratorBaseMatrix(TState tstate, Value m, @RC.Singleton Value eKind) {
+  static void iteratorBaseMatrix(
+      TState tstate, ResultsInfo results, Value m, @RC.Singleton Value eKind) {
     Value sizes = m.element(0);
-    int nDims = sizes.numElements();
-    if (IntStream.range(0, nDims).anyMatch(i -> sizes.elementAsInt(i) == 0)) {
-      tstate.dropValue(sizes);
-      return LoopCore.EMPTY_ITERATOR;
-    } else {
-      return iteratorForNonEmptyBaseMatrixWithSizes(tstate, sizes, eKind);
-    }
+    sizes
+        .isArrayOfLength(0)
+        .test(
+            () -> {
+              tstate.dropValue(sizes);
+              tstate.setResult(
+                  eKind.is(LoopCore.ENUMERATE_VALUES).choose(EMPTY_ARRAY_ONLY, EMPTY_PAIR_ONLY));
+            },
+            () -> {
+              Object layoutOrBaseType = results.result(BASE_ITERATOR_PREV_LAYOUT_OR_BASE_TYPE);
+              tstate.setResult(
+                  iteratorForBaseMatrixWithSizes(tstate, sizes, eKind, layoutOrBaseType));
+            });
   }
 
+  /**
+   * A TProperty for the layout or base type of the prev element of a BaseIterator result embedded
+   * in a TransformedIterator.
+   */
+  private static final TProperty<Object> TRANSFORMED_BASE_ITERATOR_PREV_LAYOUT_OR_BASE_TYPE =
+      TProperty.ARRAY_LAYOUT_OR_BASE_TYPE.elementOf(CollectionCore.TRANSFORMED_ITERATOR, 0);
+
   @RC.Out
-  private static Value iteratorForNonEmptyBaseMatrixWithSizes(
-      TState tstate, @RC.In Value sizes, @RC.Singleton Value eKind) {
-    int nDims = sizes.numElements();
+  private static Value iteratorForBaseMatrixWithSizes(
+      TState tstate, @RC.In Value sizes, @RC.Singleton Value eKind, Object layoutOrBaseType) {
+    int nDims;
+    if (!(sizes instanceof RValue && sizes.baseType() == Core.VARRAY)) {
+      nDims = sizes.numElements();
+    } else if (layoutOrBaseType instanceof VArrayLayout) {
+      throw new UnsupportedOperationException();
+    } else {
+      if (layoutOrBaseType instanceof BaseType) {
+        nDims = ((BaseType) layoutOrBaseType).size();
+      } else {
+        nDims = ((RecordLayout) layoutOrBaseType).baseType().size();
+      }
+      tstate.codeGen().escapeUnless(sizes.isArrayOfLength(nDims));
+    }
     Object[] prev = tstate.allocObjectArray(nDims);
     Arrays.fill(prev, 0, nDims - 1, NumValue.ONE);
     prev[nDims - 1] = NumValue.ZERO;
@@ -1075,13 +1172,30 @@ public final class MatrixCore {
 
   private static void checkSizesMatch(TState tstate, Value sizes1, Value sizes2)
       throws BuiltinException {
-    ValueUtil.checkSizes(tstate, sizes1);
-    ValueUtil.checkSizes(tstate, sizes2);
-    int nDims = sizes1.numElements();
-    Err.INVALID_ARGUMENT.unless(
-        sizes2.numElements() == nDims
-            && IntStream.range(0, nDims)
-                .allMatch(i -> sizes1.elementAsInt(i) == sizes2.elementAsInt(i)));
+    ValueUtil.checkSizes(sizes1, Err.INVALID_SIZES);
+    ValueUtil.checkSizes(sizes2, Err.INVALID_SIZES);
+    if (!(sizes1 instanceof RValue || sizes2 instanceof RValue)) {
+      int nDims = sizes1.numElements();
+      Err.INVALID_ARGUMENT.unless(
+          sizes2.numElements() == nDims
+              && IntStream.range(0, nDims)
+                  .allMatch(i -> sizes1.elementAsInt(i) == sizes2.elementAsInt(i)));
+    } else {
+      CodeGen codeGen = tstate.codeGen();
+      int n;
+      if (sizes1.baseType() != Core.VARRAY || !(sizes1 instanceof RValue)) {
+        n = sizes1.numElements();
+        Err.INVALID_SIZES.unless(sizes2.isArrayOfLength(n));
+      } else if (sizes2.baseType() != Core.VARRAY || !(sizes2 instanceof RValue)) {
+        n = sizes2.numElements();
+        Err.INVALID_SIZES.unless(sizes1.isArrayOfLength(n));
+      } else {
+        throw new UnsupportedOperationException();
+      }
+      for (int i = 0; i < n; i++) {
+        codeGen.escapeUnless(Condition.numericEq(sizes1.peekElement(i), sizes2.peekElement(i)));
+      }
+    }
   }
 
   /**
@@ -1099,6 +1213,7 @@ public final class MatrixCore {
    * method concat(Matrix v1, Matrix v2) {
    *   [len1] = sizes(v1)
    *   [len2] = sizes(v2)
+   *   assert len1 >= 0 and len2 >= 0
    *   if len1 == 0 { return v2 }
    *   if len2 == 0 { return v1 }
    *   return ConcatVector_({size: len1 + len2, v1, v2})
@@ -1121,22 +1236,32 @@ public final class MatrixCore {
     }
 
     @Continuation(order = 2)
-    static Value afterSizesV2(
+    static void afterSizesV2(
         TState tstate, Value sizes2, @Saved @RC.In Value v1, @RC.In Value v2, Value sizes1)
         throws BuiltinException {
       Err.INVALID_ARGUMENT.unless(sizes1.isArrayOfLength(1).and(sizes2.isArrayOfLength(1)));
-      int len1 = sizes1.elementAsIntOrMinusOne(0);
-      int len2 = sizes2.elementAsIntOrMinusOne(0);
-      Err.INVALID_SIZES.unless(len1 >= 0 && len2 >= 0);
-      if (len1 == 0) {
-        tstate.dropValue(v1);
-        return v2;
-      } else if (len2 == 0) {
-        tstate.dropValue(v2);
-        return v1;
-      } else {
-        return tstate.compound(CONCAT_VECTOR, NumValue.of(len1 + len2, tstate), v1, v2);
-      }
+      Value len1 = sizes1.peekElement(0).verifyInt(Err.INVALID_SIZES);
+      Err.INVALID_SIZES.when(Condition.numericLessThan(len1, NumValue.ZERO));
+      Value len2 = sizes2.peekElement(0).verifyInt(Err.INVALID_SIZES);
+      Err.INVALID_SIZES.when(Condition.numericLessThan(len2, NumValue.ZERO));
+      Condition.numericEq(len1, NumValue.ZERO)
+          .test(
+              () -> {
+                tstate.dropValue(v1);
+                tstate.setResult(v2);
+              },
+              () ->
+                  Condition.numericEq(len2, NumValue.ZERO)
+                      .test(
+                          () -> {
+                            tstate.dropValue(v2);
+                            tstate.setResult(v1);
+                          },
+                          () -> {
+                            tstate.setResult(
+                                tstate.compound(
+                                    CONCAT_VECTOR, ValueUtil.addInts(tstate, len1, len2), v1, v2));
+                          }));
     }
   }
 
@@ -1306,29 +1431,22 @@ public final class MatrixCore {
     @Continuation(order = 3)
     static void afterNext2(TState tstate, @RC.In Value x, @RC.In Value it2, @Saved @RC.In Value it)
         throws BuiltinException {
-      x.is(Core.ABSENT)
-          .testExcept(
-              () -> tstate.setResults(x, it.replaceElement(tstate, 1, it2)),
-              () -> {
-                Err.NOT_PAIR.unless(x.isArrayOfLength(2));
-                Value key = x.element(0);
-                tstate.dropOnThrow(key);
-                Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(1));
-                int size1 = it.elementAsInt(2);
-                int k = key.elementAsIntOrMinusOne(0);
-                int i = k + size1;
-                // Error if the index was garbage or the addition overflowed
-                Err.INVALID_ARGUMENT.when(k < 0 || i < 0);
-                // That was the last place we might throw an exception, so it's safe to start
-                // allocating values.
-                Value index = NumValue.of(i, tstate);
-                // Start by breaking x's link to key, so that we can potentially modify key in
-                // place.
-                Value x2 = x.replaceElement(tstate, 0, Core.TO_BE_SET);
-                Value key2 = key.replaceElement(tstate, 0, index);
-                Value newX = x2.replaceElement(tstate, 0, key2);
-                tstate.setResults(newX, it.replaceElement(tstate, 1, it2));
-              });
+      Value newX =
+          x.is(Core.ABSENT)
+              .chooseExcept(
+                  () -> x,
+                  () -> {
+                    Err.NOT_PAIR.unless(x.isArrayOfLength(2));
+                    Value key = x.peekElement(0);
+                    Err.INVALID_ARGUMENT.unless(key.isArrayOfLength(1));
+                    Value k = key.peekElement(0).verifyInt(Err.INVALID_ARGUMENT);
+                    Err.INVALID_ARGUMENT.when(Condition.numericLessThan(k, NumValue.ZERO));
+                    Value index = ValueUtil.addInts(tstate, k, it.peekElement(2));
+                    tstate.dropOnThrow(index);
+                    Err.INVALID_ARGUMENT.when(Condition.numericLessThan(index, NumValue.ZERO));
+                    return x.replaceElement(tstate, 0, tstate.arrayValue(index));
+                  });
+      tstate.setResults(newX, it.replaceElement(tstate, 1, it2));
     }
   }
 
@@ -1348,93 +1466,37 @@ public final class MatrixCore {
     @Continuation
     static void afterSizes(
         TState tstate,
+        ResultsInfo results,
         Value sizes,
         @Saved @RC.In Value lhs,
         @RC.In Value rhs,
         @Fn("enumerate:4") Caller enumerate)
         throws BuiltinException {
-      Err.INVALID_ARGUMENT.unless(sizes.isArrayOfLength(1));
-      int iSize2 = sizes.elementAsIntOrMinusOne(0);
-      Err.INVALID_SIZES.unless(iSize2 >= 0);
-      if (iSize2 == 0) {
-        tstate.dropValue(rhs);
-        tstate.setResult(lhs);
-        return;
-      }
-      int iSize1 = lhs.numElements();
-      lhs.reserveForChangeOrThrow(tstate, iSize1 + iSize2, false);
-      // Add iSize2 TO_BE_SET elements at the end of lhs
-      lhs = lhs.removeRange(tstate, iSize1, iSize1, iSize1 + iSize2, 0);
-      Value loop = tstate.compound(SaveCore.SAVE_WITH_OFFSET, NumValue.of(iSize1, tstate));
-      // Wrapping SaveWithOffset (a sequential loop) in SaverLoop makes it parallelizable (since
-      // we don't care in which order the elements are computed, as long as each is saved in the
-      // corresponding element of the result).
-      loop = tstate.compound(SaveCore.SAVER_LOOP, loop);
-      // Enumerate the elements of rhs and store each into the appropriate place in the copy
-      tstate.startCall(enumerate, rhs, LoopCore.ENUMERATE_ALL_KEYS, loop, lhs);
+      Err.INVALID_SIZES.unless(sizes.isArrayOfLength(1));
+      Value size2 = sizes.peekElement(0).verifyInt(Err.INVALID_SIZES);
+      Err.INVALID_SIZES.when(Condition.numericLessThan(size2, NumValue.ZERO));
+      Condition.numericEq(size2, NumValue.ZERO)
+          .testExcept(
+              () -> {
+                tstate.dropValue(rhs);
+                tstate.setResult(lhs);
+              },
+              () -> {
+                Value size1 = tstate.getArraySizeAndReserveForChange(lhs, size2, null);
+                // Add size2 TO_BE_SET elements at the end of lhs
+                FrameLayout resultLayout = results.result(TProperty.ARRAY_LAYOUT);
+                Value afterRemove =
+                    ValueUtil.removeRange(tstate, lhs, size1, NumValue.ZERO, size2, resultLayout);
+                Value loop = tstate.compound(SaveCore.SAVE_WITH_OFFSET, size1);
+                // Wrapping SaveWithOffset (a sequential loop) in SaverLoop makes it parallelizable
+                // (since we don't care in which order the elements are computed, as long as each is
+                // saved in the corresponding element of the result).
+                loop = tstate.compound(SaveCore.SAVER_LOOP, loop);
+                // Enumerate the elements of rhs and store each into the appropriate place in the
+                // copy
+                tstate.startCall(enumerate, rhs, LoopCore.ENUMERATE_ALL_KEYS, loop, afterRemove);
+              });
     }
-  }
-
-  /**
-   * Converts a matrix key to the key of the same element after reshaping, or throws
-   * INVALID_ARGUMENT in {@code inKey} is not valid.
-   *
-   * @param inSizes the sizes of the matrix before reshaping
-   * @param outSizes the sizes of the matrix after reshaping
-   * @param inKey a key for the matrix before reshaping
-   * @return the corresponding key for the matrix after reshaping
-   */
-  @RC.Out
-  private static Value convertKey(TState tstate, Value inKey, Value inSizes, Value outSizes)
-      throws BuiltinException {
-    long sum = convertKey(inKey, inSizes);
-    Err.INVALID_ARGUMENT.unless(sum >= 0);
-    return convertKey(tstate, sum, outSizes);
-  }
-
-  /**
-   * Given an array of sizes and an index in the sequential enumeration of a matrix with those sizes
-   * returns the corresponding key.
-   */
-  @RC.Out
-  private static Value convertKey(TState tstate, long index, Value outSizes) {
-    int outDims = outSizes.numElements();
-    if (outDims == 0) {
-      return Core.EMPTY_ARRAY;
-    }
-    @RC.Counted Object[] outKey = tstate.allocObjectArray(outDims);
-    for (int i = outDims - 1; i > 0; i--) {
-      int si = outSizes.elementAsInt(i);
-      outKey[i] = NumValue.of((int) (index % si) + 1, tstate);
-      index /= si;
-    }
-    outKey[0] = NumValue.of((int) (index + 1), tstate);
-    return tstate.asArrayValue(outKey, outDims);
-  }
-
-  /**
-   * Given an array of sizes and a key, returns the index of that key in a sequential enumeration of
-   * a matrix with those sizes (if the key is valid) or -1 (if the key is invalid).
-   */
-  private static long convertKey(Value inKey, Value inSizes) {
-    int inDims = inSizes.numElements();
-    if (!inKey.isArrayOfLengthAsBoolean(inDims)) {
-      return -1;
-    }
-    long sum = 0;
-    for (int i = 0; i < inDims; i++) {
-      int ki = inKey.elementAsIntOrMinusOne(i);
-      int si = inSizes.elementAsInt(i);
-      if (ki < 1 || ki > si) {
-        return -1;
-      }
-      sum = sum * si + ki - 1;
-      if (sum < 0) {
-        // Overflowed a long -- probably can't happen, but let's be paranoid.
-        return -1;
-      }
-    }
-    return sum;
   }
 
   /**

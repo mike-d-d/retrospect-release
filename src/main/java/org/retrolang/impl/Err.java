@@ -44,7 +44,7 @@ public class Err extends BaseType.SimpleStackEntryType {
 
     @RC.Out
     Value takeStackEntry() {
-      assert stackEntry != null;
+      assert stackEntry != null && stackEntry != ESCAPE;
       Value result = stackEntry;
       stackEntry = null;
       return result;
@@ -125,6 +125,8 @@ public class Err extends BaseType.SimpleStackEntryType {
       }
     }
   }
+
+  public static final Err ESCAPE = new Err("Escape");
 
   public static final Err UNDEFINED_VAR = new Err("Undefined var", "varName");
 

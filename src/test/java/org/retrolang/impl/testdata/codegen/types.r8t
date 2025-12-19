@@ -1,0 +1,73 @@
+if prep {
+  _ = test(["foo", "bar"])
+}
+return test(["x", True, False, [], [3, 1]])
+
+function test(array) {
+  for x in array {
+    if x is Boolean {
+      bools << 1
+    }
+    if x is String {
+      strings << 1
+    }
+    if x is Matrix {
+      arrays << 1
+    }
+  } collect {
+    bools =| sum
+    strings =| sum
+    arrays =| sum
+  }
+  return {bools, strings, arrays}
+}
+
+/* CODEGEN test RETURNS
+{arrays: 2, bools: 2, strings: 1}
+---
+test_0(x1:*[]@xxxx):
+  1: AtomicInteger.incrementAndGet(0);
+  2: I2 ← 0;
+  3: I3 ← 0;
+  4: I4 ← 0;
+  5: I5 ← 0;
+= 6: test X1 is *[]⸨x0:*[]@xxxx; False; True; x0:String⸩@xxxx; F:→ 35
+  7: test I2 < Frame1i2x.i0(X1); F:→ 28
+  8: X7 ← Value.fromArray(Frame1i2x.x0(X1), I2);
+  9: test X7 == Absent; T:→ 28
+ 10: I6 ← iAdd(I2, 1);
+ 11: test X7 instanceof Frame; T:→ 20
+ 12: test X7 == False; T:→ 22
+ 13: test X7 == True; T:→ 22
+ 14: test X7 instanceof StringValue; F:→ 35
+ 15: I8 ← I3;
+=16: I7 ← Math.addExact(I4, 1); ArithmeticException:→ 35
+ 17: I4 ← I7;
+=18: I2 ← I6;
+ 19: I3 ← I8; → 6
+-20: test X7 == False; T:→ 22
+ 21: test X7 == True; F:→ 27
+-22: I8 ← Math.addExact(I3, 1); ArithmeticException:→ 35
+=23: test X7 instanceof StringValue; T:→ 16
+ 24: test X7 instanceof Frame; F:→ 18
+ 25: I7 ← Math.addExact(I5, 1); ArithmeticException:→ 35
+ 26: I5 ← I7; → 18
+-27: I8 ← I3; → 23
+-28: dropRef{X1};
+ 29: TState.setResultTemplates(X0, [{arrays: i0, bools: i4, strings: i8}]);
+ 30: X1 ← TState.fnResultBytes(X0, 12);
+ 31: setInt[](X1, 0, I5);
+ 32: setInt[](X1, 4, I3);
+ 33: setInt[](X1, 8, I4);
+ 34: return
+-35: X6 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I2, it=ArrayIterator(X1, EnumerateValues, I2)⟧);
+ 36: X1 ← TState.fillStackEntry(X0, null, X6, ⟨⸨x0:*[]@xxxx; False; True; Absent; x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), loop@7⸨bools_ro=LoopRO(EnumerateValues, Sum(0), True), strings_ro=LoopRO(EnumerateValues, Sum(0), True), arrays_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues⸩, loop@7_state⸨bools_rw=LoopRW(Absent, b0), strings_rw=LoopRW(Absent, b0), arrays_rw=LoopRW(Absent, b0)⸩⟩, mMemo_1@xxxx, null);
+ 37: X2 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=loop@7⸨bools_ro=LoopRO(EnumerateValues, Sum(0), True), strings_ro=LoopRO(EnumerateValues, Sum(0), True), arrays_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues⸩, state=loop@7_state⸨bools_rw=LoopRW(Absent, I3), strings_rw=LoopRW(Absent, I4), arrays_rw=LoopRW(Absent, I5)⸩⟧);
+ 38: X1 ← TState.fillStackEntry(X0, X1, X2, ⟨loop@7_state⸨bools_rw=LoopRW(Absent, b0), strings_rw=LoopRW(Absent, b0), arrays_rw=LoopRW(Absent, b0)⸩⟩, mMemo_24@xxxx, null);
+ 39: X1 ← TState.fillStackEntry(X0, X1, ⟦LoopCore.enumerateDefault⟧, ⟨loop@7_state⸨bools_rw=LoopRW(Absent, b0), strings_rw=LoopRW(Absent, b0), arrays_rw=LoopRW(Absent, b0)⸩⟩, mMemo_25@xxxx, null);
+ 40: X1 ← TState.fillStackEntry(X0, X1, ⟦types.r8t+0:7_6 _t0 = enumerate(array, _t1, loop@7⸨bools_ro=bools_ro, strings_ro=strings_ro, arrays_ro=arrays_ro, _eKind=_t1⸩, loop@7_state⸨bools_rw=_t0, strings_rw=_t2, arrays_rw=_t3⸩) ∥ bools_ro=LoopRO(EnumerateValues, Sum(0), True), strings_ro=LoopRO(EnumerateValues, Sum(0), True), arrays_ro=LoopRO(EnumerateValues, Sum(0), True)⟧, ⟨{arrays: b0, bools: b0, strings: b0}⟩, mMemo_x@xxxx, null);
+ 41: TState.setStackRest(X0, X1);
+ 42: return
+---
+allocated=256/9, peak=56
+*/

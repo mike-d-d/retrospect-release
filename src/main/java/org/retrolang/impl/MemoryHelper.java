@@ -20,6 +20,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.retrolang.util.SizeOf;
 
 /**
@@ -238,6 +239,18 @@ public class MemoryHelper implements Allocator {
   }
 
   /**
+   * Sets the specified elements of the given Object[] (which should be null) to the given value.
+   *
+   * @param start index of the first element to be set
+   * @param end one more than the index of the last element to be set
+   */
+  public static void fillElements(Object[] objs, int start, int end, Object newElement) {
+    assert Arrays.stream(objs, start, end).allMatch(Objects::isNull);
+    Arrays.fill(objs, start, end, newElement);
+    RefCounted.addRef(newElement, end - start);
+  }
+
+  /**
    * Returns true if the given RefVisitor is a ReleaseVisitor, i.e. we are dropping the objects
    * visited.
    */
@@ -389,6 +402,11 @@ public class MemoryHelper implements Allocator {
     }
   }
 
+  @Override
+  public boolean isCounted() {
+    return true;
+  }
+
   /**
    * Returns the number of reserved bytes that can be used for an allocation of the given size, and
    * updates {#link #reservedBytes} accordingly. Only intended for use by ResourceTracker.
@@ -488,23 +506,144 @@ public class MemoryHelper implements Allocator {
     return objs.length >= size && objs.length <= Math.max(size * 2, 4);
   }
 
-  /** Applies the {@link Value#removeRange} transformation in-place to the given array of Values. */
-  void removeRange(
-      Object[] values, int size, int keepPrefix, int moveFrom, int moveTo, int moveLen) {
-    if (moveLen == 0) {
-      clearElements(values, keepPrefix, size);
-      return;
+  /**
+   * Returns a byte[] containing
+   *
+   * <ul>
+   *   <li>the first {@code keepPrefix} elements of {@code bytes}, followed by
+   *   <li>{@code addSize} uninitialized bytes, followed by
+   *   <li>the elements of {@code bytes} from {@code keepPrefix+removeSize} to {@code size}.
+   * </ul>
+   *
+   * <p>This method is applied to element arrays of a varray to implement {@link
+   * ValueUtil#removeRange}.
+   *
+   * <p>If {@code copy} is true, the result is a newly-allocated array and {@code bytes} is
+   * unchanged. If {@code copy} is false, {@code bytes} should be considered @RC.In; either it will
+   * be modified in place and returned, or (if a new array must be allocated for the result) it will
+   * be released.
+   */
+  @RC.Out
+  byte[] removeRange(
+      byte[] bytes, int size, int keepPrefix, int removeSize, int addSize, boolean copy) {
+    assert keepPrefix >= 0
+        && removeSize >= 0
+        && addSize >= 0
+        && size >= keepPrefix + removeSize
+        && (bytes == null ? size == 0 : size <= bytes.length);
+    if (bytes == null) {
+      return allocByteArray(addSize);
     }
-    clearElements(values, keepPrefix, moveFrom);
-    clearElements(values, moveFrom + moveLen, size);
-    if (moveFrom != moveTo) {
-      System.arraycopy(values, moveFrom, values, moveTo, moveLen);
-      // That will have left behind some values that should be nulled
-      if (moveFrom < moveTo) {
-        Arrays.fill(values, moveFrom, moveTo, null);
-      } else {
-        Arrays.fill(values, moveTo + moveLen, moveFrom + moveLen, null);
+    int moveFrom = keepPrefix + removeSize;
+    int moveTo = keepPrefix + addSize;
+    int moveLen = size - moveFrom;
+    int newSize = moveTo + moveLen;
+    if (!copy) {
+      // If we're growing the contents but they can still fit in the same array, or we're shrinking
+      // the contents but not to less than half the array size, then keep the array and just move
+      // things around within it.
+      if (removeSize <= addSize
+          ? newSize <= bytes.length
+          : bytes.length <= Math.max(newSize * 2, 16)) {
+        if (moveLen != 0 && moveFrom != moveTo) {
+          System.arraycopy(bytes, moveFrom, bytes, moveTo, moveLen);
+        }
+        return bytes;
       }
+    }
+    // We need a new array.  Allocate it and copy over the contents that we're keeping.
+    byte[] result = allocByteArray(newSize);
+    assert copy || result.length != bytes.length;
+    System.arraycopy(bytes, 0, result, 0, keepPrefix);
+    System.arraycopy(bytes, moveFrom, result, moveTo, moveLen);
+    if (!copy) {
+      dropReference(bytes);
+    }
+    return result;
+  }
+
+  /**
+   * Returns an Object[] containing
+   *
+   * <ul>
+   *   <li>the first {@code keepPrefix} elements of {@code objs}, followed by
+   *   <li>{@code addSize} nulls, followed by
+   *   <li>the elements of {@code objs} from {@code keepPrefix+removeSize} to {@code size}.
+   * </ul>
+   *
+   * <p>This method is applied to element arrays of a varray to implement {@link
+   * ValueUtil#removeRange}.
+   *
+   * <p>If {@code copy} is true, the result is a newly-allocated array and {@code objs} is
+   * unchanged. If {@code copy} is false, {@code objs} should be considered @RC.In; either it will
+   * be modified in place and returned, or (if a new array must be allocated for the result) it will
+   * be released.
+   */
+  @RC.Out
+  Object[] removeRange(
+      Object[] objs, int size, int keepPrefix, int removeSize, int addSize, boolean copy) {
+    assert keepPrefix >= 0
+        && removeSize >= 0
+        && addSize >= 0
+        && size >= keepPrefix + removeSize
+        && (objs == null ? size == 0 : size <= objs.length);
+    if (objs == null) {
+      assert copy;
+      return allocObjectArray(addSize);
+    }
+    int moveFrom = keepPrefix + removeSize;
+    int moveTo = keepPrefix + addSize;
+    int moveLen = size - moveFrom;
+    int newSize = moveTo + moveLen;
+    if (!copy) {
+      if (removeSize <= addSize
+          ? newSize <= objs.length
+          : objs.length <= Math.max(newSize * 2, 4)) {
+        // We'll keep this array.
+        clearElements(objs, keepPrefix, moveFrom);
+        if (moveLen != 0 && moveFrom != moveTo) {
+          System.arraycopy(objs, moveFrom, objs, moveTo, moveLen);
+          // That will have left behind some entries that should be nulled
+          // (*not* using clearElements(), since we don't want to drop their refcounts).
+          if (moveFrom < moveTo) {
+            Arrays.fill(objs, moveFrom, moveTo, null);
+          } else {
+            Arrays.fill(objs, newSize, size, null);
+          }
+        }
+        return objs;
+      }
+    }
+    // We need a new array
+    Object[] result = allocObjectArray(newSize);
+    assert copy || result.length != objs.length;
+    System.arraycopy(objs, 0, result, 0, keepPrefix);
+    System.arraycopy(objs, moveFrom, result, moveTo, moveLen);
+    if (copy) {
+      Arrays.stream(objs, 0, keepPrefix).forEach(RefCounted::addRef);
+      Arrays.stream(objs, moveFrom, size).forEach(RefCounted::addRef);
+    } else {
+      // Null out the entries we copied since we don't want to drop them when we drop objs.
+      Arrays.fill(objs, 0, keepPrefix, null);
+      Arrays.fill(objs, moveFrom, size, null);
+      dropReference(objs);
+    }
+    return result;
+  }
+
+  /**
+   * Copies {@code count} elements from {@code src} to {@code dst}, updating reference counts
+   * appropriately; the overwritten elements of {@code dst} should be null.
+   */
+  static void copyRange(
+      @RC.InOut Object[] dst, int dstStart, Object[] src, int srcStart, int count) {
+    assert dst != src || dstStart + count <= srcStart || srcStart + count <= dstStart;
+    int srcEnd = srcStart + count;
+    for (int i = srcStart; i < srcEnd; i++) {
+      assert dst[dstStart] == null;
+      Object x = src[i];
+      RefCounted.addRef(x);
+      dst[dstStart++] = x;
     }
   }
 
@@ -662,7 +801,7 @@ public class MemoryHelper implements Allocator {
       } else if (releaseDepth == DRAIN_DEPTH && toRelease != null) {
         // We're far enough back up the stack to work through our backlog.
         while (!toRelease.isEmpty()) {
-          dropNow(toRelease.remove(toRelease.size() - 1));
+          dropNow(toRelease.removeLast());
         }
       }
     }

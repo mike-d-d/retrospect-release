@@ -1,0 +1,935 @@
+// Here are some possible answers. Feel free to add more.
+words = [
+      "cigar","rebut","sissy","humph","awake","blush","focal","evade","naval",
+      "serve","heath","dwarf","model","karma","stink","grade","quiet","bench",
+      "abate","feign","major","death","fresh","crust","stool","colon","abase",
+      "marry","react","batty","pride","floss","helix","croak","staff","paper",
+      "unfed","whelp","trawl","outdo","adobe","crazy","sower","repay","digit",
+      "crate","cluck","spike","mimic","pound","maxim","linen","unmet","flesh",
+      "booby","forth","first","stand","belly","ivory","seedy","print","yearn",
+      "drain","bribe","stout","panel","crass","flume","offal","agree","error",
+      "swirl","argue","bleed","delta","flick","totem","wooer","front","shrub",
+      "parry","biome","lapel","start","greet","goner","golem","lusty","loopy",
+      "round","audit","lying","gamma","labor","islet","civic","forge","corny",
+      "moult","basic","salad","agate","spicy","spray","essay","fjord","spend",
+      "kebab","guild","aback","motor","alone","hatch","hyper","thumb","dowry",
+      "ought","belch","dutch","pilot","tweed","comet","jaunt","enema","steed",
+      "abyss","growl","fling","dozen","boozy","erode","world","gouge","click",
+      "briar","great","altar","pulpy","blurt","coast","duchy","groin","fixer",
+      "group","rogue","badly","smart","pithy","gaudy","chill","heron","vodka",
+      "finer","surer","radio","rouge","perch","retch","wrote","clock","tilde",
+      "store","prove","bring","solve","cheat","grime","exult","usher","epoch",
+      "triad","break","rhino","viral","conic","masse","sonic","vital","trace",
+      "using","peach","champ","baton","brake","pluck","craze","gripe","weary",
+      "picky","acute","ferry","aside","tapir","troll","unify","rebus","boost",
+      "truss","siege","tiger","banal","slump","crank","gorge","query","drink",
+      "favor","abbey","tangy","panic","solar","shire","proxy","point","robot",
+      "prick","wince","crimp","knoll","sugar","whack","mount","perky","could",
+      "wrung","light","those","moist","shard","pleat","aloft","skill","elder",
+      "frame","humor","pause","ulcer","ultra","robin","cynic","aroma","caulk",
+      "shake","dodge","swill","tacit","other","thorn","trove","bloke","vivid",
+      "spill","chant","choke","rupee","nasty","mourn","ahead","brine","cloth",
+      "hoard","sweet","month","lapse","watch","today","focus","smelt","tease",
+      "cater","movie","saute","allow","renew","their","slosh","purge","chest",
+      "depot","epoxy","nymph","found","shall","harry","stove","lowly","snout",
+      "trope","fewer","shawl","natal","comma","foray","scare","stair","black",
+      "squad","royal","chunk","mince","shame","cheek","ample","flair","foyer",
+      "cargo","oxide","plant","olive","inert","askew","heist","shown","zesty",
+      "hasty","trash","fella","larva","forgo","story","hairy","train","homer",
+      "badge","midst","canny","fetus","butch","farce","slung","tipsy","metal",
+      "yield","delve","being","scour","glass","gamer","scrap","money","hinge",
+      "album","vouch","asset","tiara","crept","bayou","atoll","manor","creak",
+      "showy","phase","froth","depth","gloom","flood","trait","girth","piety",
+      "payer","goose","float","donor","atone","primo","apron","blown","cacao",
+      "loser","input","gloat","awful","brink","smite","beady","rusty","retro",
+      "droll","gawky","hutch","pinto","gaily","egret","lilac","sever","field",
+      "fluff","hydro","flack","agape","voice","stead","stalk","berth","madam",
+      "night","bland","liver","wedge","augur","roomy","wacky","flock","angry",
+      "bobby","trite","aphid","tryst","midge","power","elope","cinch","motto",
+      "stomp","upset","bluff","cramp","quart","coyly","youth","rhyme","buggy",
+      "alien","smear","unfit","patty","cling","glean","label","hunky","khaki",
+      "poker","gruel","twice","twang","shrug","treat","unlit","waste","merit",
+      "woven","octal","needy","clown","widow","irony","ruder","gauze","chief",
+      "onset","prize","fungi","charm","gully","inter","whoop","taunt","leery",
+      "class","theme","lofty","tibia","booze","alpha","thyme","eclat","doubt",
+      "parer","chute","stick","trice","alike","sooth","recap","saint","liege",
+      "glory","grate","admit","brisk","soggy","usurp","scald","scorn","leave",
+      "twine","sting","bough","marsh","sloth","dandy","vigor","howdy","enjoy",
+      "valid","ionic","equal","unset","floor","catch","spade","stein","exist",
+      "quirk","denim","grove","spiel","mummy","fault","foggy","flout","carry",
+      "sneak","libel","waltz","aptly","piney","inept","aloud","photo","dream",
+      "stale","vomit","ombre","fanny","unite","snarl","baker","there","glyph",
+      "pooch","hippy","spell","folly","louse","gulch","vault","godly","threw",
+      "fleet","grave","inane","shock","crave","spite","valve","skimp","claim",
+      "rainy","musty","pique","daddy","quasi","arise","aging","valet","opium",
+      "avert","stuck","recut","mulch","genre","plume","rifle","count","incur",
+      "total","wrest","mocha","deter","study","lover","safer","rivet","funny",
+      "smoke","mound","undue","sedan","pagan","swine","guile","gusty","equip",
+      "tough","canoe","chaos","covet","human","udder","lunch","blast","stray",
+      "manga","melee","lefty","quick","paste","given","octet","risen","groan",
+      "leaky","grind","carve","loose","sadly","spilt","apple","slack","honey",
+      "final","sheen","eerie","minty","slick","derby","wharf","spelt","coach",
+      "erupt","singe","price","spawn","fairy","jiffy","filmy","stack","chose",
+      "sleep","ardor","nanny","niece","woozy","handy","grace","ditto","stank",
+      "cream","usual","diode","valor","angle","ninja","muddy","chase","reply",
+      "prone","spoil","heart","shade","diner","arson","onion","sleet","dowel",
+      "couch","palsy","bowel","smile","evoke","creek","lance","eagle","idiot",
+      "siren","built","embed","award","dross","annul","goody","frown","patio",
+      "laden","humid","elite","lymph","edify","might","reset","visit","gusto",
+      "purse","vapor","crock","write","sunny","loath","chaff","slide","queer",
+      "venom","stamp","sorry","still","acorn","aping","pushy","tamer","hater",
+      "mania","awoke","brawn","swift","exile","birch","lucky","freer","risky",
+      "ghost","plier","lunar","winch","snare","nurse","house","borax","nicer",
+      "lurch","exalt","about","savvy","toxin","tunic","pried","inlay","chump",
+      "lanky","cress","eater","elude","cycle","kitty","boule","moron","tenet",
+      "place","lobby","plush","vigil","index","blink","clung","qualm","croup",
+      "clink","juicy","stage","decay","nerve","flier","shaft","crook","clean",
+      "china","ridge","vowel","gnome","snuck","icing","spiny","rigor","snail",
+      "flown","rabid","prose","thank","poppy","budge","fiber","moldy","dowdy",
+      "kneel","track","caddy","quell","dumpy","paler","swore","rebar","scuba",
+      "splat","flyer","horny","mason","doing","ozone","amply","molar","ovary",
+      "beset","queue","cliff","magic","truce","sport","fritz","edict","twirl",
+      "verse","llama","eaten","range","whisk","hovel","rehab","macaw","sigma",
+      "spout","verve","sushi","dying","fetid","brain","buddy","thump","scion",
+      "candy","chord","basin","march","crowd","arbor","gayly","musky","stain",
+      "dally","bless","bravo","stung","title","ruler","kiosk","blond","ennui",
+      "layer","fluid","tatty","score","cutie","zebra","barge","matey","bluer",
+      "aider","shook","river","privy","betel","frisk","bongo","begun","azure",
+      "weave","genie","sound","glove","braid","scope","wryly","rover","assay",
+      "ocean","bloom","irate","later","woken","silky","wreck","dwelt","slate",
+      "smack","solid","amaze","hazel","wrist","jolly","globe","flint","rouse",
+      "civil","vista","relax","cover","alive","beech","jetty","bliss","vocal",
+      "often","dolly","eight","joker","since","event","ensue","shunt","diver",
+      "poser","worst","sweep","alley","creed","anime","leafy","bosom","dunce",
+      "stare","pudgy","waive","choir","stood","spoke","outgo","delay","bilge",
+      "ideal","clasp","seize","hotly","laugh","sieve","block","meant","grape",
+      "noose","hardy","shied","drawl","daisy","putty","strut","burnt","tulip",
+      "crick","idyll","vixen","furor","geeky","cough","naive","shoal","stork",
+      "bathe","aunty","check","prime","brass","outer","furry","razor","elect",
+      "evict","imply","demur","quota","haven","cavil","swear","crump","dough",
+      "gavel","wagon","salon","nudge","harem","pitch","sworn","pupil","excel",
+      "stony","cabin","unzip","queen","trout","polyp","earth","storm","until",
+      "taper","enter","child","adopt","minor","fatty","husky","brave","filet",
+      "slime","glint","tread","steal","regal","guest","every","murky","share",
+      "spore","hoist","buxom","inner","otter","dimly","level","sumac","donut",
+      "stilt","arena","sheet","scrub","fancy","slimy","pearl","silly","porch",
+      "dingo","sepia","amble","shady","bread","friar","reign","dairy","quill",
+      "cross","brood","tuber","shear","posit","blank","villa","shank","piggy",
+      "freak","which","among","fecal","shell","would","algae","large","rabbi",
+      "agony","amuse","bushy","copse","swoon","knife","pouch","ascot","plane",
+      "crown","urban","snide","relay","abide","viola","rajah","straw","dilly",
+      "crash","amass","third","trick","tutor","woody","blurb","grief","disco",
+      "where","sassy","beach","sauna","comic","clued","creep","caste","graze",
+      "snuff","frock","gonad","drunk","prong","lurid","steel","halve","buyer",
+      "vinyl","utile","smell","adage","worry","tasty","local","trade","finch",
+      "ashen","modal","gaunt","clove","enact","adorn","roast","speck","sheik",
+      "missy","grunt","snoop","party","touch","mafia","emcee","array","south",
+      "vapid","jelly","skulk","angst","tubal","lower","crest","sweat","cyber",
+      "adore","tardy","swami","notch","groom","roach","hitch","young","align",
+      "ready","frond","strap","puree","realm","venue","swarm","offer","seven",
+      "dryer","diary","dryly","drank","acrid","heady","theta","junto","pixie",
+      "quoth","bonus","shalt","penne","amend","datum","build","piano","shelf",
+      "lodge","suing","rearm","coral","ramen","worth","psalm","infer","overt",
+      "mayor","ovoid","glide","usage","poise","randy","chuck","prank","fishy",
+      "tooth","ether","drove","idler","swath","stint","while","begat","apply",
+      "slang","tarot","radar","credo","aware","canon","shift","timer","bylaw",
+      "serum","three","steak","iliac","shirk","blunt","puppy","penal","joist",
+      "bunny","shape","beget","wheel","adept","stunt","stole","topaz","chore",
+      "fluke","afoot","bloat","bully","dense","caper","sneer","boxer","jumbo",
+      "lunge","space","avail","short","slurp","loyal","flirt","pizza","conch",
+      "tempo","droop","plate","bible","plunk","afoul","savoy","steep","agile",
+      "stake","dwell","knave","beard","arose","motif","smash","broil","glare",
+      "shove","baggy","mammy","swamp","along","rugby","wager","quack","squat",
+      "snaky","debit","mange","skate","ninth","joust","tramp","spurn","medal",
+      "micro","rebel","flank","learn","nadir","maple","comfy","remit","gruff",
+      "ester","least","mogul","fetch","cause","oaken","aglow","meaty","gaffe",
+      "shyly","racer","prowl","thief","stern","poesy","rocky","tweet","waist",
+      "spire","grope","havoc","patsy","truly","forty","deity","uncle","swish",
+      "giver","preen","bevel","lemur","draft","slope","annoy","lingo","bleak",
+      "ditty","curly","cedar","dirge","grown","horde","drool","shuck","crypt",
+      "cumin","stock","gravy","locus","wider","breed","quite","chafe","cache",
+      "blimp","deign","fiend","logic","cheap","elide","rigid","false","renal",
+      "pence","rowdy","shoot","blaze","envoy","posse","brief","never","abort",
+      "mouse","mucky","sulky","fiery","media","trunk","yeast","clear","skunk",
+      "scalp","bitty","cider","koala","duvet","segue","creme","super","grill",
+      "after","owner","ember","reach","nobly","empty","speed","gipsy","recur",
+      "smock","dread","merge","burst","kappa","amity","shaky","hover","carol",
+      "snort","synod","faint","haunt","flour","chair","detox","shrew","tense",
+      "plied","quark","burly","novel","waxen","stoic","jerky","blitz","beefy",
+      "lyric","hussy","towel","quilt","below","bingo","wispy","brash","scone",
+      "toast","easel","saucy","value","spice","honor","route","sharp","bawdy",
+      "radii","skull","phony","issue","lager","swell","urine","gassy","trial",
+      "flora","upper","latch","wight","brick","retry","holly","decal","grass",
+      "shack","dogma","mover","defer","sober","optic","crier","vying","nomad",
+      "flute","hippo","shark","drier","obese","bugle","tawny","chalk","feast",
+      "ruddy","pedal","scarf","cruel","bleat","tidal","slush","semen","windy",
+      "dusty","sally","igloo","nerdy","jewel","shone","whale","hymen","abuse",
+      "fugue","elbow","crumb","pansy","welsh","syrup","terse","suave","gamut",
+      "swung","drake","freed","afire","shirt","grout","oddly","tithe","plaid",
+      "dummy","broom","blind","torch","enemy","again","tying","pesky","alter",
+      "gazer","noble","ethos","bride","extol","decor","hobby","beast","idiom",
+      "utter","these","sixth","alarm","erase","elegy","spunk","piper","scaly",
+      "scold","hefty","chick","sooty","canal","whiny","slash","quake","joint",
+      "swept","prude","heavy","wield","femme","lasso","maize","shale","screw",
+      "spree","smoky","whiff","scent","glade","spent","prism","stoke","riper",
+      "orbit","cocoa","guilt","humus","shush","table","smirk","wrong","noisy",
+      "alert","shiny","elate","resin","whole","hunch","pixel","polar","hotel",
+      "sword","cleat","mango","rumba","puffy","filly","billy","leash","clout",
+      "dance","ovate","facet","chili","paint","liner","curio","salty","audio",
+      "snake","fable","cloak","navel","spurt","pesto","balmy","flash","unwed",
+      "early","churn","weedy","stump","lease","witty","wimpy","spoof","saner",
+      "blend","salsa","thick","warty","manic","blare","squib","spoon","probe",
+      "crepe","knack","force","debut","order","haste","teeth","agent","widen",
+      "icily","slice","ingot","clash","juror","blood","abode","throw","unity",
+      "pivot","slept","troop","spare","sewer","parse","morph","cacti","tacky",
+      "spool","demon","moody","annex","begin","fuzzy","patch","water","lumpy",
+      "admin","omega","limit","tabby","macho","aisle","skiff","basis","plank",
+      "verge","botch","crawl","lousy","slain","cubic","raise","wrack","guide",
+      "foist","cameo","under","actor","revue","fraud","harpy","scoop","climb",
+      "refer","olden","clerk","debar","tally","ethic","cairn","tulle","ghoul",
+      "hilly","crude","apart","scale","older","plain","sperm","briny","abbot",
+      "rerun","quest","crisp","bound","befit","drawn","suite","itchy","cheer",
+      "bagel","guess","broad","axiom","chard","caput","leant","harsh","curse",
+      "proud","swing","opine","taste","lupus","gumbo","miner","green","chasm",
+      "lipid","topic","armor","brush","crane","mural","abled","habit","bossy",
+      "maker","dusky","dizzy","lithe","brook","jazzy","fifty","sense","giant",
+      "surly","legal","fatal","flunk","began","prune","small","slant","scoff",
+      "torus","ninny","covey","viper","taken","moral","vogue","owing","token",
+      "entry","booth","voter","chide","elfin","ebony","neigh","minim","melon",
+      "kneed","decoy","voila","ankle","arrow","mushy","tribe","cease","eager",
+      "birth","graph","odder","terra","weird","tried","clack","color","rough",
+      "weigh","uncut","ladle","strip","craft","minus","dicey","titan","lucid",
+      "vicar","dress","ditch","gypsy","pasta","taffy","flame","swoop","aloof",
+      "sight","broke","teary","chart","sixty","wordy","sheer","leper","nosey",
+      "bulge","savor","clamp","funky","foamy","toxic","brand","plumb","dingy",
+      "butte","drill","tripe","bicep","tenor","krill","worse","drama","hyena",
+      "think","ratio","cobra","basil","scrum","bused","phone","court","camel",
+      "proof","heard","angel","petal","pouty","throb","maybe","fetal","sprig",
+      "spine","shout","cadet","macro","dodgy","satyr","rarer","binge","trend",
+      "nutty","leapt","amiss","split","myrrh","width","sonar","tower","baron",
+      "fever","waver","spark","belie","sloop","expel","smote","baler","above",
+      "north","wafer","scant","frill","awash","snack","scowl","frail","drift",
+      "limbo","fence","motel","ounce","wreak","revel","talon","prior","knelt",
+      "cello","flake","debug","anode","crime","salve","scout","imbue","pinky",
+      "stave","vague","chock","fight","video","stone","teach","cleft","frost",
+      "prawn","booty","twist","apnea","stiff","plaza","ledge","tweak","board",
+      "grant","medic","bacon","cable","brawl","slunk","raspy","forum","drone",
+      "women","mucus","boast","toddy","coven","tumor","truer","wrath","stall",
+      "steam","axial","purer","daily","trail","niche","mealy","juice","nylon",
+      "plump","merry","flail","papal","wheat","berry","cower","erect","brute",
+      "leggy","snipe","sinew","skier","penny","jumpy","rally","umbra","scary",
+      "modem","gross","avian","greed","satin","tonic","parka","sniff","livid",
+      "stark","trump","giddy","reuse","taboo","avoid","quote","devil","liken",
+      "gloss","gayer","beret","noise","gland","dealt","sling","rumor","opera",
+      "thigh","tonga","flare","wound","white","bulky","etude","horse","circa",
+      "paddy","inbox","fizzy","grain","exert","surge","gleam","belle","salvo",
+      "crush","fruit","sappy","taker","tract","ovine","spiky","frank","reedy",
+      "filth","spasm","heave","mambo","right","clank","trust","lumen","borne",
+      "spook","sauce","amber","lathe","carat","corer","dirty","slyly","affix",
+      "alloy","taint","sheep","kinky","wooly","mauve","flung","yacht","fried",
+      "quail","brunt","grimy","curvy","cagey","rinse","deuce","state","grasp",
+      "milky","bison","graft","sandy","baste","flask","hedge","girly","swash",
+      "boney","coupe","endow","abhor","welch","blade","tight","geese","miser",
+      "mirth","cloud","cabal","leech","close","tenth","pecan","droit","grail",
+      "clone","guise","ralph","tango","biddy","smith","mower","payee","serif",
+      "drape","fifth","spank","glaze","allot","truck","kayak","virus","testy",
+      "tepee","fully","zonal","metro","curry","grand","banjo","axion","bezel",
+      "occur","chain","nasal","gooey","filer","brace","allay","pubic","raven",
+      "plead","gnash","flaky","munch","dully","eking","thing","slink","hurry",
+      "theft","shorn","pygmy","ranch","wring","lemon","shore","mamma","froze",
+      "newer","style","moose","antic","drown","vegan","chess","guppy","union",
+      "lever","lorry","image","cabby","druid","exact","truth","dopey","spear",
+      "cried","chime","crony","stunk","timid","batch","gauge","rotor","crack",
+      "curve","latte","witch","bunch","repel","anvil","soapy","meter","broth",
+      "madly","dried","scene","known","magma","roost","woman","thong","punch",
+      "pasty","downy","knead","whirl","rapid","clang","anger","drive","goofy",
+      "email","music","stuff","bleep","rider","mecca","folio","setup","verso",
+      "quash","fauna","gummy","happy","newly","fussy","relic","guava","ratty",
+      "fudge","femur","chirp","forte","alibi","whine","petty","golly","plait",
+      "fleck","felon","gourd","brown","thrum","ficus","stash","decry","wiser",
+      "junta","visor","daunt","scree","impel","await","press","whose","turbo",
+      "stoop","speak","mangy","eying","inlet","crone","pulse","mossy","staid",
+      "hence","pinch","teddy","sully","snore","ripen","snowy","attic","going",
+      "leach","mouth","hound","clump","tonal","bigot","peril","piece","blame",
+      "haute","spied","undid","intro","basal","shine","gecko","rodeo","guard",
+      "steer","loamy","scamp","scram","manly","hello","vaunt","organ","feral",
+      "knock","extra","condo","adapt","willy","polka","rayon","skirt","faith",
+      "torso","match","mercy","tepid","sleek","riser","twixt","peace","flush",
+      "catty","login","eject","roger","rival","untie","refit","aorta","adult",
+      "judge","rower","artsy","rural","shave"]
+
+if prep {
+  _ = solve(words[1..20] | save, "blush")
+  return solve(words[1..50] | save, "helix")
+}
+return solve(words, "mauve")
+
+function solve(words, answer) {
+  potentialAnswers = words
+  for idx in 1..6 sequential potentialAnswers {
+   guess = bestGuess(words, potentialAnswers)
+   toPrint <<^ ["Guess", idx, guess]
+   response = score(guess, answer)
+   toPrint <<^ ["Response:", response]
+   if guess == answer {
+     break
+   }
+   potentialAnswers = potentialAnswers | filter(-> score(guess, #) == response) | saveUnordered
+   toPrint << "Answers left:"
+   toPrint <<^ potentialAnswers
+  } collect {
+    toPrint =| saveSequential
+  }
+  return toPrint
+}
+
+// Get the score of this guess, given this answer.
+// Returns a string with the characters "g", "y", and "-" representing
+// "correct spot", "wrong spot", and "missing letter" respectively.
+function score(guess, answer) {
+  guess = codePoints(guess)
+  answer = codePoints(answer)
+  for char in 1..5 {
+    // The character is in the correct spot.
+    if guess[char] == answer[char] {
+      result << "g"
+      continue
+    }
+    // Let's see if it appears elsewhere in the answer.
+    for otherchar in 1..5 {
+      if (guess[otherchar] == answer[otherchar]) {
+        continue
+      }
+      // How many times have we guessed this letter so far.
+      if otherchar <= char and guess[otherchar] == guess[char] {
+        guessed << 1
+      }
+      // How many times is the letter actually in the answer.
+      if guess[char] == answer[otherchar] {
+        actual << 1
+      }
+    } collect {
+      guessed =| sum
+      actual =| sum
+    }
+    // We guessed a letter that appears elsewhere in the answer.
+    if guessed <= actual {
+      result << "y"
+    } else {
+      // It isn't anywhere, or we already guessed it.
+      result << "-"
+    }
+  } collect {
+    result =| save
+  }
+  return join(result)
+}
+
+// Concatenate a list of strings.
+function join(strings) {
+  result = ""
+  for char in strings sequential result {
+    result = result & char
+  }
+  return result
+}
+
+// Calculate the best guess out of all these words given these possible answers.
+// This simple algo just divides the answer space by score for each guess, and
+// chooses the one that has the smallest biggest group.
+function bestGuess(words, potentialAnswers) {
+  if size(potentialAnswers) == 1 {
+    return potentialAnswers[1]
+  }
+  for guess in words {
+    for answer in potentialAnswers {
+      groups << numFor(score(guess, answer))
+      if answer == guess {
+        // Give a little bonus for choosing a possible answer :-)
+        possible << 1
+      }
+    } collect {
+      groups =| intHistogram(243)
+      possible =| sum
+    }
+    worst << (groups | max) - possible
+  } collect {
+    worst =| save
+  }
+  [[index], _] = withKeys(worst) | minAt([2])
+  return words[index]
+}
+
+// A Reducer that constructs a histogram of its inputs, which must be
+// integers in the range 1..size.  The histogram is returned as an array.
+function intHistogram(Integer size) = IntHistogram_(size)
+
+compound IntHistogram is Reducer
+method emptyState(IntHistogram x) = newMatrix([x_], 300)
+method nextState(IntHistogram, state, value) {
+  state[value] += 1
+  return state
+}
+method combineStates(IntHistogram, state1, state2) {
+  state1 += state2
+  return state1
+}
+
+function adjustScoreChar(char) {
+  if char == 45 { // "-"
+    return 0
+  } else if char == 121 { // "y"
+    return 1
+  } else { // "g"
+    return 2
+  }
+}
+
+// Convert a "score" into a number between 1 and 243.
+function numFor(score) {
+  reduced = adjustScoreChar(^codePoints(score))
+  return (([1, 3, 9, 27, 81] * reduced) | sum) + 1
+}
+
+/* CODEGEN solve RETURNS
+["Guess", 1, "arise", "Response:", "y---g", "Answers left:", "evade", "badge", "gauze", "leave", "valve", "canoe", "lance", "eagle", "place", "weave", "bathe", "plane", "halve", "plate", "knave", "mange", "maple", "gaffe", "chafe", "cache", "blaze", "value", "whale", "quake", "glade", "table", "elate", "dance", "ovate", "fable", "ladle", "flame", "maybe", "flake", "vague", "cable", "heave", "lathe", "mauve", "blade", "payee", "glaze", "gauge", "latte", "blame", "haute", "peace",
+ "Guess", 2, "eagle", "Response:", "-g--g", "Answers left:", "canoe", "bathe", "cache", "dance", "maybe", "mauve", "haute",
+ "Guess", 3, "bench", "Response:", "-y---", "Answers left:", "mauve",
+ "Guess", 4, "mauve", "Response:", "ggggg"]
+---
+solve_0(x1:*[]@xxxx, x2:String):
+   1: AtomicInteger.incrementAndGet(0);
+   2: X3 ← null;
+   3: X4 ← null;
+   4: I8 ← 1;
+   5: X9 ← [];
+   6: X10 ← X1;
+   7: addRef{X10};
+=  8: I11 ← Math.addExact(I8, 1); ArithmeticException:→ 86
+   9: test X10 is *[]x0:String@xxxx; F:→ 86
+  10: X5 ← null;
+  11: test Frame1i2x.i0(X10) == 1; F:→ 91
+  12: test Frame1i2x.i0(X10) < 1; T:→ 86
+  13: X14 ← Value.fromArray(Frame1i2x.x0(X10), 0);
+= 14: I6 ← 0;
+= 15: I7 ← iAdd(I6, 1);
+  16: test I6 == 0; F:→ 216
+  17: I12 ← 0;
+  18: X13 ← "Guess";
+= 19: I15 ← 2;
+= 20: I16 ← Frame1i4x.i0(X9);
+  21: test TState.reserveForChange(X0, *[]b0⸨0:b1; 1:x0:String⸩@xxxx, X9, iAdd(I16, 1)) == 0; T:→ 342
+  22: addRef{X13};
+  23: X9 ← removeRange*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, X9, I16, 0, 1);
+  24: test I15 == 0; F:→ 222
+  25: I6 ← 0;
+= 26: clear*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, X9, I16, iAdd(I16, 1));
+  27: test I12 isUint8; F:→ 334
+  28: setUint8[](Frame1i4x.x1(X9), I16, I12);
+  29: setObject[](Frame1i4x.x2(X9), I16, X13);
+  30: setUint8[](Frame1i4x.x0(X9), I16, I6);
+  31: I6 ← I7;
+  32: test I6 < 3; T:→ 15
+  33: [x0:String] ← score_1(X0, addRef(X14), addRef(X2)); X6 ← stackRest; unwind:→ 331
+  34: X8 ← TState.fnResult(X0, 0);
+  35: TState.clearResults(X0);
+  36: test X6 == null; T:→ 39
+  37: addRef(X2); addRef(X10); addRef(X14); addRef(X9); X7 ← newStackEntry(⟦wordle.r8t+1:271_10 response = score(guess, answer) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), toPrint_rw=LoopRW(Absent, X9), potentialAnswers=X10, guess=X14, answer=X2, _key=Absent⟧);
+  38: X5 ← TState.fillStackEntry(X0, X6, X7, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5);
+- 39: I6 ← 0;
+= 40: I7 ← iAdd(I6, 1);
+  41: test I6 == 0; F:→ 223
+  42: X12 ← "Response:";
+= 43: I13 ← Frame1i4x.i0(X9);
+  44: test TState.reserveForChange(X0, *[]b0⸨0:b1; 1:x0:String⸩@xxxx, X9, iAdd(I13, 1)) == 0; T:→ 322
+  45: X15 ← removeRange*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, addRef(X9), I13, 0, 1);
+  46: test X12 instanceof StringValue; F:→ 330
+  47: addRef{X12} dropRef{X9};
+  48: clear*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, X15, I13, iAdd(I13, 1));
+  49: setUint8[](Frame1i4x.x0(X15), I13, 1);
+  50: setObject[](Frame1i4x.x2(X15), I13, X12);
+  51: I6 ← I7;
+  52: X9 ← X15;
+  53: test I6 < 2; T:→ 40
+= 54: test Objects.equals(X2, X14) == 0; F:→ 272
+  55: X12 ← null;
+  56: I6 ← 0;
+  57: X15 ← [];
+= 58: X7 ← null;
+= 59: test I6 < Frame1i2x.i0(X10); F:→ 227
+  60: I18 ← iAdd(I6, 1);
+  61: X19 ← Value.fromArray(Frame1i2x.x0(X10), I6);
+  62: test X19 == Absent; T:→ 228
+  63: test X19 instanceof StringValue; F:→ 317
+  64: X13 ← null;
+  65: X16 ← null;
+  66: [x0:String] ← score_1(X0, addRef(X14), addRef(X19)); X17 ← stackRest; unwind:→ 308
+  67: X6 ← TState.fnResult(X0, 0);
+  68: TState.clearResults(X0);
+  69: test X17 == null; T:→ 72
+  70: addRef(X8); X16 ← newStackEntry(⟦wordle.r8t+1:276_1 _t0 = score(guess, #) ∥ response=X8⟧);
+  71: X16 ← TState.fillStackEntry(X0, X17, X16, ⟨⸨False; True⸩, x0:String⟩, mMemo_6@xxxx, null);
+- 72: test Objects.equals(X8, X6) == 0; T:→ 225
+  73: dropRef{X6};
+  74: I6 ← 1;
+= 75: test X16 == null; T:→ 78
+  76: addRef(X19); X13 ← newStackEntry(⟦CollectionCore.AtFilter.at ∥ x=⸨Absent; X19⸩⟧);
+  77: X13 ← TState.fillStackEntry(X0, X16, X13, ⟨⸨Absent; x0:String⸩, Undef, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), TransformedIterator((empty), EnumerateValues, Filter(lambda@xxx:48⸨guess=x0:String, response=x0:String⸩))⟩, mMemo_7@xxxx, null);
+- 78: test I6 0 (< 2); F:→ 80
+  79: X19 ← Absent;
+- 80: test X13 == null; T:→ 83
+  81: addRef(X10); addRef(X14); addRef(X8); X6 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.at ∥ key=Undef, innerIt=ArrayIterator(X10, EnumerateValues, I18), it=TransformedIterator((empty), EnumerateValues, Filter(lambda@xxx:48⸨guess=X14, response=X8⸩))⟧);
+  82: X7 ← TState.fillStackEntry(X0, X13, X6, ⟨⸨Absent; x0:String⸩, TransformedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), EnumerateValues, Filter(lambda@xxx:48⸨guess=x0:String, response=x0:String⸩)), SaveUnordered, x0:*[]@xxxx⟩, mMemo_9@xxxx, X7);
+- 83: test X19 == Absent; F:→ 229
+  84: I6 ← I18; → 59
+= 85: test 6 < I8; F:→ 8
+= 86: X3 ← newStackEntry(⟦LoopCore.Iterate.afterIterator ∥ it=RangeIterator(I8, 6, None), loop=loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=X1, answer=X2⸩, state=loop@xxx_state⸨toPrint_rw=LoopRW(Absent, X9), potentialAnswers=X10⸩⟧);
+  87: X4 ← TState.fillStackEntry(X0, null, X3, ⟨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, mMemo_h40@xxxx, X4);
+= 88: X3 ← TState.fillStackEntry(X0, X4, ⟦wordle.r8t+1:268_4 _t0 = iterate(_t0, _t2, loop@xxx⸨toPrint_ro=toPrint_ro, _eKind=_t2, words=words, answer=answer⸩, loop@xxx_state⸨toPrint_rw=_t1, potentialAnswers=potentialAnswers⸩) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False)⟧, ⟨x0:*[]@xxxx⟩, mMemo_x@xxxx, null);
+  89: TState.setStackRest(X0, X3);
+  90: return
+- 91: test X1 is *[]x0:String@xxxx; F:→ 86
+  92: I7 ← Frame1i2x.i0(X1);
+  93: test I7 == 0; T:→ 86
+  94: test TState.reserveForChange(X0, *[]i0@xxxx, null, I7) == 0; T:→ 86
+  95: X6 ← null;
+  96: X14 ← alloc*[]i0@xxxx(X0, I7);
+  97: X12 ← null;
+  98: I7 ← 0;
+= 99: test I7 < Frame1i2x.i0(X1); F:→ 190
+ 100: test TState.reserveForChange(X0, *[]i0@xxxx, null, 243) == 0; T:→ 405
+ 101: I15 ← iAdd(I7, 1);
+ 102: X13 ← Value.fromArray(Frame1i2x.x0(X1), I7);
+ 103: X7 ← null;
+ 104: X19 ← alloc*[]i0@xxxx(X0, 243);
+ 105: ArrayUtil.bytesFillI(Frame1i2x.x0(X19), 0, 243, 300);
+ 106: X16 ← null;
+ 107: I20 ← 0;
+ 108: I21 ← 0;
+=109: test I20 < Frame1i2x.i0(X10); F:→ 164
+ 110: X22 ← Value.fromArray(Frame1i2x.x0(X10), I20);
+ 111: test X22 == Absent; T:→ 164
+ 112: test X22 instanceof StringValue; F:→ 400
+ 113: I20 ← iAdd(I20, 1);
+ 114: X17 ← null;
+ 115: [x0:String] ← score_1(X0, addRef(X13), addRef(X22)); X18 ← stackRest; unwind:→ 397
+ 116: X23 ← TState.fnResult(X0, 0);
+ 117: TState.clearResults(X0);
+ 118: test X18 == null; T:→ 121
+ 119: addRef(X13); addRef(X19); addRef(X22); X17 ← newStackEntry(⟦wordle.r8t+1:345_8 _t0 = score(guess, answer) ∥ groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), groups_rw=LoopRW(Absent, X19), possible_ro=LoopRO(EnumerateValues, Sum(0), True), possible_rw=LoopRW(Absent, I21), answer=X22, guess=X13, _key=Absent⟧);
+ 120: X17 ← TState.fillStackEntry(X0, X18, X17, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩, loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0)⟩, mMemo_h58@xxxx, null);
+-121: I18 ← StringValue.length(X23);
+ 122: test I18 == 0; T:→ 394
+ 123: test I18 == 5; F:→ 394
+ 124: I18 ← 0;
+ 125: I24 ← 0;
+=126: I25 ← iAdd(I18, 1);
+ 127: test I18 == 0; F:→ 155
+ 128: I26 ← 1;
+=129: I27 ← Math.addExact(1, Math.subtractExact(I25, 1)); ArithmeticException:→ 381
+ 130: I27 ← StringValue.codePoint(X23, I27);
+ 131: test I27 < 0; T:→ 381
+ 132: test I27 == 45; T:→ 162
+ 133: test I27 == 121; F:→ 163
+ 134: I27 ← 1;
+=135: I26 ← Math.multiplyExact(I26, I27); ArithmeticException:→ 381
+ 136: I26 ← Math.addExact(I24, I26); ArithmeticException:→ 381
+ 137: I18 ← I25;
+ 138: I24 ← I26;
+ 139: test I18 < 5; T:→ 126
+ 140: I25 ← Math.addExact(I24, 1); ArithmeticException:→ 381
+ 141: test I25 < 1; T:→ 381
+ 142: test Frame1i2x.i0(X19) < I25; T:→ 381
+ 143: dropRef{X23};
+ 144: I18 ← iSub(I25, 1);
+ 145: I23 ← int[](Frame1i2x.x0(X19), iShl(I18, 2));
+ 146: I24 ← Math.addExact(I23, 1); ArithmeticException:→ 370
+ 147: setInt[](Frame1i2x.x0(X19), iShl(I18, 2), I24);
+ 148: test Objects.equals(X13, X22) == 0; T:→ 152
+ 149: I24 ← Math.addExact(I21, 1); ArithmeticException:→ 370
+ 150: test I24 == 1; F:→ 370
+ 151: I21 ← 1;
+-152: test X17 == null; T:→ 109
+ 153: addRef(X10); addRef(X13); X18 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=X13⸩, it=ArrayIterator(X10, EnumerateValues, I20)⟧);
+ 154: X16 ← TState.fillStackEntry(X0, X17, X18, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h40@xxxx, X16); → 109
+-155: test I18 == 1; F:→ 157
+ 156: I26 ← 3; → 129
+-157: test I18 == 2; F:→ 159
+ 158: I26 ← 9; → 129
+-159: test I18 == 3; F:→ 161
+ 160: I26 ← 27; → 129
+-161: I26 ← 81; → 129
+-162: I27 ← 0; → 135
+-163: I27 ← 2; → 135
+-164: test X16 == null; T:→ 169
+ 165: X13 ← TState.fillStackEntry(X0, X16, ⟦LoopCore.enumerateDefault⟧, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h38@xxxx, null);
+ 166: test X13 == null; T:→ 169
+ 167: addRef(X14); X7 ← newStackEntry(⟦wordle.r8t+1:344_12 _t0 = enumerate(potentialAnswers, _t1, loop@xxx⸨groups_ro=groups_ro, possible_ro=possible_ro, _eKind=_t1, guess=guess⸩, loop@xxx_state⸨groups_rw=_t0, possible_rw=_t2⸩) ∥ worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), worst_rw=LoopRW(Absent, X14), _key=[I15], groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True)⟧);
+ 168: X7 ← TState.fillStackEntry(X0, X13, X7, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩, loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=x0:*[]@xxxx⸩, ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0)⟩, mMemo_h75@xxxx, null);
+-169: I13 ← 0;
+ 170: I17 ← 0;
+ 171: I16 ← 1;
+=172: test I13 < Frame1i2x.i0(X19); F:→ 180
+ 173: I18 ← iAdd(I13, 1);
+ 174: I13 ← int[](Frame1i2x.x0(X19), iShl(I13, 2));
+ 175: test I16 1 (< 2); T:→ 177
+ 176: test I17 < I13; F:→ 178
+-177: I17 ← I13;
+-178: I13 ← I18;
+ 179: I16 ← 0; → 172
+-180: test I16 == 0; F:→ 357
+ 181: I18 ← Math.subtractExact(I17, I21); ArithmeticException:→ 357
+ 182: test I15 < 1; T:→ 357
+ 183: test Frame1i2x.i0(X14) < I15; T:→ 357
+ 184: dropRef{X19};
+ 185: setInt[](Frame1i2x.x0(X14), iShl(iSub(I15, 1), 2), I18);
+ 186: test X7 == null; T:→ 189
+ 187: addRef(X1); addRef(X10); X13 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=X10⸩, it=ArrayIterator(X1, EnumerateAllKeys, I15)⟧);
+ 188: X12 ← TState.fillStackEntry(X0, X7, X13, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩⟩, mMemo_h40@xxxx, X12);
+-189: I7 ← I15; → 99
+-190: test X12 == null; T:→ 195
+ 191: X7 ← TState.fillStackEntry(X0, X12, ⟦LoopCore.enumerateDefault⟧, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩⟩, mMemo_h38@xxxx, null);
+ 192: test X7 == null; T:→ 195
+ 193: addRef(X1); X6 ← newStackEntry(⟦wordle.r8t+1:343_8 _t0 = enumerate(words, _t1, loop@xxx⸨worst_ro=worst_ro, _eKind=_t1, potentialAnswers=potentialAnswers⸩, loop@xxx_state⸨worst_rw=_t0⸩) ∥ words=X1, worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True)⟧);
+ 194: X6 ← TState.fillStackEntry(X0, X7, X6, ⟨x0:String⟩, mMemo_h73@xxxx, null);
+-195: I7 ← 0;
+ 196: I15 ← 0;
+ 197: I16 ← 0;
+ 198: I12 ← 1;
+=199: test I7 < Frame1i2x.i0(X14); F:→ 208
+ 200: I13 ← iAdd(I7, 1);
+ 201: I7 ← int[](Frame1i2x.x0(X14), iShl(I7, 2));
+ 202: test I12 1 (< 2); T:→ 204
+ 203: test I7 < I16; F:→ 206
+-204: I15 ← I13;
+ 205: I16 ← I7;
+-206: I7 ← I13;
+ 207: I12 ← 0; → 199
+-208: test I12 == 0; F:→ 347
+ 209: test I15 < 1; T:→ 347
+ 210: test Frame1i2x.i0(X1) < I15; T:→ 347
+ 211: dropRef{X14};
+ 212: X14 ← Value.fromArray(Frame1i2x.x0(X1), iSub(I15, 1));
+ 213: test X6 == null; T:→ 14
+ 214: addRef(X2); addRef(X9); addRef(X10); X5 ← newStackEntry(⟦wordle.r8t+1:269_8 guess = bestGuess(words, potentialAnswers) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), toPrint_rw=LoopRW(Absent, X9), potentialAnswers=X10, idx=I8, answer=X2, _key=Absent⟧);
+ 215: X5 ← TState.fillStackEntry(X0, X6, X5, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, null); → 14
+-216: test I6 == 1; F:→ 220
+ 217: X13 ← null;
+ 218: I12 ← I8;
+ 219: I15 ← 0; → 20
+-220: I12 ← 0;
+ 221: X13 ← X14; → 19
+-222: I6 ← 1; → 26
+-223: test X8 == Absent; T:→ 54
+ 224: X12 ← X8; → 43
+-225: dropRef{X6};
+ 226: I6 ← 0; → 75
+-227: I18 ← I6;
+-228: X19 ← Absent;
+-229: test X7 == null; T:→ 232
+ 230: addRef(X15); X6 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaveUnordered, state=X15⟧);
+ 231: X12 ← TState.fillStackEntry(X0, X7, X6, ⟨x0:*[]@xxxx, SaveUnordered⟩, mMemo_13@xxxx, X12);
+-232: test X19 == Absent; T:→ 243
+ 233: addRef{X19};
+ 234: I6 ← Frame1i2x.i0(X15);
+ 235: test TState.reserveForChange(X0, *[]x0:String@xxxx, X15, iAdd(I6, 1)) == 0; T:→ 300
+ 236: X7 ← removeRange*[]x0:String@xxxx(X0, addRef(X15), I6, 0, 1);
+ 237: test X19 instanceof StringValue; F:→ 307
+ 238: dropRef{X15};
+ 239: clear*[]x0:String@xxxx(X0, X7, I6, iAdd(I6, 1));
+ 240: setObject[](Frame1i2x.x0(X7), I6, X19);
+ 241: I6 ← I18;
+ 242: X15 ← X7; → 58
+-243: test X12 == null; T:→ 250
+ 244: X7 ← TState.fillStackEntry(X0, addRef(X12), ⟦LoopCore.enumerateDefault⟧, ⟨x0:*[]@xxxx, SaveUnordered⟩, mMemo_14@xxxx, null);
+ 245: test X7 == null; T:→ 250
+ 246: X6 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaveUnordered⟧, ⟨x0:*[]@xxxx⟩, mMemo_18@xxxx, null);
+ 247: test X6 == null; T:→ 250
+ 248: addRef(X9); X7 ← newStackEntry(⟦wordle.r8t+1:276_21 potentialAnswers = pipe(_t0, _t1) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), toPrint_rw=LoopRW(Absent, X9), _key=Absent⟧);
+ 249: X5 ← TState.fillStackEntry(X0, X6, X7, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5);
+-250: I6 ← Frame1i4x.i0(X9);
+ 251: test TState.reserveForChange(X0, *[]b0⸨0:b1; 1:x0:String⸩@xxxx, X9, iAdd(I6, 1)) == 0; T:→ 300
+ 252: dropRef{X10, X12, X8};
+ 253: X9 ← removeRange*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, X9, I6, 0, 1);
+ 254: clear*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, X9, I6, iAdd(I6, 1));
+ 255: setUint8[](Frame1i4x.x0(X9), I6, 1);
+ 256: setObject[](Frame1i4x.x2(X9), I6, "Answers left:");
+ 257: I6 ← 0;
+=258: test I6 < Frame1i2x.i0(X15); F:→ 280
+ 259: X8 ← Value.fromArray(Frame1i2x.x0(X15), I6);
+ 260: test X8 == Absent; T:→ 280
+ 261: I10 ← Frame1i4x.i0(X9);
+ 262: test TState.reserveForChange(X0, *[]b0⸨0:b1; 1:x0:String⸩@xxxx, X9, iAdd(I10, 1)) == 0; T:→ 291
+ 263: I7 ← iAdd(I6, 1);
+ 264: X12 ← removeRange*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, addRef(X9), I10, 0, 1);
+ 265: test X8 instanceof StringValue; F:→ 290
+ 266: addRef{X8} dropRef{X9};
+ 267: clear*[]b0⸨0:b1; 1:x0:String⸩@xxxx(X0, X12, I10, iAdd(I10, 1));
+ 268: setUint8[](Frame1i4x.x0(X12), I10, 1);
+ 269: setObject[](Frame1i4x.x2(X12), I10, X8);
+ 270: I6 ← I7;
+ 271: X9 ← X12; → 258
+-272: dropRef{X10, X8};
+ 273: X10 ← null;
+ 274: I6 ← 0;
+=275: test X5 == null; T:→ 278
+ 276: addRef(X1); addRef(X2); X7 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=X1, answer=X2⸩, it=RangeIterator(I11, 6, None)⟧);
+ 277: X4 ← TState.fillStackEntry(X0, X5, X7, ⟨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, mMemo_h40@xxxx, X4);
+-278: test I6 0 (< 2); T:→ 283
+ 279: I8 ← I11; → 85
+-280: I6 ← 1;
+ 281: X10 ← X15;
+ 282: addRef{X10} dropRef{X15}; → 275
+-283: dropRef{X1, X2, X10};
+ 284: test X4 == null; T:→ 286
+ 285: X3 ← TState.fillStackEntry(X0, X4, ⟦wordle.r8t+1:268_4 _t0 = iterate(_t0, _t2, loop@xxx⸨toPrint_ro=toPrint_ro, _eKind=_t2, words=words, answer=answer⸩, loop@xxx_state⸨toPrint_rw=_t1, potentialAnswers=potentialAnswers⸩) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False)⟧, ⟨x0:*[]@xxxx⟩, mMemo_x@xxxx, null);
+-286: TState.setResultTemplates(X0, [x0:*[]@xxxx]);
+ 287: setObject[](TState.fnResults(X0, 1), 0, X9);
+ 288: TState.setStackRest(X0, X3);
+ 289: return
+-290: dropRef{X12};
+-291: addRef(X15); X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I6, it=ArrayIterator(X15, EnumerateValues, I6)⟧);
+ 292: X12 ← TState.fillStackEntry(X0, null, X3, ⟨⸨Absent; x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), SaveUnordered, x0:*[]@xxxx⟩, mMemo_1@xxxx, null);
+ 293: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaveUnordered, state=X9⟧);
+ 294: X7 ← TState.fillStackEntry(X0, X12, X3, ⟨x0:*[]@xxxx⟩, mMemo_4@xxxx, null);
+ 295: X6 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.EmitAll.iterate⟧, ⟨LoopRW(Absent, x0:*[]@xxxx)⟩, mMemo_5@xxxx, null);
+ 296: X3 ← newStackEntry(⟦wordle.r8t+1:278_23 toPrint_rw = emitAll(toPrint_ro, toPrint_rw, potentialAnswers) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), potentialAnswers=X15, _key=Absent⟧);
+ 297: X5 ← TState.fillStackEntry(X0, X6, X3, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5);
+=298: X3 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=X1, answer=X2⸩, it=RangeIterator(I11, 6, None)⟧);
+ 299: X4 ← TState.fillStackEntry(X0, X5, X3, ⟨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, mMemo_h40@xxxx, X4); → 88
+-300: addRef{X14};
+=301: X3 ← newStackEntry(⟦LoopCore.Iterate.afterNext ∥ element=⸨Absent; X19⸩, it=TransformedIterator(ArrayIterator(X10, EnumerateValues, I18), EnumerateValues, Filter(lambda@xxx:48⸨guess=X14, response=X8⸩)), loop=SaveUnordered, state=X15⟧);
+ 302: X12 ← TState.fillStackEntry(X0, null, X3, ⟨x0:*[]@xxxx, SaveUnordered⟩, mMemo_13@xxxx, X12);
+=303: X7 ← TState.fillStackEntry(X0, X12, ⟦LoopCore.enumerateDefault⟧, ⟨x0:*[]@xxxx, SaveUnordered⟩, mMemo_14@xxxx, null);
+ 304: X6 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=SaveUnordered⟧, ⟨x0:*[]@xxxx⟩, mMemo_18@xxxx, null);
+ 305: X3 ← newStackEntry(⟦wordle.r8t+1:276_21 potentialAnswers = pipe(_t0, _t1) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), toPrint_rw=LoopRW(Absent, X9), _key=Absent⟧);
+ 306: X5 ← TState.fillStackEntry(X0, X6, X3, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5); → 298
+-307: addRef{X14} dropRef{X7}; → 301
+-308: addRef{X14, X19};
+ 309: addRef(X8); X3 ← newStackEntry(⟦wordle.r8t+1:276_1 _t0 = score(guess, #) ∥ response=X8⟧);
+ 310: X16 ← TState.fillStackEntry(X0, X17, X3, ⟨⸨False; True⸩, x0:String⟩, mMemo_6@xxxx, null);
+ 311: X3 ← newStackEntry(⟦CollectionCore.AtFilter.at ∥ x=⸨Absent; X19⸩⟧);
+ 312: X13 ← TState.fillStackEntry(X0, X16, X3, ⟨⸨Absent; x0:String⸩, Undef, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), TransformedIterator((empty), EnumerateValues, Filter(lambda@xxx:48⸨guess=x0:String, response=x0:String⸩))⟩, mMemo_7@xxxx, null);
+ 313: X3 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.at ∥ key=Undef, innerIt=ArrayIterator(X10, EnumerateValues, I18), it=TransformedIterator((empty), EnumerateValues, Filter(lambda@xxx:48⸨guess=X14, response=X8⸩))⟧);
+ 314: X7 ← TState.fillStackEntry(X0, X13, X3, ⟨⸨Absent; x0:String⸩, TransformedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), EnumerateValues, Filter(lambda@xxx:48⸨guess=x0:String, response=x0:String⸩)), SaveUnordered, x0:*[]@xxxx⟩, mMemo_9@xxxx, X7);
+=315: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaveUnordered, state=X15⟧);
+ 316: X12 ← TState.fillStackEntry(X0, X7, X3, ⟨x0:*[]@xxxx, SaveUnordered⟩, mMemo_13@xxxx, X12); → 303
+-317: addRef{X14};
+ 318: X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I6, it=ArrayIterator(X10, EnumerateValues, I6)⟧);
+ 319: X13 ← TState.fillStackEntry(X0, null, X3, ⟨⸨Absent; x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), TransformedIterator((empty), EnumerateValues, Filter(lambda@xxx:48⸨guess=x0:String, response=x0:String⸩))⟩, mMemo_1@xxxx, null);
+ 320: X3 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.next ∥ it=TransformedIterator((empty), EnumerateValues, Filter(lambda@xxx:48⸨guess=X14, response=X8⸩))⟧);
+ 321: X7 ← TState.fillStackEntry(X0, X13, X3, ⟨⸨Absent; x0:String⸩, TransformedIterator(ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), EnumerateValues, Filter(lambda@xxx:48⸨guess=x0:String, response=x0:String⸩)), SaveUnordered, x0:*[]@xxxx⟩, mMemo_9@xxxx, X7); → 315
+-322: addRef{X14};
+=323: addRef(X8); X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I6, it=ArrayIterator(["Response:", X8], EnumerateValues, I6)⟧);
+ 324: X12 ← TState.fillStackEntry(X0, null, X3, ⟨⸨Absent; x0:String⸩, ArrayIterator(["Response:", x0:String], EnumerateValues, b0), SaveUnordered, x0:*[]@xxxx⟩, mMemo_1@xxxx, null);
+ 325: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaveUnordered, state=X9⟧);
+ 326: X7 ← TState.fillStackEntry(X0, X12, X3, ⟨x0:*[]@xxxx⟩, mMemo_4@xxxx, null);
+ 327: X6 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.EmitAll.iterate⟧, ⟨LoopRW(Absent, x0:*[]@xxxx)⟩, mMemo_5@xxxx, null);
+ 328: addRef(X2); X3 ← newStackEntry(⟦wordle.r8t+1:272_11 toPrint_rw = emitAll(toPrint_ro, toPrint_rw, ["Response:", response]) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), potentialAnswers=X10, guess=X14, response=X8, answer=X2, _key=Absent⟧);
+ 329: X5 ← TState.fillStackEntry(X0, X6, X3, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5); → 298
+-330: addRef{X14} dropRef{X15}; → 323
+-331: addRef{X14};
+ 332: addRef(X2); X3 ← newStackEntry(⟦wordle.r8t+1:271_10 response = score(guess, answer) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), toPrint_rw=LoopRW(Absent, X9), potentialAnswers=X10, guess=X14, answer=X2, _key=Absent⟧);
+ 333: X5 ← TState.fillStackEntry(X0, X6, X3, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5); → 298
+-334: addRef{X14};
+ 335: X3 ← newStackEntry(⟦ReducerCore.NextStateSaveUnordered.replace ∥ state=X9, index=I16, value=I6⸨0:I12; 1:X13⸩⟧);
+ 336: X12 ← TState.fillStackEntry(X0, null, X3, ⟨x0:*[]@xxxx, SaveUnordered, ArrayIterator(["Guess", b0, x0:String], EnumerateValues, b0)⟩, mMemo_1@xxxx, null);
+ 337: addRef(X14); X3 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=SaveUnordered, it=ArrayIterator(["Guess", I8, X14], EnumerateValues, I7)⟧);
+ 338: X7 ← TState.fillStackEntry(X0, X12, X3, ⟨x0:*[]@xxxx⟩, mMemo_4@xxxx, null);
+=339: X6 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.EmitAll.iterate⟧, ⟨LoopRW(Absent, x0:*[]@xxxx)⟩, mMemo_5@xxxx, null);
+ 340: addRef(X2); X3 ← newStackEntry(⟦wordle.r8t+1:270_9 toPrint_rw = emitAll(toPrint_ro, toPrint_rw, ["Guess", idx, guess]) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), potentialAnswers=X10, guess=X14, answer=X2, _key=Absent⟧);
+ 341: X5 ← TState.fillStackEntry(X0, X6, X3, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, X5); → 298
+-342: addRef{X14};
+ 343: addRef(X14); X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I6, it=ArrayIterator(["Guess", I8, X14], EnumerateValues, I6)⟧);
+ 344: X12 ← TState.fillStackEntry(X0, null, X3, ⟨⸨b0; Absent; x0:String⸩, ArrayIterator(["Guess", b0, x0:String], EnumerateValues, b0), SaveUnordered, x0:*[]@xxxx⟩, mMemo_1@xxxx, null);
+ 345: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=SaveUnordered, state=X9⟧);
+ 346: X7 ← TState.fillStackEntry(X0, X12, X3, ⟨x0:*[]@xxxx⟩, mMemo_4@xxxx, null); → 339
+-347: X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I7, it=ArrayIterator(X14, EnumerateWithKeys, I7)⟧);
+ 348: X13 ← TState.fillStackEntry(X0, null, X3, ⟨⸨[[b0], i0]; Absent⸩, ArrayIterator(x0:*[]@xxxx, EnumerateWithKeys, b0), Top(ElementLessThan([2]), False), ⸨[[b0], i0]; Absent⸩⟩, mMemo_1@xxxx, null);
+ 349: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=Top(ElementLessThan([2]), False), state=I12⸨0:[[I15], I16]; 1:Absent⸩⟧);
+ 350: X7 ← TState.fillStackEntry(X0, X13, X3, ⟨[[b0], i0], Top(ElementLessThan([2]), False)⟩, mMemo_11@xxxx, null);
+ 351: X12 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.enumerateDefault⟧, ⟨[[b0], i0], Top(ElementLessThan([2]), False)⟩, mMemo_12@xxxx, null);
+ 352: X7 ← TState.fillStackEntry(X0, X12, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=Top(ElementLessThan([2]), False)⟧, ⟨[[b0], i0]⟩, mMemo_16@xxxx, null);
+ 353: addRef(X1); X3 ← newStackEntry(⟦wordle.r8t+1:358_13 _t0 = pipe(_t0, _t1) ∥ words=X1⟧);
+ 354: X6 ← TState.fillStackEntry(X0, X7, X3, ⟨x0:String⟩, mMemo_h73@xxxx, X6);
+=355: addRef(X2); X3 ← newStackEntry(⟦wordle.r8t+1:269_8 guess = bestGuess(words, potentialAnswers) ∥ toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), toPrint_rw=LoopRW(Absent, X9), potentialAnswers=X10, idx=I8, answer=X2, _key=Absent⟧);
+ 356: X5 ← TState.fillStackEntry(X0, X6, X3, ⟨⸨LoopExit(loop@xxx_break⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@xxx_state⸨toPrint_rw=LoopRW(Absent, x0:*[]@xxxx), potentialAnswers=x0:*[]@xxxx⸩⸩, loop@xxx⸨toPrint_ro=LoopRO(EnumerateValues, SaveUnordered, False), _eKind=EnumerateValues, words=x0:*[]@xxxx, answer=x0:String⸩, RangeIterator(b0, 6, None)⟩, mMemo_h85@xxxx, null); → 298
+-357: X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I13, it=ArrayIterator(X19, EnumerateValues, I13)⟧);
+ 358: X18 ← TState.fillStackEntry(X0, null, X3, ⟨⸨i0; Absent⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), Top(⟦`lessThan:2`⟧, True), ⸨i0; Absent⸩⟩, mMemo_1@xxxx, null);
+ 359: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=Top(⟦`lessThan:2`⟧, True), state=I16⸨0:I17; 1:Absent⸩⟧);
+ 360: X17 ← TState.fillStackEntry(X0, X18, X3, ⟨i0, Top(⟦`lessThan:2`⟧, True)⟩, mMemo_6@xxxx, null);
+ 361: X16 ← TState.fillStackEntry(X0, X17, ⟦LoopCore.enumerateDefault⟧, ⟨i0, Top(⟦`lessThan:2`⟧, True)⟩, mMemo_7@xxxx, null);
+ 362: X13 ← TState.fillStackEntry(X0, X16, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=Top(⟦`lessThan:2`⟧, True)⟧, ⟨i0⟩, mMemo_11@xxxx, null);
+ 363: X3 ← newStackEntry(⟦wordle.r8t+1:354_17 _t0 = pipe(groups, _t0) ∥ worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), worst_rw=LoopRW(Absent, X14), possible=I21, _key=[I15]⟧);
+ 364: X7 ← TState.fillStackEntry(X0, X13, X3, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩, loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=x0:*[]@xxxx⸩, ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0)⟩, mMemo_h75@xxxx, X7);
+=365: addRef(X1); addRef(X10); X3 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=X10⸩, it=ArrayIterator(X1, EnumerateAllKeys, I15)⟧);
+ 366: X12 ← TState.fillStackEntry(X0, X7, X3, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩⟩, mMemo_h40@xxxx, X12);
+=367: X7 ← TState.fillStackEntry(X0, X12, ⟦LoopCore.enumerateDefault⟧, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩⟩, mMemo_h38@xxxx, null);
+ 368: addRef(X1); X3 ← newStackEntry(⟦wordle.r8t+1:343_8 _t0 = enumerate(words, _t1, loop@xxx⸨worst_ro=worst_ro, _eKind=_t1, potentialAnswers=potentialAnswers⸩, loop@xxx_state⸨worst_rw=_t0⸩) ∥ words=X1, worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True)⟧);
+ 369: X6 ← TState.fillStackEntry(X0, X7, X3, ⟨x0:String⟩, mMemo_h73@xxxx, null); → 355
+-370: addRef{X13, X22};
+ 371: X3 ← newStackEntry(⟦wordle.r8t+1:369_1 _t0 = binaryUpdate(_t0, ⟦`add:2`⟧, 1) ∥ _t0=I23, _t1=ArrayUpdater(X19, I18)⟧);
+ 372: X3 ← TState.fillStackEntry(X0, null, X3, ⟨x0:*[]@xxxx⟩, mMemo_6@xxxx, null);
+ 373: X18 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.EmitValue.nextState⟧, ⟨LoopRW(Absent, x0:*[]@xxxx)⟩, mMemo_7@xxxx, null);
+ 374: addRef(X13); X3 ← newStackEntry(⟦wordle.r8t+1:345_10 groups_rw = emitValue(groups_ro, groups_rw, _t0) ∥ groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), possible_rw=LoopRW(Absent, I21), answer=X22, guess=X13, _key=Absent⟧);
+ 375: X17 ← TState.fillStackEntry(X0, X18, X3, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩, loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0)⟩, mMemo_h58@xxxx, X17);
+=376: addRef(X10); X3 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=X13⸩, it=ArrayIterator(X10, EnumerateValues, I20)⟧);
+ 377: X16 ← TState.fillStackEntry(X0, X17, X3, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h40@xxxx, X16);
+=378: X13 ← TState.fillStackEntry(X0, X16, ⟦LoopCore.enumerateDefault⟧, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h38@xxxx, null);
+ 379: X3 ← newStackEntry(⟦wordle.r8t+1:344_12 _t0 = enumerate(potentialAnswers, _t1, loop@xxx⸨groups_ro=groups_ro, possible_ro=possible_ro, _eKind=_t1, guess=guess⸩, loop@xxx_state⸨groups_rw=_t0, possible_rw=_t2⸩) ∥ worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), worst_rw=LoopRW(Absent, X14), _key=[I15], groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True)⟧);
+ 380: X7 ← TState.fillStackEntry(X0, X13, X3, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩, loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=x0:*[]@xxxx⸩, ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0)⟩, mMemo_h75@xxxx, null); → 365
+-381: addRef{X13, X22};
+ 382: X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I18, it=ArrayIterator([1, 3, 9, 27, 81], EnumerateAllKeys, I18)⟧);
+ 383: X3 ← TState.fillStackEntry(X0, null, X3, ⟨⸨[[b0], b0]; Absent⸩, ArrayIterator([1, 3, 9, 27, 81], EnumerateAllKeys, b0), JoinedIterator((empty), TransformedMatrix(Range(1, 5), TransformedLambda(ToCodePoint(x0:String), ⟦`adjustScoreChar:1`⟧)), EnumerateValues)⟩, mMemo_1@xxxx, null);
+ 384: X5 ← newStackEntry(⟦CollectionCore.NextJoinedIterator.next ∥ it=JoinedIterator((empty), TransformedMatrix(Range(1, 5), TransformedLambda(ToCodePoint(X23), ⟦`adjustScoreChar:1`⟧)), EnumerateValues)⟧);
+ 385: X3 ← TState.fillStackEntry(X0, X3, X5, ⟨⸨[b0, b0]; Absent⸩, JoinedIterator(ArrayIterator([1, 3, 9, 27, 81], EnumerateAllKeys, b0), TransformedMatrix(Range(1, 5), TransformedLambda(ToCodePoint(x0:String), ⟦`adjustScoreChar:1`⟧)), EnumerateValues), TransformedIterator((empty), EnumerateValues, ⟦`multiply:2`⟧)⟩, mMemo_11@xxxx, null);
+ 386: X3 ← TState.fillStackEntry(X0, X3, ⟦CollectionCore.NextTransformedIterator.next ∥ it=TransformedIterator(ToBeSet, EnumerateValues, ⟦`multiply:2`⟧)⟧, ⟨⸨b0; Absent⸩, TransformedIterator(JoinedIterator(ArrayIterator([1, 3, 9, 27, 81], EnumerateAllKeys, b0), TransformedMatrix(Range(1, 5), TransformedLambda(ToCodePoint(x0:String), ⟦`adjustScoreChar:1`⟧)), EnumerateValues), EnumerateValues, ⟦`multiply:2`⟧), Sum(0), b0⟩, mMemo_14@xxxx, null);
+ 387: X5 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=Sum(0), state=I24⟧);
+ 388: X3 ← TState.fillStackEntry(X0, X3, X5, ⟨b0, Sum(0)⟩, mMemo_22@xxxx, null);
+ 389: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.enumerateDefault⟧, ⟨b0, Sum(0)⟩, mMemo_23@xxxx, null);
+ 390: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=Sum(0)⟧, ⟨b0⟩, mMemo_27@xxxx, null);
+ 391: X18 ← TState.fillStackEntry(X0, X3, ⟦wordle.r8t+1:390_4 _t0 = pipe(_t0, _t1)⟧, ⟨b0⟩, mMemo_h38@xxxx, null);
+ 392: addRef(X13); X3 ← newStackEntry(⟦wordle.r8t+1:345_9 _t0 = numFor(_t0) ∥ groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), groups_rw=LoopRW(Absent, X19), possible_ro=LoopRO(EnumerateValues, Sum(0), True), possible_rw=LoopRW(Absent, I21), answer=X22, guess=X13, _key=Absent⟧);
+ 393: X17 ← TState.fillStackEntry(X0, X18, X3, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩, loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0)⟩, mMemo_h58@xxxx, X17); → 376
+-394: addRef{X13, X22};
+ 395: addRef(X13); X3 ← newStackEntry(⟦wordle.r8t+1:345_9 _t0 = numFor(_t0) ∥ groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), groups_rw=LoopRW(Absent, X19), possible_ro=LoopRO(EnumerateValues, Sum(0), True), possible_rw=LoopRW(Absent, I21), answer=X22, guess=X13, _key=Absent, _t0=X23⟧);
+ 396: X17 ← TState.fillStackEntry(X0, null, X3, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩, loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0)⟩, mMemo_h58@xxxx, X17); → 376
+-397: addRef{X13, X22};
+ 398: addRef(X13); X3 ← newStackEntry(⟦wordle.r8t+1:345_8 _t0 = score(guess, answer) ∥ groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), groups_rw=LoopRW(Absent, X19), possible_ro=LoopRO(EnumerateValues, Sum(0), True), possible_rw=LoopRW(Absent, I21), answer=X22, guess=X13, _key=Absent⟧);
+ 399: X17 ← TState.fillStackEntry(X0, X18, X3, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩, loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0)⟩, mMemo_h58@xxxx, null); → 376
+-400: addRef{X13};
+ 401: addRef(X10); X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I20, it=ArrayIterator(X10, EnumerateValues, I20)⟧);
+ 402: X17 ← TState.fillStackEntry(X0, null, X3, ⟨⸨Absent; x0:String⸩, ArrayIterator(x0:*[]@xxxx, EnumerateValues, b0), loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=x0:String⸩, loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩⟩, mMemo_1@xxxx, null);
+ 403: X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=loop@xxx⸨groups_ro=LoopRO(EnumerateValues, IntHistogram(243), True), possible_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=X13⸩, state=loop@xxx_state⸨groups_rw=LoopRW(Absent, X19), possible_rw=LoopRW(Absent, I21)⸩⟧);
+ 404: X16 ← TState.fillStackEntry(X0, X17, X3, ⟨loop@xxx_state⸨groups_rw=LoopRW(Absent, x0:*[]@xxxx), possible_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h40@xxxx, X16); → 378
+-405: addRef(X1); X3 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I7, it=ArrayIterator(X1, EnumerateAllKeys, I7)⟧);
+ 406: X7 ← TState.fillStackEntry(X0, null, X3, ⟨⸨[[b0], x0:String]; Absent⸩, ArrayIterator(x0:*[]@xxxx, EnumerateAllKeys, b0), loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=x0:*[]@xxxx⸩, loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩⟩, mMemo_1@xxxx, null);
+ 407: addRef(X10); X3 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=loop@xxx⸨worst_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, potentialAnswers=X10⸩, state=loop@xxx_state⸨worst_rw=LoopRW(Absent, X14)⸩⟧);
+ 408: X12 ← TState.fillStackEntry(X0, X7, X3, ⟨loop@xxx_state⸨worst_rw=LoopRW(Absent, x0:*[]@xxxx)⸩⟩, mMemo_h40@xxxx, X12); → 367
+
+score_1(x1:String, x2:String):
+   1: AtomicInteger.incrementAndGet(0);
+   2: I3 ← StringValue.length(X1);
+   3: test I3 == 0; T:→ 121
+   4: test I3 == 5; F:→ 121
+   5: I3 ← StringValue.length(X2);
+   6: test I3 == 0; T:→ 121
+   7: test I3 == 5; F:→ 121
+   8: I4 ← 1;
+   9: X5 ← null;
+  10: X6 ← null;
+  11: X7 ← null;
+  12: X8 ← null;
+  13: X3 ← null;
+= 14: I9 ← Math.addExact(I4, 1); ArithmeticException:→ 119
+  15: test X3 == null; F:→ 119
+  16: I10 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 119
+  17: I10 ← StringValue.codePoint(X1, I10);
+  18: test I10 < 0; T:→ 119
+  19: I11 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 119
+  20: I11 ← StringValue.codePoint(X2, I11);
+  21: test I11 < 0; T:→ 119
+  22: test I10 == I11; T:→ 83
+  23: I3 ← 1;
+  24: I10 ← 0;
+  25: I11 ← 0;
+= 26: I12 ← Math.addExact(I3, 1); ArithmeticException:→ 114
+  27: I13 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 114
+  28: I13 ← StringValue.codePoint(X1, I13);
+  29: test I13 < 0; T:→ 114
+  30: I14 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 114
+  31: I14 ← StringValue.codePoint(X2, I14);
+  32: test I14 < 0; T:→ 114
+  33: test I13 == I14; T:→ 53
+  34: test I4 < I3; T:→ 80
+  35: I13 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 114
+  36: I13 ← StringValue.codePoint(X1, I13);
+  37: test I13 < 0; T:→ 114
+  38: I14 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 114
+  39: I14 ← StringValue.codePoint(X1, I14);
+  40: test I14 < 0; T:→ 114
+  41: test I13 == I14; T:→ 81
+  42: I13 ← I10;
+= 43: I14 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 114
+  44: I14 ← StringValue.codePoint(X1, I14);
+  45: test I14 < 0; T:→ 114
+  46: I15 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 114
+  47: I15 ← StringValue.codePoint(X2, I15);
+  48: test I15 < 0; T:→ 114
+  49: test I14 == I15; F:→ 52
+  50: I14 ← Math.addExact(I11, 1); ArithmeticException:→ 114
+  51: I11 ← I14;
+- 52: I10 ← I13;
+- 53: I3 ← I12;
+  54: test 5 < I3; F:→ 26
+  55: test I11 < I10; T:→ 82
+  56: X10 ← "y";
+= 57: test I4 < 1; T:→ 108
+  58: X3 ← null;
+  59: test I4 == 1; F:→ 84
+  60: dropRef{X5};
+  61: X5 ← X10;
+= 62: I4 ← I9;
+  63: test 5 < I4; F:→ 14
+  64: dropRef{X1, X2};
+  65: I1 ← 0;
+  66: X2 ← "";
+= 67: I4 ← iAdd(I1, 1);
+  68: test I1 == 0; F:→ 99
+  69: X9 ← X5;
+= 70: test X9 == Absent; T:→ 95
+  71: test X9 instanceof StringValue; T:→ 106
+  72: X4 ← newStackEntry(⟦ArrayCore.NextArrayIterator.startLoop ∥ index=I1, it=ArrayIterator([X5, X6, X7, X8, X3], EnumerateValues, I1)⟧);
+  73: X3 ← TState.fillStackEntry(X0, null, X4, ⟨⸨Absent; x0:String⸩, ArrayIterator([x0:String, x0:String, x0:String, x0:String, x0:String], EnumerateValues, b0), loop@xxx, loop@xxx_state⸨result=x0:String⸩⟩, mMemo_1@xxxx, null);
+  74: X1 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=loop@xxx, state=loop@xxx_state⸨result=X2⸩⟧);
+  75: X1 ← TState.fillStackEntry(X0, X3, X1, ⟨loop@xxx_state⸨result=x0:String⸩⟩, mMemo_6@xxxx, null);
+  76: X1 ← TState.fillStackEntry(X0, X1, ⟦wordle.r8t+1:330_1 _t0 = iterate(strings, EnumerateValues, loop@xxx, loop@xxx_state⸨result=result⸩)⟧, ⟨x0:String⟩, mMemo_8@xxxx, null);
+  77: X1 ← TState.fillStackEntry(X0, X1, ⟦wordle.r8t+1:324_8 _t0 = join(result)⟧, ⟨x0:String⟩, mMemo_x@xxxx, null);
+= 78: TState.setStackRest(X0, X1);
+  79: return
+- 80: I13 ← I10; → 43
+- 81: I13 ← Math.addExact(I10, 1); → 43, ArithmeticException:→ 114
+- 82: X10 ← "-"; → 57
+- 83: X10 ← "g"; → 57
+- 84: test I4 == 2; F:→ 87
+  85: dropRef{X6};
+  86: X6 ← X10; → 62
+- 87: test I4 == 3; F:→ 90
+  88: dropRef{X7};
+  89: X7 ← X10; → 62
+- 90: test I4 == 4; F:→ 93
+  91: dropRef{X8};
+  92: X8 ← X10; → 62
+- 93: X3 ← X10; → 62
+= 94: test I1 < 5; T:→ 67
+- 95: dropRef{X5, X6, X7, X8, X3};
+  96: TState.setResultTemplates(X0, [x0:String]);
+  97: setObject[](TState.fnResults(X0, 1), 0, X2);
+  98: return
+- 99: test I1 == 1; F:→ 101
+ 100: X9 ← X6; → 70
+-101: test I1 == 2; F:→ 103
+ 102: X9 ← X7; → 70
+-103: test I1 == 3; F:→ 105
+ 104: X9 ← X8; → 70
+-105: X9 ← X3;
+-106: X2 ← pushAndDropRef(StringValue.concat(X0, X2, X9), X0, X2);
+ 107: I1 ← I4; → 94
+-108: X3 ← newStackEntry(⟦wordle.r8t+1:319_32 result_rw = emitKey(result_ro, result_rw, _key) ∥ result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), result_rw=LoopRW(X10, [X5, X6, X7, X8, (empty)]), _key=[I4]⟧);
+ 109: X3 ← TState.fillStackEntry(X0, null, X3, ⟨loop@xxx_state⸨result_rw=LoopRW(Absent, [x0:String, x0:String, x0:String, x0:String, x0:String])⸩, loop@xxx⸨result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, guess=TransformedMatrix(Range(1, 5), ToCodePoint(x0:String)), answer=TransformedMatrix(Range(1, 5), ToCodePoint(x0:String))⸩, RangeIterator(b0, 5, 0)⟩, mMemo_h72@xxxx, null);
+=110: X4 ← newStackEntry(⟦LoopCore.Iterate.nextState ∥ loop=loop@xxx⸨result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, guess=TransformedMatrix(Range(1, 5), ToCodePoint(X1)), answer=TransformedMatrix(Range(1, 5), ToCodePoint(X2))⸩, it=RangeIterator(I9, 5, 0)⟧);
+ 111: X1 ← TState.fillStackEntry(X0, X3, X4, ⟨loop@xxx_state⸨result_rw=LoopRW(Absent, [x0:String, x0:String, x0:String, x0:String, x0:String])⸩⟩, mMemo_h40@xxxx, null);
+=112: X1 ← TState.fillStackEntry(X0, X1, ⟦LoopCore.enumerateDefault⟧, ⟨loop@xxx_state⸨result_rw=LoopRW(Absent, [x0:String, x0:String, x0:String, x0:String, x0:String])⸩⟩, mMemo_h38@xxxx, null);
+ 113: X1 ← TState.fillStackEntry(X0, X1, ⟦wordle.r8t+1:291_5 _t0 = enumerate(_t0, _t2, loop@xxx⸨result_ro=result_ro, _eKind=_t2, guess=guess, answer=answer⸩, loop@xxx_state⸨result_rw=_t1⸩) ∥ result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True)⟧, ⟨x0:String⟩, mMemo_x@xxxx, null); → 78
+-114: addRef(X1); addRef(X2); X12 ← newStackEntry(⟦LoopCore.Iterate.afterIterator ∥ it=RangeIterator(I3, 5, None), loop=loop@xxx⸨guessed_ro=LoopRO(EnumerateValues, Sum(0), True), actual_ro=LoopRO(EnumerateValues, Sum(0), True), _eKind=EnumerateValues, guess=TransformedMatrix(Range(1, 5), ToCodePoint(X1)), answer=TransformedMatrix(Range(1, 5), ToCodePoint(X2)), char=I4⸩, state=loop@xxx_state⸨guessed_rw=LoopRW(Absent, I10), actual_rw=LoopRW(Absent, I11)⸩⟧);
+ 115: X3 ← TState.fillStackEntry(X0, null, X12, ⟨loop@xxx_state⸨guessed_rw=LoopRW(Absent, b0), actual_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h40@xxxx, null);
+ 116: X3 ← TState.fillStackEntry(X0, X3, ⟦LoopCore.enumerateDefault⟧, ⟨loop@xxx_state⸨guessed_rw=LoopRW(Absent, b0), actual_rw=LoopRW(Absent, b0)⸩⟩, mMemo_h38@xxxx, null);
+ 117: X10 ← newStackEntry(⟦wordle.r8t+1:298_20 _t0 = enumerate(_t0, _t2, loop@xxx⸨guessed_ro=guessed_ro, actual_ro=actual_ro, _eKind=_t2, guess=guess, answer=answer, char=char⸩, loop@xxx_state⸨guessed_rw=_t1, actual_rw=_t3⸩) ∥ result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), result_rw=LoopRW(Absent, [X5, X6, X7, X8, (empty)]), _key=[I4], guessed_ro=LoopRO(EnumerateValues, Sum(0), True), actual_ro=LoopRO(EnumerateValues, Sum(0), True)⟧);
+ 118: X3 ← TState.fillStackEntry(X0, X3, X10, ⟨loop@xxx_state⸨result_rw=LoopRW(Absent, [x0:String, x0:String, x0:String, x0:String, x0:String])⸩, loop@xxx⸨result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, guess=TransformedMatrix(Range(1, 5), ToCodePoint(x0:String)), answer=TransformedMatrix(Range(1, 5), ToCodePoint(x0:String))⸩, RangeIterator(b0, 5, 0)⟩, mMemo_h72@xxxx, null); → 110
+-119: X9 ← newStackEntry(⟦LoopCore.Iterate.afterIterator ∥ it=RangeIterator(I4, 5, 0), loop=loop@xxx⸨result_ro=LoopRO(EnumerateAllKeys, SaverLoop(SaveElements), True), _eKind=EnumerateAllKeys, guess=TransformedMatrix(Range(1, 5), ToCodePoint(X1)), answer=TransformedMatrix(Range(1, 5), ToCodePoint(X2))⸩, state=loop@xxx_state⸨result_rw=LoopRW(Absent, [X5, X6, X7, X8, X3])⸩⟧);
+ 120: X1 ← TState.fillStackEntry(X0, null, X9, ⟨loop@xxx_state⸨result_rw=LoopRW(Absent, [x0:String, x0:String, x0:String, x0:String, x0:String])⸩⟩, mMemo_h40@xxxx, null); → 112
+-121: X3 ← newStackEntry(⟦wordle.r8t+1:289_0 guess = codePoints(guess) ∥ guess=X1, answer=X2⟧);
+ 122: X1 ← TState.fillStackEntry(X0, null, X3, ⟨x0:String⟩, mMemo_x@xxxx, null); → 78
+---
+allocated=1623221720/21848368, peak=20608
+*/

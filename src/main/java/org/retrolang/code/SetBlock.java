@@ -289,7 +289,7 @@ public class SetBlock extends Block.NonTerminal {
      * at {@code onThrow}.
      */
     public WithCatch(Register lhs, CodeValue rhs, Class<?> exception, FutureBlock onThrow) {
-      // TODO(mdixon): It wouldn't be hard to support lhs == null.
+      // TODO: It wouldn't be hard to support lhs == null.
       // We don't currently try to support combining side effects with exceptions.
       Preconditions.checkArgument(lhs != null && !rhs.hasSideEffect());
       this.lhs = lhs;

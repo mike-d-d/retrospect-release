@@ -21,13 +21,6 @@ import java.util.Arrays;
 import org.retrolang.Vm;
 import org.retrolang.impl.Err.BuiltinException;
 
-/**
- * Implementation of Vm.Compound, for compounds that correspond to a simple base type.
- *
- * <p>Used for the results of {@link Vm.ModuleBuilder#newCompoundType} and {@link
- * Vm.VirtualMachine#arrayOfSize}, but not {@link Vm.VirtualMachine#structWithKeys} -- those
- * compounds have a more complex structure, and are handled by {@link StructCompound}.
- */
 class VmCompound implements Vm.Compound {
   final BaseType baseType;
 
@@ -49,6 +42,8 @@ class VmCompound implements Vm.Compound {
 
   @Override
   public VmType asType() {
+    // This will error if BaseType is a StructType or FixedArrayType, which do not have
+    // corresponding VmTypes.
     return ((BaseType.Named) baseType).asType;
   }
 
@@ -62,6 +57,8 @@ class VmCompound implements Vm.Compound {
     Value arg = (Value) args[0];
     if (baseType.isArray()) {
       Err.INVALID_ARGUMENT.unless(arg.isArrayOfLength(baseType.size()));
+    } else if (baseType instanceof StructType compound) {
+      Err.INVALID_ARGUMENT.unless(compound.matches(arg));
     } else {
       Err.INVALID_ARGUMENT.unless(arg.isa(baseType));
     }
