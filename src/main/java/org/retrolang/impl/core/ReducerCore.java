@@ -61,21 +61,19 @@ public final class ReducerCore {
   @Core.Method("nextState(Count, Number, _)")
   static Value nextStateCount(TState tstate, Value reducer, Value state, Value unused)
       throws BuiltinException {
-    int i = NumValue.asIntOrMinusOne(state) + 1;
-    // Also catches int overflow
-    Err.INVALID_ARGUMENT.unless(i > 0);
-    return NumValue.of(i, tstate);
+    Value result = ValueUtil.addInts(tstate, state, NumValue.ONE);
+    // Error on overflow
+    Err.INVALID_ARGUMENT.unless(Condition.numericLessThan(NumValue.ZERO, result));
+    return result;
   }
 
   /** {@code method combineStates(Count, Integer state1, Integer state2) = state1 + state2} */
   @Core.Method("combineStates(Count, Number, Number)")
   static Value combineStatesCount(TState tstate, Value reducer, Value state1, Value state2)
       throws BuiltinException {
-    int i1 = NumValue.asIntOrMinusOne(state1);
-    int i2 = NumValue.asIntOrMinusOne(state2);
-    int sum = i1 + i2;
-    Err.INVALID_ARGUMENT.unless(i1 >= 0 && i2 >= 0 && sum >= 0);
-    return NumValue.of(sum, tstate);
+    Value result = ValueUtil.addInts(tstate, state1, state2);
+    Err.INVALID_ARGUMENT.unless(Condition.numericLessOrEq(NumValue.ZERO, result));
+    return result;
   }
 
   /**
@@ -401,27 +399,11 @@ public final class ReducerCore {
    * method nextState(SaveUnordered, state, value) = state &amp; [value]
    * </pre>
    */
-  static class NextStateSaveUnordered extends BuiltinMethod {
-    @Core.Method("nextState(SaveUnordered, Array, _)")
-    static void begin(
-        TState tstate, ResultsInfo results, Value reducer, @RC.In Value state, @RC.In Value value)
-        throws BuiltinException {
-      Value prevSize = tstate.getArraySizeAndReserveForChange(state, NumValue.ONE, null);
-      // Add one TO_BE_SET element at the end of state.
-      FrameLayout resultLayout = results.result(TProperty.ARRAY_LAYOUT);
-      state =
-          ValueUtil.removeRange(tstate, state, prevSize, NumValue.ZERO, NumValue.ONE, resultLayout);
-      // When generating code, doing the replacement (which may fail if the array can't hold this
-      // value) in a separate step enables us to escape with the expanded array; otherwise we'd
-      // have to escape with the array before expansion, which would mean we'd always have to have
-      // a copy of it and could never do the replacement in place.
-      tstate.jump("replace", state, prevSize, value);
-    }
-
-    @Continuation
-    static Value replace(TState tstate, @RC.In Value state, Value index, @RC.In Value value) {
-      return ValueUtil.replaceElement(tstate, state, index, 0, value);
-    }
+  @Core.Method("nextState(SaveUnordered, Array, _)")
+  static Value nextStateSaveUnordered(
+      TState tstate, ResultsInfo results, Value reducer, @RC.In Value state, @RC.In Value value)
+      throws BuiltinException {
+    return ValueUtil.appendElement(tstate, state, value, results.result(TProperty.ARRAY_LAYOUT));
   }
 
   /**

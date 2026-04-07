@@ -115,7 +115,7 @@ function dist(pt, centroid) = (centroid - pt) ** 2 | sum
  12: iterate_r6 (8)
  13: next_r7 (7)
 ---
-allocated=7115552/94431, peak=9568
+allocated=7114800/94408, peak=9568
 $0 = *[]x0:$1
 $1 = *{b0: d4, b1: d12, b2: d20, b3: i0, class: b28, distance0: d36, distance1: d44, distance10: d52, distance2: d60, distance3: d68, distance4: d76, distance5: d84, distance6: d92, distance7: d100, distance8: d108, distance9: d116, filter: i32}
 */
