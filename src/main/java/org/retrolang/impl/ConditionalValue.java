@@ -16,6 +16,7 @@
 
 package org.retrolang.impl;
 
+import org.retrolang.code.FutureBlock;
 import org.retrolang.impl.Condition.ValueSupplier;
 
 /**
@@ -38,5 +39,23 @@ public class ConditionalValue implements Value {
   @Override
   public BaseType baseType() {
     throw new AssertionError();
+  }
+
+  /**
+   * Emits blocks to set the registers in {@code dst} (whose indices must be in the range {@code
+   * registerStart..registerEnd}) from this ConditionalValue. Used to implement {@link
+   * CodeGen#emitStore(Value, Template, int, int)} for ConditionalValues.
+   */
+  void emitStore(CodeGen codeGen, Template dst, int registerStart, int registerEnd) {
+    FutureBlock elseBranch = new FutureBlock();
+    condition.addTest(codeGen, elseBranch);
+    codeGen
+        .escapeOnErr(ifTrue)
+        .ifPresent(v -> codeGen.emitStore(v, dst, registerStart, registerEnd));
+    FutureBlock done = codeGen.cb.swapNext(elseBranch);
+    codeGen
+        .escapeOnErr(ifFalse)
+        .ifPresent(v -> codeGen.emitStore(v, dst, registerStart, registerEnd));
+    codeGen.cb.mergeNext(done);
   }
 }

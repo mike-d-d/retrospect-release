@@ -123,8 +123,13 @@ public abstract class Condition {
   }
 
   /** Returns {@code ifTrue} if this Condition is true, {@code ifFalse} if it is not. */
-  public Value choose(Value ifTrue, Value ifFalse) {
-    return new ConditionalValue(this, () -> ifTrue, () -> ifFalse);
+  public Value choose(Value ifTrueValue, Value ifFalseValue) {
+    return new ConditionalValue(this, () -> ifTrueValue, () -> ifFalseValue) {
+      @Override
+      public Condition isa(VmType type) {
+        return Condition.this.ternary(ifTrueValue.isa(type), ifFalseValue.isa(type));
+      }
+    };
   }
 
   /** Returns {@code ifTrue.get()} if this Condition is true, {@code ifFalse.get()} if it is not. */
@@ -135,6 +140,16 @@ public abstract class Condition {
   /** Returns {@code ifTrue.get()} if this Condition is true, {@code ifFalse.get()} if it is not. */
   public Value chooseExcept(ValueSupplier ifTrue, ValueSupplier ifFalse) throws BuiltinException {
     return new ConditionalValue(this, ifTrue, ifFalse);
+  }
+
+  /**
+   * Returns a CodeValue equal to {@code ifTrue} if this Condition is true, {@code ifFalse} if it is
+   * not. May allocate a new register of the specified type to hold the result.
+   */
+  public CodeValue choose(CodeGen codeGen, CodeValue ifTrue, CodeValue ifFalse, Class<?> type) {
+    Register result = codeGen.cb.newRegister(type);
+    test(() -> codeGen.emitSet(result, ifTrue), () -> codeGen.emitSet(result, ifFalse));
+    return result;
   }
 
   /** Returns {@code Core.TRUE} if this Condition is true, {@code Core.FALSE} if it is not. */
@@ -397,6 +412,11 @@ public abstract class Condition {
     @Override
     public Value chooseExcept(ValueSupplier ifTrue, ValueSupplier ifFalse) throws BuiltinException {
       return (value ? ifTrue : ifFalse).get();
+    }
+
+    @Override
+    public CodeValue choose(CodeGen codeGen, CodeValue ifTrue, CodeValue ifFalse, Class<?> type) {
+      return value ? ifTrue : ifFalse;
     }
 
     @Override

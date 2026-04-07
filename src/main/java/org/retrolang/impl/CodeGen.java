@@ -20,6 +20,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.invoke.VarHandle.AccessMode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
@@ -680,6 +681,20 @@ public class CodeGen {
 
   /** Called from {@link VmFunction#emitCall} to emit the body of the specified method. */
   void emitMethodCall(MethodImpl impl, MethodMemo mMemo, Object[] args) {
+    // There may be ConditionalValues in args; this is the time to resolve them.
+    int numArgs = mMemo.method().function.numArgs;
+    Object[] originalArgs = args;
+    for (int i = 0; i < numArgs; i++) {
+      if (args[i] instanceof ConditionalValue cv) {
+        int registerStart = cb.numRegisters();
+        Template saved = mMemo.argsMemo.result(i, TProperty.build(newAllocator()));
+        cv.emitStore(this, saved, registerStart, cb.numRegisters());
+        if (args == originalArgs) {
+          args = Arrays.copyOf(args, numArgs);
+        }
+        args[i] = RValue.fromTemplate(saved);
+      }
+    }
     if (mMemo.isExlined()) {
       CodeGenLink link = (CodeGenLink) mMemo.extra();
       ExlinedCall.emitCall(this, group.getTarget(link), args);
@@ -877,7 +892,7 @@ public class CodeGen {
     }
   }
 
-  private Optional<Value> escapeOnErr(Condition.ValueSupplier supplier) {
+  Optional<Value> escapeOnErr(Condition.ValueSupplier supplier) {
     try {
       return Optional.of(supplier.get());
     } catch (Err.BuiltinException e) {
@@ -888,21 +903,14 @@ public class CodeGen {
 
   /**
    * Emits blocks to set the registers in {@code dst} (whose indices must be in the range {@code
-   * registerStart..registerEnd} from {@code v}; after the new blocks have executed, either {@code
-   * RValue.fromTemplate(dst)} will have the same value as {@code v} or we will have branched the
+   * registerStart..registerEnd}) from {@code v}. After the new blocks have executed, either {@code
+   * RValue.fromTemplate(dst)} will have the same value as {@code v} or we will have branched to the
    * current escape handler.
    */
   void emitStore(Value v, Template dst, int registerStart, int registerEnd) {
     if (cb.nextIsReachable()) {
-      if (v instanceof ConditionalValue conditional) {
-        FutureBlock elseBranch = new FutureBlock();
-        conditional.condition.addTest(this, elseBranch);
-        escapeOnErr(conditional.ifTrue)
-            .ifPresent(v2 -> emitStore(v2, dst, registerStart, registerEnd));
-        FutureBlock done = cb.swapNext(elseBranch);
-        escapeOnErr(conditional.ifFalse)
-            .ifPresent(v2 -> emitStore(v2, dst, registerStart, registerEnd));
-        cb.mergeNext(done);
+      if (v instanceof ConditionalValue cv) {
+        cv.emitStore(this, dst, registerStart, registerEnd);
       } else {
         emitStore(RValue.toTemplate(v), dst, registerStart, registerEnd);
       }
