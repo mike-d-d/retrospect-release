@@ -1,0 +1,112 @@
+// See https://adventofcode.com/2025/day/1
+
+input = stream("L24\nL26\nR15\nR55\nL10\nR40\nR15\nL26\nR15\nR55\nL26\nR15\nR55\nL10\nR40\nR15\nL26")
+oneLine = outputMatch(oneOf("LR")) + parseInt + choose(newLine, "")
+pos = 50
+for sequential pos, input {
+  if peek(atEnd, input) { break }
+  [dir, amt] = match(oneLine, input=)
+  pos = (pos + (dir == "L"  ? -amt : amt)) % 100
+  if pos == 0 { result << 1 }
+} collect {
+  result =| count
+}
+return result
+
+/* RUN () CODEGEN(3) RETURNS
+  2
+---
+?0-----1+?∘0-1+∘0-1+++2bs[⊝0-s[⊝-⊝-]]-
+  0: x (top level)
+  1: r LoopCore.IterateUnbounded // parser.r8t+2:4_11 _t0 = iterateUnbounded(loop@4⸨result_ro=result_ro, oneLine=oneLine⸩, loop@4_state⸨result_rw=_t0, pos=pos, input=input⸩)
+  2: iterateUnbounded_r0 (1)
+---
+allocated=21176/706, peak=0
+*/
+
+// See https://adventofcode.com/2025/day/2
+
+input = stream("12345-1234567,2-3,2222-3332,1000-1009")
+digits = outputMatch(1.. * digit)
+onePair = digits + "-" + digits + choose(",", "")
+endOfInput = choose(newLine, "") + atEnd
+for sequential input {
+  if peek(endOfInput, input) { break }
+  [start, end] = match(onePair, input=)
+  // Find the start and end of the invalid ids that we must count
+  {half: start, p10: startP10} = nextInvalid(start, True)
+  {half: end, p10: endP10} = nextInvalid(end, False)
+  if start > end { continue }
+  for sequential start, startP10 {
+    if startP10 == endP10 {
+      result << sum(start, end, startP10)
+      break
+    }
+    // If start and end have different numbers of digits we have to break it into ranges
+    // with the same number of digits and compute the sum of each range.
+    result << sum(start, startP10 - 1, startP10)
+    start = startP10
+    startP10 *= 10
+  } collect {
+    result
+  }
+} collect {
+  result =| sum
+}
+return result
+
+// Returns the invalid id closest to the given string.
+//
+// Invalid ids are represented by a pair of integers {half, p10} such that
+//   - p10 is the smallest power of 10 > half
+//   - half * (p10 + 1) is the invalid id
+//
+// If after is True, returns the smallest invalid id >= s; if after is False, returns the largest
+// invalid id <= s (or, if there are no invalid ids <= s, returns {half: 0, p10: 1}).
+function nextInvalid(s, after) {
+  size = size(s)
+  halfSize = div(size, 2)
+  p10 = 10 ** halfSize
+  if size > 2 * halfSize {
+    return after ? {half: p10, p10: p10 * 10} : {half: p10 - 1, p10}
+  }
+  leftHalf = parseInt(s[.. halfSize])
+  rightHalf = parseInt(s[halfSize + 1 ..])
+
+  if after ? (leftHalf >= rightHalf) : (leftHalf <= rightHalf) {
+    half = leftHalf
+  } else if after {
+    half = leftHalf + 1
+    // That can't get up to p10, because leftHalf < rightHalf < p10
+    assert half != p10
+  } else {
+    half = leftHalf - 1
+    if leftHalf * 10 == p10 {
+      p10 = leftHalf
+    }
+  }
+  return {half, p10}
+}
+
+// Returns the sum of the invalid ids from {half: start, p10} to {half: end, p10} inclusive.
+function sum(start, end, p10) {
+  // We want the sum of the sequence
+  //     start * (p10 + 1), (start + 1) * (p10 + 1), ..., end * (p10 + 1)
+  // which is
+  //     (start + (start + 1) + ... + end) * (p10 + 1)
+  return div((end - start + 1) * (start + end), 2) * (p10 + 1)
+}
+
+/* RUN () CODEGEN(3) RETURNS
+  495074547
+---
+?0-----1++?0----2+++3bs[⊝0-]?--?-1∘?0-1+⊝0-s[⊝-]-1++4bsr3s[⊕]0---4sr3s[⊚?5-0-]?5-0-5-0--
+  0: x (top level)
+  1: r ParserCore.ParseRepeat // ParserCore.ParseOutputMatch.parseInner // ParserCore.ParseConcatParser.parse1 // ParserCore.ParseConcatParser.parse1 // ParserCore.ParseConcatParser.parse1 // ParserCore.Match.parse // parser.r8t+28:7_7 _t0, input = match(onePair, input) // LoopCore.IterateUnbounded.at // parser.r8t+28:5_15 _t0 = iterateUnbounded(loop@5⸨result_ro=result_ro, endOfInput=endOfInput, onePair=onePair⸩, loop@5_state⸨result_rw=_t0, input=input⸩)
+  2: r ParserCore.ParseRepeat // ParserCore.ParseOutputMatch.parseInner // ParserCore.ParseConcatParser.parse2 // ParserCore.ParseConcatParser.parse1 // ParserCore.Match.parse // parser.r8t+28:7_7 _t0, input = match(onePair, input) // LoopCore.IterateUnbounded.at // parser.r8t+28:5_15 _t0 = iterateUnbounded(loop@5⸨result_ro=result_ro, endOfInput=endOfInput, onePair=onePair⸩, loop@5_state⸨result_rw=_t0, input=input⸩)
+  3: parse_r0 (2)
+  4: parse_r1 (1)
+  5: r LoopCore.IterateUnbounded // parser.r8t+28:5_15 _t0 = iterateUnbounded(loop@5⸨result_ro=result_ro, endOfInput=endOfInput, onePair=onePair⸩, loop@5_state⸨result_rw=_t0, input=input⸩)
+---
+allocated=22880/749, peak=24
+*/

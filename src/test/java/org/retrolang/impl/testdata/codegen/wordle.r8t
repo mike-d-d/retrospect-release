@@ -530,7 +530,7 @@ solve_x0(x1:*[]@xxxx, x2:String):
  130: test I18 == 0; F:→ 158
  131: I26 ← 1;
 =132: I27 ← Math.addExact(1, Math.subtractExact(I25, 1)); ArithmeticException:→ 378
- 133: I27 ← StringValue.codePoint(X23, I27);
+ 133: I27 ← StringValue.codePoint(X23, iSub(I27, 1));
  134: test I27 < 0; T:→ 378
  135: test I27 == 45; T:→ 165
  136: test I27 == 121; F:→ 166
@@ -821,10 +821,10 @@ score_x1(x1:String, x2:String):
 = 14: I9 ← Math.addExact(I4, 1); ArithmeticException:→ 134
   15: test X3 == null; F:→ 134
   16: I10 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 134
-  17: I10 ← StringValue.codePoint(X1, I10);
+  17: I10 ← StringValue.codePoint(X1, iSub(I10, 1));
   18: test I10 < 0; T:→ 134
   19: I11 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 134
-  20: I11 ← StringValue.codePoint(X2, I11);
+  20: I11 ← StringValue.codePoint(X2, iSub(I11, 1));
   21: test I11 < 0; T:→ 134
   22: test I10 == I11; T:→ 87
   23: I3 ← 1;
@@ -832,26 +832,26 @@ score_x1(x1:String, x2:String):
   25: I11 ← 0;
 = 26: I12 ← Math.addExact(I3, 1); ArithmeticException:→ 129
   27: I13 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 129
-  28: I13 ← StringValue.codePoint(X1, I13);
+  28: I13 ← StringValue.codePoint(X1, iSub(I13, 1));
   29: test I13 < 0; T:→ 129
   30: I14 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 129
-  31: I14 ← StringValue.codePoint(X2, I14);
+  31: I14 ← StringValue.codePoint(X2, iSub(I14, 1));
   32: test I14 < 0; T:→ 129
   33: test I13 == I14; T:→ 53
   34: test I4 < I3; T:→ 84
   35: I13 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 129
-  36: I13 ← StringValue.codePoint(X1, I13);
+  36: I13 ← StringValue.codePoint(X1, iSub(I13, 1));
   37: test I13 < 0; T:→ 129
   38: I14 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 129
-  39: I14 ← StringValue.codePoint(X1, I14);
+  39: I14 ← StringValue.codePoint(X1, iSub(I14, 1));
   40: test I14 < 0; T:→ 129
   41: test I13 == I14; T:→ 85
   42: I13 ← I10;
 = 43: I14 ← Math.addExact(1, Math.subtractExact(I4, 1)); ArithmeticException:→ 129
-  44: I14 ← StringValue.codePoint(X1, I14);
+  44: I14 ← StringValue.codePoint(X1, iSub(I14, 1));
   45: test I14 < 0; T:→ 129
   46: I15 ← Math.addExact(1, Math.subtractExact(I3, 1)); ArithmeticException:→ 129
-  47: I15 ← StringValue.codePoint(X2, I15);
+  47: I15 ← StringValue.codePoint(X2, iSub(I15, 1));
   48: test I15 < 0; T:→ 129
   49: test I14 == I15; F:→ 52
   50: I14 ← Math.addExact(I11, 1); ArithmeticException:→ 129

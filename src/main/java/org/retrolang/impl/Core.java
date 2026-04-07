@@ -40,6 +40,7 @@ import org.retrolang.impl.core.CollectionCore;
 import org.retrolang.impl.core.LoopCore;
 import org.retrolang.impl.core.MatrixCore;
 import org.retrolang.impl.core.NumberCore;
+import org.retrolang.impl.core.ParserCore;
 import org.retrolang.impl.core.RangeCore;
 import org.retrolang.impl.core.ReducerCore;
 import org.retrolang.impl.core.SaveCore;
@@ -554,7 +555,8 @@ public class Core {
             CollectionCore.class,
             MatrixCore.class,
             RangeCore.class,
-            StructCore.class
+            StructCore.class,
+            ParserCore.class
           };
       Builder<String, VmType> typesBuilder = new Builder<>(true, t -> t.name);
       Builder<String, VmFunction> functionsBuilder =
