@@ -89,7 +89,7 @@ public class StructType extends BaseType {
   }
 
   @Override
-  VmType vmType() {
+  public VmType vmType() {
     return Core.STRUCT;
   }
 
@@ -142,7 +142,7 @@ public class StructType extends BaseType {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       return STRUCT_KEYS;
     }
 

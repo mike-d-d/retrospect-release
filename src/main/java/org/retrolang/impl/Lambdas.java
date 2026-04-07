@@ -26,7 +26,7 @@ public class Lambdas {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       return Core.FUNCTION_LAMBDA;
     }
 
@@ -100,7 +100,7 @@ public class Lambdas {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       return Core.PARTIAL_APPLICATION_LAMBDA;
     }
 

@@ -106,7 +106,7 @@ public class CodeGenManager {
   private static final Monitor DEFAULT_MONITOR =
       (name, args, counter, debugInfo) -> {
         String argsAsString = StringUtil.joinElements("(", ")", args.size(), args::get);
-        System.out.format("Loaded code for %s%s", name, argsAsString);
+        System.out.format("Loaded code for %s%s\n", name, argsAsString);
       };
 
   /**

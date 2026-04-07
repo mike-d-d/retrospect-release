@@ -136,6 +136,11 @@ public class Core {
     return new VmType.Union(CORE, name, true, superTypes);
   }
 
+  /** Returns a new Core open union type with the given name and subtypes. */
+  public static VmType.Union newOpenUnionWithSubTypes(String name, VmType... subTypes) {
+    return VmType.Union.withSubTypes(CORE, name, true, subTypes);
+  }
+
   @Public public static final VmType.Union BOOLEAN = newUnion("Boolean");
   @Public public static final Singleton FALSE = newSingleton("False", BOOLEAN);
   @Public public static final Singleton TRUE = newSingleton("True", BOOLEAN);
@@ -248,7 +253,7 @@ public class Core {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       return ARRAY;
     }
 
@@ -302,7 +307,7 @@ public class Core {
   public static final BaseType VARRAY =
       new BaseType(-1, BaseType.SORT_ORDER_ARRAY) {
         @Override
-        VmType vmType() {
+        public VmType vmType() {
           return ARRAY;
         }
 
@@ -430,7 +435,7 @@ public class Core {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       return CORE_LAMBDA;
     }
 
