@@ -137,11 +137,7 @@ public abstract class NumValue extends RefCounted implements Value {
    */
   public static int asInt(Value v) {
     assert isInt(v);
-    if (v instanceof I ni) {
-      return ni.value;
-    } else {
-      return (int) ((D) v).value;
-    }
+    return toInt(v);
   }
 
   /**

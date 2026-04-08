@@ -57,13 +57,13 @@ cgtest_x0(i1):
    2: X2 ← null;
    3: test 6 < I1; F:→ 81
    4: I4 ← I1;
-=  5: I5 ← Math.addExact(I4, 1); ArithmeticException:→ 168
-   6: [TreeNode([i0⸨0:None; 1:TreeNode(x0:*@xxxx)⸩, i4⸨0:None; 1:TreeNode(x1:*@xxxx)⸩])] ← createTree_x1(X0, I5); X1 ← stackRest; unwind:→ 166
+=  5: I5 ← Math.addExact(I4, 1); ArithmeticException:→ 167
+   6: [TreeNode([i0⸨0:None; 1:TreeNode(x0:*@xxxx)⸩, i4⸨0:None; 1:TreeNode(x1:*@xxxx)⸩])] ← createTree_x1(X0, I5); X1 ← stackRest; unwind:→ 165
    7: X3 ← TState.fnResult(X0, 0);
    8: X6 ← TState.fnResult(X0, 1);
    9: X7 ← TState.fnResultBytes(X0, 0);
-  10: test int[](X7, 0) == 1; F:→ 165
-  11: test int[](X7, 4) == 1; F:→ 165
+  10: test int[](X7, 0) == 1; F:→ 164
+  11: test int[](X7, 4) == 1; F:→ 164
   12: TState.clearResults(X0);
   13: test X1 == null; T:→ 16
   14: X2 ← newStackEntry(⟦binary_trees.r8t+3:11_4 _t0 = createTree(stretchDepth) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5⟧);
@@ -73,18 +73,18 @@ cgtest_x0(i1):
   18: Frame1i2x.x0.set(X1, X3);
   19: Frame1i2x.b1.set(X1, 1);
   20: Frame1i2x.x1.set(X1, X6);
-  21: [i0] ← check_x2(X0, X1); X1 ← stackRest; unwind:→ 163
+  21: [i0] ← check_x2(X0, X1); X1 ← stackRest; unwind:→ 162
   22: I6 ← int[](TState.fnResultBytes(X0, 0), 0);
   23: TState.clearResultTemplates(X0);
   24: test X1 == null; T:→ 27
   25: X3 ← newStackEntry(⟦binary_trees.r8t+3:11_5 stretchCheck = check(_t0) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5⟧);
   26: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2);
-- 27: [TreeNode([i0⸨0:None; 1:TreeNode(x0:*@xxxx)⸩, i4⸨0:None; 1:TreeNode(x1:*@xxxx)⸩])] ← createTree_x1(X0, I4); X1 ← stackRest; unwind:→ 161
+- 27: [TreeNode([i0⸨0:None; 1:TreeNode(x0:*@xxxx)⸩, i4⸨0:None; 1:TreeNode(x1:*@xxxx)⸩])] ← createTree_x1(X0, I4); X1 ← stackRest; unwind:→ 160
   28: X8 ← TState.fnResult(X0, 0);
   29: X9 ← TState.fnResult(X0, 1);
   30: X7 ← TState.fnResultBytes(X0, 0);
-  31: test int[](X7, 0) == 1; F:→ 160
-  32: test int[](X7, 4) == 1; F:→ 160
+  31: test int[](X7, 0) == 1; F:→ 159
+  32: test int[](X7, 4) == 1; F:→ 159
   33: TState.clearResults(X0);
   34: test X1 == null; T:→ 37
   35: X3 ← newStackEntry(⟦binary_trees.r8t+3:13_6 longLivedTree = createTree(maxDepth) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5, stretchCheck=I6⟧);
@@ -93,24 +93,24 @@ cgtest_x0(i1):
   38: X10 ← [];
   39: I11 ← 4;
   40: X3 ← null;
-= 41: I7 ← Math.subtractExact(I4, I11); ArithmeticException:→ 158
-  42: I7 ← Math.addExact(I7, 4); ArithmeticException:→ 158
+= 41: I7 ← Math.subtractExact(I4, I11); ArithmeticException:→ 157
+  42: I7 ← Math.addExact(I7, 4); ArithmeticException:→ 157
   43: I12 ← NumberCore.bitShift(1, I7);
-  44: test I12 < 0; T:→ 158
+  44: test I12 < 0; T:→ 157
   45: X13 ← null;
   46: I15 ← 1;
   47: I16 ← 0;
 = 48: test I12 < I15; T:→ 84
-  49: I17 ← Math.addExact(I15, 1); ArithmeticException:→ 156
+  49: I17 ← Math.addExact(I15, 1); ArithmeticException:→ 155
   50: I18 ← 0;
   51: I15 ← I17;
   52: X14 ← null;
-  53: [TreeNode([i0⸨0:None; 1:TreeNode(x0:*@xxxx)⸩, i4⸨0:None; 1:TreeNode(x1:*@xxxx)⸩])] ← createTree_x1(X0, I11); X19 ← stackRest; unwind:→ 155
+  53: [TreeNode([i0⸨0:None; 1:TreeNode(x0:*@xxxx)⸩, i4⸨0:None; 1:TreeNode(x1:*@xxxx)⸩])] ← createTree_x1(X0, I11); X19 ← stackRest; unwind:→ 154
   54: X20 ← TState.fnResult(X0, 0);
   55: X21 ← TState.fnResult(X0, 1);
   56: X7 ← TState.fnResultBytes(X0, 0);
-  57: test int[](X7, 0) == 1; F:→ 154
-  58: test int[](X7, 4) == 1; F:→ 154
+  57: test int[](X7, 0) == 1; F:→ 153
+  58: test int[](X7, 4) == 1; F:→ 153
   59: TState.clearResults(X0);
   60: test X19 == null; T:→ 62
   61: X14 ← TState.fillStackEntry(X0, X19, ⟦binary_trees.r8t+3:18_1 _t0 = createTree(depth)⟧, ⟨i0, Undef, RangeIterator(i0, i0, None), TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=b0⸩)⟩, mMemo_8@xxxx, null);
@@ -119,7 +119,7 @@ cgtest_x0(i1):
   64: Frame1i2x.x0.set(X7, X20);
   65: Frame1i2x.b1.set(X7, 1);
   66: Frame1i2x.x1.set(X7, X21);
-  67: [i0] ← check_x2(X0, X7); X19 ← stackRest; unwind:→ 149
+  67: [i0] ← check_x2(X0, X7); X19 ← stackRest; unwind:→ 148
   68: I20 ← int[](TState.fnResultBytes(X0, 0), 0);
   69: TState.clearResultTemplates(X0);
   70: test X19 == null; T:→ 72
@@ -130,7 +130,7 @@ cgtest_x0(i1):
   75: test X7 == null; T:→ 78
   76: X14 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=Sum(0), state=I16⟧);
   77: X13 ← TState.fillStackEntry(X0, X7, X14, ⟨i0, Sum(0)⟩, LmMemo_17@xxxx, X13);
-- 78: I7 ← Math.addExact(I16, I20); ArithmeticException:→ 143
+- 78: I7 ← Math.addExact(I16, I20); ArithmeticException:→ 142
   79: I15 ← I17;
   80: I16 ← I7; → 48
 - 81: I4 ← 6; → 5
@@ -146,18 +146,18 @@ cgtest_x0(i1):
   91: addRef(X10); X3 ← newStackEntry(⟦binary_trees.r8t+3:18_15 check = pipe(_t0, _t1) ∥ results_ro=LoopRO(EnumerateValues, SaveUnordered, False), results_rw=LoopRW(Absent, X10), depth=I11, iterations=I12⟧);
   92: X3 ← TState.fillStackEntry(X0, X7, X3, ⟨⸨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@15_state⸨results_rw=LoopRW(Absent, x0:*[]@xxxx), depth=b0⸩⸩, loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=b0, minDepth=4⸩⟩, mMemo_h40@xxxx, null);
 - 93: I7 ← Frame1i4x.i0(X10);
-  94: test TState.reserveForChange(X0, *[]{check: i0, depth: b1, iterations: i2}@xxxx, X10, iAdd(I7, 1)) == 0; T:→ 143
-  95: dropRef{X13};
-  96: X10 ← removeRange*[]{check: i0, depth: b1, iterations: i2}@xxxx(X0, X10, I7, 0, 1);
-  97: setInt[](Frame1i4x.x0(X10), iShl(I7, 2), I16);
-  98: test I11 isUint8; F:→ 134
+  94: test TState.reserveForChange(X0, *[]{check: i0, depth: b1, iterations: i2}@xxxx, X10, iAdd(I7, 1)) == 0; T:→ 142
+  95: test I11 isUint8; F:→ 142
+  96: dropRef{X13};
+  97: X10 ← removeRange*[]{check: i0, depth: b1, iterations: i2}@xxxx(X0, X10, I7, 0, 1);
+  98: setInt[](Frame1i4x.x0(X10), iShl(I7, 2), I16);
   99: setUint8[](Frame1i4x.x1(X10), I7, I11);
  100: setInt[](Frame1i4x.x2(X10), iShl(I7, 2), I12);
- 101: I13 ← Math.addExact(I11, 2); ArithmeticException:→ 134
+ 101: I7 ← Math.addExact(I11, 2); ArithmeticException:→ 134
  102: test X3 == null; T:→ 105
- 103: X7 ← newStackEntry(⟦LoopCore.IterateUnbounded.at ∥ lambda=loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=I4, minDepth=4⸩⟧);
- 104: X1 ← TState.fillStackEntry(X0, X3, X7, ⟨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, LmMemo_h38@xxxx, X1);
--105: I11 ← I13; → 82
+ 103: X11 ← newStackEntry(⟦LoopCore.IterateUnbounded.at ∥ lambda=loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=I4, minDepth=4⸩⟧);
+ 104: X1 ← TState.fillStackEntry(X0, X3, X11, ⟨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, LmMemo_h38@xxxx, X1);
+-105: I11 ← I7; → 82
 -106: test X1 == null; T:→ 109
  107: addRef(X8); addRef(X9); X3 ← newStackEntry(⟦binary_trees.r8t+3:15_10 _t0 = iterateUnbounded(loop@15⸨results_ro=results_ro, maxDepth=maxDepth, minDepth=minDepth⸩, loop@15_state⸨results_rw=_t0, depth=depth⸩) ∥ stretchDepth=I5, stretchCheck=I6, longLivedTree=TreeNode([TreeNode(X8), TreeNode(X9)]), results_ro=LoopRO(EnumerateValues, SaveUnordered, False)⟧);
  108: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2);
@@ -186,42 +186,41 @@ cgtest_x0(i1):
 =131: TState.setStackRest(X0, X2);
  132: TState.setUnwoundFrom(X0, target:cgtest_x0);
  133: return
--134: X13 ← newStackEntry(⟦ReducerCore.NextStateSaveUnordered.replace ∥ state=X10, index=I7, value={check: I16, depth: I11, iterations: I12}⟧);
- 135: X7 ← TState.fillStackEntry(X0, null, X13, ⟨x0:*[]@xxxx⟩, mMemo_1@xxxx, null);
- 136: X7 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.EmitValue.nextState⟧, ⟨LoopRW(Absent, x0:*[]@xxxx)⟩, mMemo_2@xxxx, null);
- 137: X10 ← newStackEntry(⟦binary_trees.r8t+3:19_16 results_rw = emitValue(results_ro, results_rw, {check: check, depth: depth, iterations: iterations}) ∥ depth=I11⟧);
- 138: X3 ← TState.fillStackEntry(X0, X7, X10, ⟨⸨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@15_state⸨results_rw=LoopRW(Absent, x0:*[]@xxxx), depth=b0⸩⸩, loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=b0, minDepth=4⸩⟩, mMemo_h40@xxxx, X3);
-=139: X7 ← newStackEntry(⟦LoopCore.IterateUnbounded.at ∥ lambda=loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=I4, minDepth=4⸩⟧);
- 140: X1 ← TState.fillStackEntry(X0, X3, X7, ⟨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, LmMemo_h38@xxxx, X1);
-=141: X3 ← newStackEntry(⟦binary_trees.r8t+3:15_10 _t0 = iterateUnbounded(loop@15⸨results_ro=results_ro, maxDepth=maxDepth, minDepth=minDepth⸩, loop@15_state⸨results_rw=_t0, depth=depth⸩) ∥ stretchDepth=I5, stretchCheck=I6, longLivedTree=TreeNode([TreeNode(X8), TreeNode(X9)]), results_ro=LoopRO(EnumerateValues, SaveUnordered, False)⟧);
- 142: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2); → 131
--143: X7 ← newStackEntry(⟦LoopCore.Iterate.afterNext ∥ element=I18⸨0:I20; 1:Absent⸩, it=TransformedIterator(RangeIterator(I15, I12, None), EnumerateValues, lambda@18:28⸨depth=I11⸩), loop=Sum(0), state=I16⟧);
- 144: X13 ← TState.fillStackEntry(X0, null, X7, ⟨i0, Sum(0)⟩, LmMemo_17@xxxx, X13);
-=145: X7 ← TState.fillStackEntry(X0, X13, ⟦LoopCore.enumerateDefault⟧, ⟨i0, Sum(0)⟩, mMemo_18@xxxx, null);
- 146: X7 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=Sum(0)⟧, ⟨i0⟩, mMemo_22@xxxx, null);
- 147: X13 ← newStackEntry(⟦binary_trees.r8t+3:18_15 check = pipe(_t0, _t1) ∥ results_ro=LoopRO(EnumerateValues, SaveUnordered, False), results_rw=LoopRW(Absent, X10), depth=I11, iterations=I12⟧);
- 148: X3 ← TState.fillStackEntry(X0, X7, X13, ⟨⸨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@15_state⸨results_rw=LoopRW(Absent, x0:*[]@xxxx), depth=b0⸩⸩, loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=b0, minDepth=4⸩⟩, mMemo_h40@xxxx, X3); → 139
--149: X14 ← TState.fillStackEntry(X0, X19, ⟦binary_trees.r8t+3:18_2 _t0 = check(_t0)⟧, ⟨i0, Undef, RangeIterator(i0, i0, None), TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=b0⸩)⟩, mMemo_8@xxxx, X14);
-=150: X7 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.at ∥ key=Undef, innerIt=RangeIterator(I17, I12, None), it=TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=I11⸩)⟧);
- 151: X7 ← TState.fillStackEntry(X0, X14, X7, ⟨⸨i0; Absent⸩, TransformedIterator(RangeIterator(i0, i0, None), EnumerateValues, lambda@18:28⸨depth=b0⸩), Sum(0), i0⟩, lmMemo_10@xxxx, null);
-=152: X14 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=Sum(0), state=I16⟧);
- 153: X13 ← TState.fillStackEntry(X0, X7, X14, ⟨i0, Sum(0)⟩, LmMemo_17@xxxx, X13); → 145
--154: dropRef{X20, X21};
--155: X14 ← TState.fillStackEntry(X0, X19, ⟦binary_trees.r8t+3:18_1 _t0 = createTree(depth)⟧, ⟨i0, Undef, RangeIterator(i0, i0, None), TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=b0⸩)⟩, mMemo_8@xxxx, null); → 150
--156: X7 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.loop ∥ innerIt=RangeIterator(I15, I12, None), it=TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=I11⸩)⟧);
- 157: X7 ← TState.fillStackEntry(X0, null, X7, ⟨⸨i0; Absent⸩, TransformedIterator(RangeIterator(i0, i0, None), EnumerateValues, lambda@18:28⸨depth=b0⸩), Sum(0), i0⟩, lmMemo_10@xxxx, null); → 152
--158: X3 ← newStackEntry(⟦LoopCore.IterateUnbounded.afterAt ∥ state=loop@15_state⸨results_rw=LoopRW(Absent, X10), depth=I11⸩, lambda=loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=I4, minDepth=4⸩⟧);
- 159: X1 ← TState.fillStackEntry(X0, null, X3, ⟨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, LmMemo_h38@xxxx, X1); → 141
--160: dropRef{X8, X9};
--161: X3 ← newStackEntry(⟦binary_trees.r8t+3:13_6 longLivedTree = createTree(maxDepth) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5, stretchCheck=I6⟧);
- 162: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2); → 131
--163: X3 ← newStackEntry(⟦binary_trees.r8t+3:11_5 stretchCheck = check(_t0) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5⟧);
- 164: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2); → 131
--165: dropRef{X3, X6};
--166: X2 ← newStackEntry(⟦binary_trees.r8t+3:11_4 _t0 = createTree(stretchDepth) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5⟧);
- 167: X2 ← TState.fillStackEntry(X0, X1, X2, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, null); → 131
--168: X2 ← newStackEntry(⟦binary_trees.r8t+3:8_0 minDepth = 4 ∥ n=I1⟧);
- 169: X2 ← TState.fillStackEntry(X0, null, X2, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, null); → 131
+-134: X7 ← newStackEntry(⟦LoopCore.EmitValue.afterNextState ∥ state=X10⟧);
+ 135: X7 ← TState.fillStackEntry(X0, null, X7, ⟨LoopRW(Absent, x0:*[]@xxxx)⟩, mMemo_2@xxxx, null);
+ 136: X10 ← newStackEntry(⟦binary_trees.r8t+3:19_16 results_rw = emitValue(results_ro, results_rw, {check: check, depth: depth, iterations: iterations}) ∥ depth=I11⟧);
+ 137: X3 ← TState.fillStackEntry(X0, X7, X10, ⟨⸨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@15_state⸨results_rw=LoopRW(Absent, x0:*[]@xxxx), depth=b0⸩⸩, loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=b0, minDepth=4⸩⟩, mMemo_h40@xxxx, X3);
+=138: X7 ← newStackEntry(⟦LoopCore.IterateUnbounded.at ∥ lambda=loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=I4, minDepth=4⸩⟧);
+ 139: X1 ← TState.fillStackEntry(X0, X3, X7, ⟨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, LmMemo_h38@xxxx, X1);
+=140: X3 ← newStackEntry(⟦binary_trees.r8t+3:15_10 _t0 = iterateUnbounded(loop@15⸨results_ro=results_ro, maxDepth=maxDepth, minDepth=minDepth⸩, loop@15_state⸨results_rw=_t0, depth=depth⸩) ∥ stretchDepth=I5, stretchCheck=I6, longLivedTree=TreeNode([TreeNode(X8), TreeNode(X9)]), results_ro=LoopRO(EnumerateValues, SaveUnordered, False)⟧);
+ 141: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2); → 131
+-142: X7 ← newStackEntry(⟦LoopCore.Iterate.afterNext ∥ element=I18⸨0:I20; 1:Absent⸩, it=TransformedIterator(RangeIterator(I15, I12, None), EnumerateValues, lambda@18:28⸨depth=I11⸩), loop=Sum(0), state=I16⟧);
+ 143: X13 ← TState.fillStackEntry(X0, null, X7, ⟨i0, Sum(0)⟩, LmMemo_17@xxxx, X13);
+=144: X7 ← TState.fillStackEntry(X0, X13, ⟦LoopCore.enumerateDefault⟧, ⟨i0, Sum(0)⟩, mMemo_18@xxxx, null);
+ 145: X7 ← TState.fillStackEntry(X0, X7, ⟦LoopCore.PipeCollectionCollector.enumerate ∥ loop=Sum(0)⟧, ⟨i0⟩, mMemo_22@xxxx, null);
+ 146: X13 ← newStackEntry(⟦binary_trees.r8t+3:18_15 check = pipe(_t0, _t1) ∥ results_ro=LoopRO(EnumerateValues, SaveUnordered, False), results_rw=LoopRW(Absent, X10), depth=I11, iterations=I12⟧);
+ 147: X3 ← TState.fillStackEntry(X0, X7, X13, ⟨⸨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩); loop@15_state⸨results_rw=LoopRW(Absent, x0:*[]@xxxx), depth=b0⸩⸩, loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=b0, minDepth=4⸩⟩, mMemo_h40@xxxx, X3); → 138
+-148: X14 ← TState.fillStackEntry(X0, X19, ⟦binary_trees.r8t+3:18_2 _t0 = check(_t0)⟧, ⟨i0, Undef, RangeIterator(i0, i0, None), TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=b0⸩)⟩, mMemo_8@xxxx, X14);
+=149: X7 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.at ∥ key=Undef, innerIt=RangeIterator(I17, I12, None), it=TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=I11⸩)⟧);
+ 150: X7 ← TState.fillStackEntry(X0, X14, X7, ⟨⸨i0; Absent⸩, TransformedIterator(RangeIterator(i0, i0, None), EnumerateValues, lambda@18:28⸨depth=b0⸩), Sum(0), i0⟩, lmMemo_10@xxxx, null);
+=151: X14 ← newStackEntry(⟦LoopCore.Iterate.next ∥ loop=Sum(0), state=I16⟧);
+ 152: X13 ← TState.fillStackEntry(X0, X7, X14, ⟨i0, Sum(0)⟩, LmMemo_17@xxxx, X13); → 144
+-153: dropRef{X20, X21};
+-154: X14 ← TState.fillStackEntry(X0, X19, ⟦binary_trees.r8t+3:18_1 _t0 = createTree(depth)⟧, ⟨i0, Undef, RangeIterator(i0, i0, None), TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=b0⸩)⟩, mMemo_8@xxxx, null); → 149
+-155: X7 ← newStackEntry(⟦CollectionCore.NextTransformedIterator.loop ∥ innerIt=RangeIterator(I15, I12, None), it=TransformedIterator((empty), EnumerateValues, lambda@18:28⸨depth=I11⸩)⟧);
+ 156: X7 ← TState.fillStackEntry(X0, null, X7, ⟨⸨i0; Absent⸩, TransformedIterator(RangeIterator(i0, i0, None), EnumerateValues, lambda@18:28⸨depth=b0⸩), Sum(0), i0⟩, lmMemo_10@xxxx, null); → 151
+-157: X3 ← newStackEntry(⟦LoopCore.IterateUnbounded.afterAt ∥ state=loop@15_state⸨results_rw=LoopRW(Absent, X10), depth=I11⸩, lambda=loop@15⸨results_ro=LoopRO(EnumerateValues, SaveUnordered, False), maxDepth=I4, minDepth=4⸩⟧);
+ 158: X1 ← TState.fillStackEntry(X0, null, X3, ⟨LoopExit(loop@15_break⸨results_rw=LoopRW(Absent, x0:*[]@xxxx)⸩)⟩, LmMemo_h38@xxxx, X1); → 140
+-159: dropRef{X8, X9};
+-160: X3 ← newStackEntry(⟦binary_trees.r8t+3:13_6 longLivedTree = createTree(maxDepth) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5, stretchCheck=I6⟧);
+ 161: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2); → 131
+-162: X3 ← newStackEntry(⟦binary_trees.r8t+3:11_5 stretchCheck = check(_t0) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5⟧);
+ 163: X2 ← TState.fillStackEntry(X0, X1, X3, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, X2); → 131
+-164: dropRef{X3, X6};
+-165: X2 ← newStackEntry(⟦binary_trees.r8t+3:11_4 _t0 = createTree(stretchDepth) ∥ minDepth=4, maxDepth=I4, stretchDepth=I5⟧);
+ 166: X2 ← TState.fillStackEntry(X0, X1, X2, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, null); → 131
+-167: X2 ← newStackEntry(⟦binary_trees.r8t+3:8_0 minDepth = 4 ∥ n=I1⟧);
+ 168: X2 ← TState.fillStackEntry(X0, null, X2, ⟨{longLivedCheck: i0, results: x0:*[]@xxxx, stretchCheck: i0, stretchDepth: b0}⟩, mMemo_x@xxxx, null); → 131
 
 createTree_x1(i1):
   1: CodeGenTarget.incrementCallCount(target:createTree_x1);

@@ -191,7 +191,7 @@ public abstract class BaseType implements PtrInfo {
    * Returns the most specific VmType for values with this BaseType. Should only be called on
    * BaseTypes that correspond to Retrospect-language values.
    */
-  abstract VmType vmType();
+  public abstract VmType vmType();
 
   /**
    * Creates a new uncounted Value with the given elements, all of which must be uncounted.
@@ -254,7 +254,7 @@ public abstract class BaseType implements PtrInfo {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       return asType;
     }
 
@@ -345,7 +345,7 @@ public abstract class BaseType implements PtrInfo {
     }
 
     @Override
-    VmType vmType() {
+    public VmType vmType() {
       // Stack entries aren't Retrospect-language values, so this should never be called.
       throw new AssertionError();
     }

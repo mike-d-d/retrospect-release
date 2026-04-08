@@ -192,7 +192,6 @@ public interface Value {
   }
 
   /** Returns this Value as a transient Integer or throws the specified Err. */
-  @RC.Out
   default Value verifyInt(Err err) throws Err.BuiltinException {
     return NumValue.verifyInt(this, err);
   }

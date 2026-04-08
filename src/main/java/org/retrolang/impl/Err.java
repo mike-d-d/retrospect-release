@@ -173,6 +173,10 @@ public class Err extends BaseType.SimpleStackEntryType {
 
   public static final Err INHERIT_KEYED_COLLECTOR = new Err("Can't inherit a keyed collector");
 
+  public static final Err PARSE_FAILED = new Err("Input does not match parser");
+
+  public static final Err REPEATED_EMPTY_PARSE = new Err("Repeated parser matches empty string");
+
   /** {@code futureStack} is an array of stack entries, from top to base. */
   public static final Err FUTURE_ERROR =
       new Err("Error while computing future() value", "futureStack");

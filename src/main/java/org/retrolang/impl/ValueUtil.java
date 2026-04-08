@@ -620,6 +620,174 @@ public class ValueUtil {
     return tstate.asArrayValue(result, nDims);
   }
 
+  /** Adds one element at the end of the given array. */
+  @RC.Out
+  public static Value appendElement(
+      TState tstate, @RC.In Value array, @RC.In Value newElement, FrameLayout resultLayout)
+      throws Err.BuiltinException {
+    return insertElements(tstate, array, true, resultLayout, newElement);
+  }
+
+  /**
+   * A CopyEmitter that just discards the values, used to pre-test whether the source can be stored
+   * in a given template.
+   */
+  private static final CopyEmitter TEST_STORE =
+      new CopyEmitter() {
+        @Override
+        void setDstVar(CodeGen codeGen, Template t, CodeValue v) {
+          // do nothing
+        }
+      };
+
+  /** Adds elements at the beginning or end of the given array. */
+  @RC.Out
+  public static Value insertElements(
+      TState tstate,
+      @RC.In Value array,
+      boolean atEnd,
+      FrameLayout resultLayout,
+      @RC.In Value... newElements)
+      throws Err.BuiltinException {
+    if (newElements.length == 0) {
+      return array;
+    }
+    if (array.baseType().isCompositional()) {
+      int size = array.baseType().size();
+      int newSize = size + newElements.length;
+      if (size == 0 || newSize <= 5) {
+        Object[] newArray = tstate.allocObjectArray(newSize);
+        int offset = atEnd ? 0 : newElements.length;
+        for (int i = 0; i < size; i++) {
+          newArray[i + offset] = array.element(i);
+        }
+        tstate.dropValue(array);
+        System.arraycopy(newElements, 0, newArray, atEnd ? size : 0, newElements.length);
+        return tstate.asArrayValue(newArray, newSize);
+      }
+    }
+    Value numAdded = NumValue.of(newElements.length, Allocator.TRANSIENT);
+    Value size = tstate.getArraySizeAndReserveForChange(array, numAdded, null);
+    boolean preChecked = false;
+    if (tstate.hasCodeGen() && resultLayout instanceof VArrayLayout vLayout) {
+      // We'd like to expand the varray and then copy the new elements into it.  If it is possible
+      // that one of the newElements might not fit into the varray, the emitted code will save
+      // the state at the beginning of this step for a possible escape -- including the original
+      // value of array, which will prevent us from expanding it in place.  To avoid that we
+      // need to test that each newElement fits *before* we expand array.
+      CodeGen codeGen = tstate.codeGen();
+      Template elementTemplate = vLayout.template;
+      for (int i = 0; i < newElements.length; i++) {
+        Template newTemplate = RValue.toTemplate(newElements[i]);
+        if (!newTemplate.toBuilder().isSubsetOf(elementTemplate.toBuilder())) {
+          // Try copying this element into the varray's template, but with an emitter that doesn't
+          // actually store the values (but will escape if they don't fit).
+          CopyPlan plan = CopyPlan.create(newTemplate, elementTemplate);
+          plan = CopyOptimizer.toVArray(plan, vLayout);
+          TEST_STORE.emit(codeGen, plan, codeGen.escapeLink());
+        }
+      }
+      preChecked = true;
+    }
+    Value keepPrefix = atEnd ? size : NumValue.ZERO;
+    array = ValueUtil.removeRange(tstate, array, keepPrefix, NumValue.ZERO, numAdded, resultLayout);
+    CodeGen.EscapeState prevEscape = null;
+    if (preChecked) {
+      CodeGen codeGen = tstate.codeGen();
+      prevEscape = codeGen.escapeState();
+      codeGen.setNewEscape(codeGen::emitAssertionFailed);
+    }
+    for (int i = 0; i < newElements.length; i++) {
+      Value pos = NumValue.of(i, Allocator.TRANSIENT);
+      if (atEnd) {
+        pos = ValueUtil.addInts(tstate, pos, size);
+      }
+      array = replaceElement(tstate, array, pos, 0, newElements[i]);
+      if (atEnd) {
+        tstate.dropValue(pos);
+      }
+    }
+    tstate.dropValue(size);
+    if (prevEscape != null) {
+      tstate.codeGen().restore(prevEscape);
+    }
+    return array;
+  }
+
+  /**
+   * Adds the elements of {@code array2} (which must not be a varray) at the beginning or end of
+   * {@code array} (which may be).
+   */
+  @RC.Out
+  public static Value insertAllElements(
+      TState tstate,
+      @RC.In Value array,
+      boolean atEnd,
+      FrameLayout resultLayout,
+      @RC.In Value array2)
+      throws Err.BuiltinException {
+    int n = array2.baseType().size();
+    if (n == 0) {
+      return array;
+    }
+    Value[] elements = new Value[n];
+    Arrays.setAll(elements, array2::element);
+    tstate.dropValue(array2);
+    return insertElements(tstate, array, atEnd, resultLayout, elements);
+  }
+
+  /** Returns the concatenation of two arrays. */
+  @RC.Out
+  public static Value appendArrays(
+      TState tstate, @RC.In Value array1, @RC.In Value array2, FrameLayout resultLayout)
+      throws Err.BuiltinException {
+    assert array1.baseType().isArray() && array2.baseType().isArray();
+    if (array1 == Core.EMPTY_ARRAY) {
+      return array2;
+    } else if (array2.baseType().isCompositional()) {
+      return insertAllElements(tstate, array1, true, resultLayout, array2);
+    } else if (array1.baseType().isCompositional()) {
+      return insertAllElements(tstate, array2, false, resultLayout, array1);
+    }
+    // Both are varrays
+    Value size2 = numElements(tstate, array2);
+    Value size1 = tstate.getArraySizeAndReserveForChange(array1, size2, null);
+    array1 = ValueUtil.removeRange(tstate, array1, size1, NumValue.ZERO, size2, resultLayout);
+    VArrayLayout layout1 = (VArrayLayout) array1.layout();
+    VArrayLayout layout2 = (VArrayLayout) array2.layout();
+    if (layout2.template.equals(layout1.template)) {
+      array1 = layout1.fastCopyRange(tstate, array1, size1, array2, NumValue.ZERO, size2);
+    } else if (tstate.hasCodeGen()) {
+      CodeGen codeGen = tstate.codeGen();
+      Register size1Cv = codeGen.register(size1);
+      Register size2Cv = codeGen.register(size2);
+      VArrayLayout dstLayout = (VArrayLayout) resultLayout;
+      CodeValue dst = codeGen.register(array1);
+      if (dstLayout == layout1) {
+        dst = layout1.emitEnsureUnshared(codeGen, dst);
+      } else {
+        CodeValue size = Op.ADD_INTS_EXACT.result(size1Cv, size2Cv);
+        size = codeGen.materializeCatchingArithmeticException(size);
+        CodeValue newDst = codeGen.materialize(dstLayout.emitAlloc(codeGen, size), Frame.class);
+        dstLayout.emitCopyRange(
+            codeGen, layout1, newDst, CodeValue.ZERO, dst, CodeValue.ZERO, size1Cv);
+        dst = newDst;
+      }
+      dstLayout.emitCopyRange(
+          codeGen, layout2, dst, size1Cv, codeGen.register(array2), CodeValue.ZERO, size2Cv);
+      return CodeGen.asValue((Register) dst, resultLayout);
+    } else {
+      int n1 = NumValue.asInt(size1);
+      int n2 = NumValue.asInt(size2);
+      for (int i = 0; i < n2; i++) {
+        array1 = array1.replaceElement(tstate, i + n1, array2.element(i));
+      }
+    }
+    tstate.dropValue(array2);
+    tstate.dropValue(size1);
+    return array1;
+  }
+
   /**
    * Returns a varray containing
    *

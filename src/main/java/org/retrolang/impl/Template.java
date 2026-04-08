@@ -512,9 +512,9 @@ public sealed interface Template {
   static final class NumVar extends TemplateBuilder implements Template {
     // When we need a new numeric TemplateBuilder we'll use one of these;
     // the proper index will be filled in when it's built.
-    static final NumVar UINT8 = new NumVar(NumEncoding.UINT8, 0);
-    static final NumVar INT32 = new NumVar(NumEncoding.INT32, 0);
-    static final NumVar FLOAT64 = new NumVar(NumEncoding.FLOAT64, 0);
+    public static final NumVar UINT8 = new NumVar(NumEncoding.UINT8, 0);
+    public static final NumVar INT32 = new NumVar(NumEncoding.INT32, 0);
+    public static final NumVar FLOAT64 = new NumVar(NumEncoding.FLOAT64, 0);
 
     public final NumEncoding encoding;
     public final int index;

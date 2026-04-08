@@ -16,7 +16,9 @@
 
 package org.retrolang.impl;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
+import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
@@ -123,8 +125,15 @@ public abstract class Condition {
   }
 
   /** Returns {@code ifTrue} if this Condition is true, {@code ifFalse} if it is not. */
-  public Value choose(Value ifTrue, Value ifFalse) {
-    return new ConditionalValue(this, () -> ifTrue, () -> ifFalse);
+  public Value choose(Value ifTrueValue, Value ifFalseValue) {
+    return new ConditionalValue(this, () -> ifTrueValue, () -> ifFalseValue) {
+      @Override
+      public Condition isa(VmType type) {
+        // Implementing Value.isa(VmType) enables us to method resolution if one of these is passed
+        // as a function argument.
+        return Condition.this.ternary(ifTrueValue.isa(type), ifFalseValue.isa(type));
+      }
+    };
   }
 
   /** Returns {@code ifTrue.get()} if this Condition is true, {@code ifFalse.get()} if it is not. */
@@ -135,6 +144,16 @@ public abstract class Condition {
   /** Returns {@code ifTrue.get()} if this Condition is true, {@code ifFalse.get()} if it is not. */
   public Value chooseExcept(ValueSupplier ifTrue, ValueSupplier ifFalse) throws BuiltinException {
     return new ConditionalValue(this, ifTrue, ifFalse);
+  }
+
+  /**
+   * Returns a CodeValue equal to {@code ifTrue} if this Condition is true, {@code ifFalse} if it is
+   * not. May allocate a new register of the specified type to hold the result.
+   */
+  public CodeValue choose(CodeGen codeGen, CodeValue ifTrue, CodeValue ifFalse, Class<?> type) {
+    Register result = codeGen.cb.newRegister(type);
+    test(() -> codeGen.emitSet(result, ifTrue), () -> codeGen.emitSet(result, ifFalse));
+    return result;
   }
 
   /** Returns {@code Core.TRUE} if this Condition is true, {@code Core.FALSE} if it is not. */
@@ -272,6 +291,22 @@ public abstract class Condition {
   }
 
   /**
+   * Returns a Condition that is true if the CodeValue returned by {@code supplier} (which must be
+   * of type int) is not zero (or is true, if it represents a boolean).
+   */
+  public static Condition isNonZero(Function<CodeGen, CodeValue> supplier) {
+    return new Condition() {
+      @Override
+      public void addTest(CodeGen codeGen, FutureBlock elseBranch) {
+        CodeValue v = supplier.apply(codeGen);
+        new TestBlock.IsEq(CodeBuilder.OpCodeType.INT, v, CodeValue.ZERO)
+            .setBranch(true, elseBranch)
+            .addTo(codeGen.cb);
+      }
+    };
+  }
+
+  /**
    * Returns a Condition that is true if {@code v1} is less than {@code v2}; both must be of type
    * int.
    */
@@ -397,6 +432,11 @@ public abstract class Condition {
     @Override
     public Value chooseExcept(ValueSupplier ifTrue, ValueSupplier ifFalse) throws BuiltinException {
       return (value ? ifTrue : ifFalse).get();
+    }
+
+    @Override
+    public CodeValue choose(CodeGen codeGen, CodeValue ifTrue, CodeValue ifFalse, Class<?> type) {
+      return value ? ifTrue : ifFalse;
     }
 
     @Override

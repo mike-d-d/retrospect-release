@@ -1,0 +1,67 @@
+_ = aoc1("L24\nL26\nR15")
+return aoc1("L24\nL26\nR15\nR55\nL10\nR40\nR15")
+
+
+function aoc1(input) {
+  input = stream(input)
+  oneLine = outputMatch(oneOf("LR")) + parseInt + choose(newLine, "")
+  pos = 50
+  for sequential pos, input {
+    if peek(atEnd, input) { break }
+    [dir, amt] = match(oneLine, input=)
+    pos = (pos + (dir == "L"  ? -amt : amt)) % 100
+    if pos == 0 { result << 1 }
+  } collect {
+    result =| count
+  }
+  return result
+}
+
+/* CODEGEN aoc1 RETURNS
+2
+---
+aoc1_x0(x1:String):
+  1: CodeGenTarget.incrementCallCount(target:aoc1_x0);
+  2: I2 ← 0;
+  3: I3 ← 50;
+  4: I4 ← 0;
+= 5: test I4 == StringValue.length(X1); T:→ 31
+  6: I5 ← StringValue.codePoint(X1, I4);
+  7: test I5 < 0; T:→ 36
+  8: test StringValue.containsCodePoint("LR", I5) == 0; T:→ 36
+  9: I5 ← iAdd(I4, 1);
+ 10: X6 ← StringValue.substring(X1, X0, I4, I5);
+ 11: test X6 == null; T:→ 36
+ 12: I7 ← StringValue.skipInt(X1, I5);
+ 13: test I7 < 0; T:→ 35
+ 14: I5 ← StringValue.parseInt(X1, I5, I7); ArithmeticException:→ 35
+ 15: I8 ← StringValue.codePoint(X1, I7);
+ 16: test I8 < 0; T:→ 19
+ 17: test I8 == 10; F:→ 35
+ 18: I7 ← iAdd(I7, 1);
+-19: test Objects.equals(X6, "L") == 0; T:→ 30
+ 20: dropRef{X6};
+ 21: I5 ← Math.negateExact(I5); ArithmeticException:→ 36
+=22: I5 ← Math.addExact(I3, I5); ArithmeticException:→ 36
+ 23: I5 ← Math.floorMod(I5, 100);
+ 24: test I5 == 0; F:→ 28
+ 25: I6 ← iAdd(I2, 1);
+ 26: test 0 < I6; F:→ 36
+ 27: I2 ← I6;
+-28: I3 ← I5;
+ 29: I4 ← I7; → 5
+-30: dropRef{X6}; → 22
+-31: dropRef{X1};
+ 32: TState.setResultTemplates(X0, [i0]);
+ 33: setInt[](TState.fnResultBytes(X0, 4), 0, I2);
+ 34: return
+-35: dropRef{X6};
+-36: X5 ← newStackEntry(⟦LoopCore.IterateUnbounded.afterAt ∥ state=loop@9_state⸨result_rw=LoopRW(Absent, I2), pos=I3, input=Stream(I4, X1)⸩, lambda=loop@9⸨result_ro=LoopRO(EnumerateValues, Count, True), oneLine=ConcatParser(ConcatParser(OutputMatch(OneOf("LR")), ParseInt), ChooseParser(Guarded(NewLine, TrivialParser), ""))⸩⟧);
+ 37: X1 ← TState.fillStackEntry(X0, null, X5, ⟨LoopExit(loop@9_break⸨result_rw=LoopRW(Absent, b0)⸩)⟩, LmMemo_31@xxxx, null);
+ 38: X1 ← TState.fillStackEntry(X0, X1, ⟦parser.r8t+0:9_11 _t0 = iterateUnbounded(loop@9⸨result_ro=result_ro, oneLine=oneLine⸩, loop@9_state⸨result_rw=_t0, pos=pos, input=input⸩) ∥ result_ro=LoopRO(EnumerateValues, Count, True)⟧, ⟨b0⟩, mMemo_x@xxxx, null);
+ 39: TState.setStackRest(X0, X1);
+ 40: TState.setUnwoundFrom(X0, target:aoc1_x0);
+ 41: return
+---
+allocated=816/14, peak=0
+*/
