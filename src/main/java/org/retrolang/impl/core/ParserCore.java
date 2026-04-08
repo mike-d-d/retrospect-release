@@ -6,6 +6,7 @@ import org.retrolang.impl.Allocator;
 import org.retrolang.impl.BaseType;
 import org.retrolang.impl.BuiltinMethod;
 import org.retrolang.impl.Condition;
+import org.retrolang.impl.ConditionalValue;
 import org.retrolang.impl.Core;
 import org.retrolang.impl.Err;
 import org.retrolang.impl.NumValue;
@@ -16,6 +17,7 @@ import org.retrolang.impl.Singleton;
 import org.retrolang.impl.StringValue;
 import org.retrolang.impl.TProperty;
 import org.retrolang.impl.TState;
+import org.retrolang.impl.Template;
 import org.retrolang.impl.Value;
 import org.retrolang.impl.ValueUtil;
 import org.retrolang.impl.VmFunctionBuilder;
@@ -779,39 +781,47 @@ public final class ParserCore {
    * }
    * </pre>
    */
-  @Core.Method("multiply(Number, Parser|Guarded)")
+  @Core.Method("multiply(Number, Parser)")
   static Value repeatParserInt(TState tstate, Value n, @RC.In Value inner)
       throws Err.BuiltinException {
     n = n.verifyInt(Err.INVALID_ARGUMENT);
     Err.INVALID_ARGUMENT.unless(Condition.numericLessOrEq(NumValue.ZERO, n));
     Value min = n.makeStorable(tstate);
-    return inner
-        .isa(GUARDED)
-        .choose(
-            () -> tstate.compound(REPEAT_PARSER, inner, min, addRef(min)),
-            () -> {
-              Value guarded = tstate.compound(GUARDED, inner, TRIVIAL_PARSER);
-              return tstate.compound(REPEAT_PARSER, guarded, min, addRef(min));
-            });
+    Value guarded = tstate.compound(GUARDED, inner, TRIVIAL_PARSER);
+    return tstate.compound(REPEAT_PARSER, guarded, min, addRef(min));
   }
 
   /**
    * <pre>
    * method multiply(Range range, Parser inner) {
    *   min = min(range)
-   *   assert min is None or min >= 0
+   *   if min is None {
+   *     min = 0
+   *   }
+   *   assert min >= 0
+   *   // range must not be empty
+   *   assert max is None or max >= min
    *   return RepeatParser_({inner, min, max: max(range)})
    * }
    * </pre>
    */
-  @Core.Method("multiply(Range, Parser)")
+  @Core.Method("multiply(Range, Parser|Guarded)")
   static Value repeatParserRange(TState tstate, Value range, @RC.In Value inner)
       throws Err.BuiltinException {
     Value m = range.element(0);
-    Value min = m.is(Core.NONE).choose(NumValue.ZERO, m);
-    tstate.dropOnThrow(min);
+    m = m.is(Core.NONE).choose(NumValue.ZERO, m);
+    Value min;
+    if (m instanceof ConditionalValue cv) {
+      // Unlikely, but possible.  A ConditionalValue will cause problems ahead, so we need to
+      // materialize it.  Fortunately that's easy when we know the type.
+      min = cv.materialize(tstate.codeGen(), Template.NumVar.INT32);
+    } else {
+      min = m;
+      tstate.dropOnThrow(min);
+    }
     Err.INVALID_ARGUMENT.unless(Condition.numericLessOrEq(NumValue.ZERO, min));
     Value max = range.element(1);
+    Err.INVALID_ARGUMENT.unless(max.is(Core.NONE).or(() -> Condition.numericLessOrEq(min, max)));
     return inner
         .isa(GUARDED)
         .choose(
@@ -958,10 +968,9 @@ public final class ParserCore {
                 Value inner = repeat.peekElement(0);
                 assert inner.isa(GUARDED).asBoolean();
                 Value rest = inner.element(1);
-                tstate.dropValue(prevPos);
                 tstate
                     .startCall(parseRest, rest, addRef(mode), guardPos, addRef(source))
-                    .saving(repeat, newCount, mode, combinedResult, source);
+                    .saving(repeat, newCount, mode, combinedResult, prevPos, source);
               });
     }
 
@@ -975,6 +984,7 @@ public final class ParserCore {
         @RC.In Value count,
         @RC.In Value mode,
         @RC.In Value result,
+        Value prevPos,
         @RC.In Value source)
         throws Err.BuiltinException {
       restResult
@@ -989,6 +999,7 @@ public final class ParserCore {
                 tstate.setResults(Core.NONE, pos);
               },
               () -> {
+                Err.REPEATED_EMPTY_PARSE.when(Condition.numericEq(pos, prevPos));
                 Value combinedResult =
                     ValueUtil.appendArrays(
                         tstate, result, restResult, results.result(TProperty.ARRAY_LAYOUT));
@@ -1099,6 +1110,9 @@ public final class ParserCore {
   /**
    * <pre>
    * method takeChar(String s, Number pos=) {
+   *   if atEnd(s, pos) {
+   *     return None
+   *   }
    *   result = s @ pos
    *   pos += 1
    *   return result
@@ -1108,8 +1122,13 @@ public final class ParserCore {
   @Core.Method("takeChar(String, Number)")
   static void takeCharString(TState tstate, Value s, Value pos) throws Err.BuiltinException {
     Value result = StringValue.codePoint(tstate, s, pos, 0);
-    Value newPos = ValueUtil.addInts(tstate, pos, NumValue.ONE);
-    tstate.setResults(result, newPos);
+    Condition.numericLessThan(result, NumValue.ZERO)
+        .test(
+            () -> tstate.setResults(Core.NONE, addRef(pos)),
+            () -> {
+              Value newPos = ValueUtil.addInts(tstate, pos, NumValue.ONE);
+              tstate.setResults(result, newPos);
+            });
   }
 
   /**

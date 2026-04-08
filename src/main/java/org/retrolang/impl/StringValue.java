@@ -309,17 +309,24 @@ public class StringValue extends RefCounted implements Value {
    */
   public static Condition substringStartsWith(TState tstate, Value s, Value start, Value sub)
       throws BuiltinException {
-    start = start.verifyInt(Err.INVALID_ARGUMENT);
     if (s instanceof StringValue sv
         && start instanceof NumValue
         && sub instanceof StringValue sv2) {
+      Err.INVALID_ARGUMENT.unless(NumValue.isInt(start));
       return Condition.of(substringStartsWith(sv, NumValue.asInt(start), sv2));
     }
-    CodeGen codeGen = tstate.codeGen();
-    CodeValue result =
-        SUBSTRING_STARTS_WITH_OP.result(
-            codeGen.asCodeValue(s), codeGen.asCodeValue(start), codeGen.asCodeValue(sub));
-    return Condition.isNonZero(result);
+    return Condition.isNonZero(
+        codeGen -> {
+          Value iStart;
+          try {
+            iStart = start.verifyInt(Err.INVALID_ARGUMENT);
+          } catch (BuiltinException e) {
+            codeGen.escape();
+            return CodeValue.ZERO;
+          }
+          return SUBSTRING_STARTS_WITH_OP.result(
+              codeGen.asCodeValue(s), codeGen.asCodeValue(iStart), codeGen.asCodeValue(sub));
+        });
   }
 
   /**
@@ -330,19 +337,19 @@ public class StringValue extends RefCounted implements Value {
     if (s instanceof StringValue sv && cp instanceof NumValue) {
       return Condition.of(containsCodePoint(sv, NumValue.asInt(cp)));
     }
-    CodeGen codeGen = tstate.codeGen();
-    CodeValue result = CONTAINS_OP.result(codeGen.asCodeValue(s), codeGen.asCodeValue(cp));
-    return Condition.isNonZero(result);
+    return Condition.isNonZero(
+        codeGen -> CONTAINS_OP.result(codeGen.asCodeValue(s), codeGen.asCodeValue(cp)));
   }
 
-  static final Op LENGTH_OP = RcOp.forRcMethod(StringValue.class, "length").build();
+  static final Op LENGTH_OP =
+      RcOp.forRcMethod(StringValue.class, "length").withConstSimplifier().build();
 
   public int length() {
     return value.length();
   }
 
   static final Op CODE_POINT_OP =
-      RcOp.forRcMethod(StringValue.class, "codePoint", int.class).build();
+      RcOp.forRcMethod(StringValue.class, "codePoint", int.class).withConstSimplifier().build();
 
   /** Returns the code point at the given index, or -1 if {@code index} is invalid. */
   public int codePoint(int index) {
@@ -354,7 +361,9 @@ public class StringValue extends RefCounted implements Value {
   }
 
   static final Op SUBSTRING_OP =
-      RcOp.forRcMethod(StringValue.class, "substring", TState.class, int.class, int.class).build();
+      RcOp.forRcMethod(StringValue.class, "substring", TState.class, int.class, int.class)
+          .withConstSimplifier()
+          .build();
 
   /**
    * Returns the substring from {@code start} (inclusive) to {@code end} (exclusive). If {@code end}
@@ -376,7 +385,8 @@ public class StringValue extends RefCounted implements Value {
     }
   }
 
-  static final Op SKIP_INT_OP = RcOp.forRcMethod(StringValue.class, "skipInt", int.class).build();
+  static final Op SKIP_INT_OP =
+      RcOp.forRcMethod(StringValue.class, "skipInt", int.class).withConstSimplifier().build();
 
   private static boolean isDigit(char c) {
     return c >= '0' && c <= '9';
@@ -409,7 +419,9 @@ public class StringValue extends RefCounted implements Value {
   }
 
   static final Op PARSE_INT_OP =
-      RcOp.forRcMethod(StringValue.class, "parseInt", int.class, int.class).build();
+      RcOp.forRcMethod(StringValue.class, "parseInt", int.class, int.class)
+          .withConstSimplifier()
+          .build();
 
   public int parseInt(int start, int end) throws ArithmeticException {
     try {
@@ -420,7 +432,9 @@ public class StringValue extends RefCounted implements Value {
   }
 
   static final Op PARSE_DOUBLE_OP =
-      RcOp.forRcMethod(StringValue.class, "parseDouble", int.class, int.class).build();
+      RcOp.forRcMethod(StringValue.class, "parseDouble", int.class, int.class)
+          .withConstSimplifier()
+          .build();
 
   public double parseDouble(int start, int end) {
     return Double.parseDouble(value.substring(start, end));
@@ -450,6 +464,7 @@ public class StringValue extends RefCounted implements Value {
               StringValue.class,
               int.class,
               StringValue.class)
+          .withConstSimplifier()
           .build();
 
   public static boolean substringStartsWith(StringValue x, int n, StringValue y) {
@@ -458,6 +473,7 @@ public class StringValue extends RefCounted implements Value {
 
   static final Op CONTAINS_OP =
       RcOp.forRcMethod(StringValue.class, "containsCodePoint", StringValue.class, int.class)
+          .withConstSimplifier()
           .build();
 
   public static boolean containsCodePoint(StringValue x, int cp) {

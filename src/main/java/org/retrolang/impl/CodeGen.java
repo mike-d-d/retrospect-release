@@ -686,13 +686,12 @@ public class CodeGen {
     Object[] originalArgs = args;
     for (int i = 0; i < numArgs; i++) {
       if (args[i] instanceof ConditionalValue cv) {
-        int registerStart = cb.numRegisters();
-        Template saved = mMemo.argsMemo.result(i, TProperty.build(newAllocator()));
-        cv.emitStore(this, saved, registerStart, cb.numRegisters());
         if (args == originalArgs) {
           args = Arrays.copyOf(args, numArgs);
         }
-        args[i] = RValue.fromTemplate(saved);
+        int finalI = i;
+        args[i] =
+            cv.materialize(this, alloc -> mMemo.argsMemo.result(finalI, TProperty.build(alloc)));
       }
     }
     if (mMemo.isExlined()) {
@@ -892,6 +891,10 @@ public class CodeGen {
     }
   }
 
+  /**
+   * Evaluates a supplier and returns its result as an Optional. If the evaluation throws a
+   * BuiltinException, emits an escape and returns an empty optional.
+   */
   Optional<Value> escapeOnErr(Condition.ValueSupplier supplier) {
     try {
       return Optional.of(supplier.get());

@@ -16,7 +16,9 @@
 
 package org.retrolang.impl;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
+import org.retrolang.code.CodeBuilder;
 import org.retrolang.code.CodeBuilder.OpCodeType;
 import org.retrolang.code.CodeValue;
 import org.retrolang.code.FutureBlock;
@@ -127,6 +129,8 @@ public abstract class Condition {
     return new ConditionalValue(this, () -> ifTrueValue, () -> ifFalseValue) {
       @Override
       public Condition isa(VmType type) {
+        // Implementing Value.isa(VmType) enables us to method resolution if one of these is passed
+        // as a function argument.
         return Condition.this.ternary(ifTrueValue.isa(type), ifFalseValue.isa(type));
       }
     };
@@ -284,6 +288,22 @@ public abstract class Condition {
    */
   public static Condition isNonZero(CodeValue v) {
     return intEq(v, CodeValue.ZERO).not();
+  }
+
+  /**
+   * Returns a Condition that is true if the CodeValue returned by {@code supplier} (which must be
+   * of type int) is not zero (or is true, if it represents a boolean).
+   */
+  public static Condition isNonZero(Function<CodeGen, CodeValue> supplier) {
+    return new Condition() {
+      @Override
+      public void addTest(CodeGen codeGen, FutureBlock elseBranch) {
+        CodeValue v = supplier.apply(codeGen);
+        new TestBlock.IsEq(CodeBuilder.OpCodeType.INT, v, CodeValue.ZERO)
+            .setBranch(true, elseBranch)
+            .addTo(codeGen.cb);
+      }
+    };
   }
 
   /**

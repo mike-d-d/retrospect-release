@@ -61,6 +61,7 @@ public final class ReducerCore {
   @Core.Method("nextState(Count, Number, _)")
   static Value nextStateCount(TState tstate, Value reducer, Value state, Value unused)
       throws BuiltinException {
+    state = state.verifyInt(Err.INVALID_ARGUMENT);
     Value result = ValueUtil.addInts(tstate, state, NumValue.ONE);
     // Error on overflow
     Err.INVALID_ARGUMENT.unless(Condition.numericLessThan(NumValue.ZERO, result));
@@ -71,6 +72,8 @@ public final class ReducerCore {
   @Core.Method("combineStates(Count, Number, Number)")
   static Value combineStatesCount(TState tstate, Value reducer, Value state1, Value state2)
       throws BuiltinException {
+    state1 = state1.verifyInt(Err.INVALID_ARGUMENT);
+    state2 = state2.verifyInt(Err.INVALID_ARGUMENT);
     Value result = ValueUtil.addInts(tstate, state1, state2);
     Err.INVALID_ARGUMENT.unless(Condition.numericLessOrEq(NumValue.ZERO, result));
     return result;
